@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Home, 
   Wallet, 
@@ -25,10 +25,82 @@ import {
 type TabType = "home" | "wallet" | "game" | "network" | "settings";
 type NetworkTabType = "direct" | "placement";
 
+interface DirectMember {
+  id: string;
+  email: string;
+  status: string;
+  referralCount: number;
+  joinOrder: number;
+}
+
+interface PlacementMember {
+  id: string;
+  email: string;
+  status: string;
+  parentId: string;
+  placementId: string;
+  referralCount: number;
+  isRolledUp: boolean;
+}
+
 export default function MobileApp() {
   const [activeTab, setActiveTab] = useState<TabType>("home");
   const [networkTab, setNetworkTab] = useState<NetworkTabType>("direct");
   const [referralCopied, setReferralCopied] = useState(false);
+  const [loadingNetwork, setLoadingNetwork] = useState(false);
+
+  // Default User Mock Id (C's UUID from local test)
+  const defaultUserId = "e87f2b48-18e3-469b-9c76-d446b7a69bc9"; // Root C user
+  
+  // Dynamic Network State
+  const [directTree, setDirectTree] = useState<DirectMember[]>([
+    { id: "1", email: "User_01", status: "ACTIVE", referralCount: 3, joinOrder: 1 },
+    { id: "2", email: "User_02", status: "ACTIVE", referralCount: 0, joinOrder: 2 },
+    { id: "3", email: "User_03 (롤업)", status: "ACTIVE", referralCount: 0, joinOrder: 3 },
+    { id: "4", email: "User_04", status: "ACTIVE", referralCount: 1, joinOrder: 4 },
+  ]);
+
+  const [placementTree, setPlacementTree] = useState<{
+    firstTier: PlacementMember[];
+    secondTier: PlacementMember[];
+  }>({
+    firstTier: [
+      { id: "1", email: "User_01", status: "ACTIVE", parentId: defaultUserId, placementId: defaultUserId, referralCount: 3, isRolledUp: false },
+      { id: "2", email: "User_02", status: "ACTIVE", parentId: defaultUserId, placementId: defaultUserId, referralCount: 0, isRolledUp: false },
+      { id: "4", email: "User_04", status: "ACTIVE", parentId: defaultUserId, placementId: defaultUserId, referralCount: 1, isRolledUp: false },
+    ],
+    secondTier: [
+      { id: "1-3", email: "User_01-3", status: "ACTIVE", parentId: "1", placementId: defaultUserId, referralCount: 0, isRolledUp: true },
+    ]
+  });
+
+  // Fetch Network Tree from DB
+  const fetchNetworkData = async () => {
+    setLoadingNetwork(true);
+    try {
+      const res = await fetch(`/api/network?userId=${defaultUserId}`);
+      const result = await res.json();
+      if (result.success && result.data) {
+        // If DB has actual referral structures, bind them dynamically
+        if (result.data.directTree && result.data.directTree.length > 0) {
+          setDirectTree(result.data.directTree);
+        }
+        if (result.data.placementTree) {
+          setPlacementTree(result.data.placementTree);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load network tree from API. Using local fallbacks.", err);
+    } finally {
+      setLoadingNetwork(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "network") {
+      fetchNetworkData();
+    }
+  }, [activeTab]);
   
   // Wallet States
   const [fromAmount, setFromAmount] = useState("");
@@ -46,12 +118,7 @@ export default function MobileApp() {
       return;
     }
     const num = Number(val);
-    if (isUsdtToUrc) {
-      // 0.1% fee
-      setToAmount((num * 0.999).toFixed(4));
-    } else {
-      setToAmount((num * 0.999).toFixed(4));
-    }
+    setToAmount((num * 0.999).toFixed(4));
   };
 
   const copyReferral = () => {
@@ -60,7 +127,7 @@ export default function MobileApp() {
     setTimeout(() => setReferralCopied(false), 2000);
   };
 
-  // Re-calculate withdrawal fee
+  // Re-calculate withdrawal fee (5% flat fee)
   const getWithdrawalFee = () => {
     const amt = Number(withdrawAmount);
     if (!amt || isNaN(amt)) return 0;
@@ -368,8 +435,19 @@ export default function MobileApp() {
         {/* ==================== NETWORK (조직) TAB ==================== */}
         {activeTab === "network" && (
           <div className="space-y-6">
-            <h1 className="text-xl font-bold text-white">My Network</h1>
-            <p className="text-xs text-[#8E8E93] -mt-4">369 Game compensation plan trees.</p>
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-xl font-bold text-white">My Network</h1>
+                <p className="text-xs text-[#8E8E93] mt-0.5">369 Game compensation plan trees.</p>
+              </div>
+              <button 
+                onClick={fetchNetworkData}
+                disabled={loadingNetwork}
+                className="p-2 bg-[#1C1C21] border border-[#26262B] rounded-xl hover:bg-[#26262B] text-[#00D2FF]"
+              >
+                <RefreshCw size={14} className={loadingNetwork ? "animate-spin" : ""} />
+              </button>
+            </div>
 
             {/* Network Sub-Tabs */}
             <div className="flex bg-[#16161A] p-1 rounded-xl border border-[#26262B]">
@@ -406,46 +484,33 @@ export default function MobileApp() {
 
                 {/* Direct Line Nodes List */}
                 <div className="bg-[#16161A] border border-[#26262B] rounded-2xl divide-y divide-[#26262B] overflow-hidden">
-                  <div className="p-3.5 flex items-center justify-between text-xs">
-                    <div className="flex items-center space-x-3">
-                      <span className="w-8 h-8 rounded-full bg-[#121214] border border-[#26262B] flex items-center justify-center text-white font-semibold">1</span>
-                      <div>
-                        <p className="font-bold text-white">User_01</p>
-                        <p className="text-[10px] text-[#8E8E93] mt-0.5">추천 순서: 1번째 (일반후원)</p>
+                  {directTree.map((member) => {
+                    const isRollupSponsor = member.joinOrder % 3 === 0;
+                    return (
+                      <div key={member.id} className="p-3.5 flex items-center justify-between text-xs">
+                        <div className="flex items-center space-x-3">
+                          <span className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
+                            isRollupSponsor ? "bg-[#FF9F0A]/10 border border-[#FF9F0A]/20 text-[#FF9F0A]" : "bg-[#121214] border border-[#26262B] text-white"
+                          }`}>
+                            {member.joinOrder}
+                          </span>
+                          <div>
+                            <p className={`font-bold ${isRollupSponsor ? "text-[#FF9F0A]" : "text-white"}`}>
+                              {member.email} {isRollupSponsor && "(롤업)"}
+                            </p>
+                            <p className="text-[10px] text-[#8E8E93] mt-0.5">
+                              추천 순서: {member.joinOrder}번째 {isRollupSponsor ? "➔ 스폰서 B에게 롤업" : "(일반후원)"}
+                            </p>
+                          </div>
+                        </div>
+                        <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
+                          isRollupSponsor ? "bg-[#FF9F0A]/10 text-[#FF9F0A] border border-[#FF9F0A]/20" : "bg-[#30D5C8]/10 text-[#30D5C8]"
+                        }`}>
+                          {isRollupSponsor ? "Pass-up" : member.status}
+                        </span>
                       </div>
-                    </div>
-                    <span className="text-[10px] bg-[#30D5C8]/10 text-[#30D5C8] px-2 py-0.5 rounded font-bold">Active</span>
-                  </div>
-                  <div className="p-3.5 flex items-center justify-between text-xs">
-                    <div className="flex items-center space-x-3">
-                      <span className="w-8 h-8 rounded-full bg-[#121214] border border-[#26262B] flex items-center justify-center text-white font-semibold">2</span>
-                      <div>
-                        <p className="font-bold text-white">User_02</p>
-                        <p className="text-[10px] text-[#8E8E93] mt-0.5">추천 순서: 2번째 (일반후원)</p>
-                      </div>
-                    </div>
-                    <span className="text-[10px] bg-[#30D5C8]/10 text-[#30D5C8] px-2 py-0.5 rounded font-bold">Active</span>
-                  </div>
-                  <div className="p-3.5 flex items-center justify-between text-xs">
-                    <div className="flex items-center space-x-3">
-                      <span className="w-8 h-8 rounded-full bg-[#FF9F0A]/10 border border-[#FF9F0A]/20 flex items-center justify-center text-[#FF9F0A] font-semibold">3</span>
-                      <div>
-                        <p className="font-bold text-[#FF9F0A]">User_03 (롤업)</p>
-                        <p className="text-[10px] text-[#FF9F0A]/80 mt-0.5">추천 순서: 3번째 ➔ 스폰서 B에게 롤업</p>
-                      </div>
-                    </div>
-                    <span className="text-[10px] bg-[#FF9F0A]/10 text-[#FF9F0A] px-2 py-0.5 rounded font-bold border border-[#FF9F0A]/20">Pass-up</span>
-                  </div>
-                  <div className="p-3.5 flex items-center justify-between text-xs">
-                    <div className="flex items-center space-x-3">
-                      <span className="w-8 h-8 rounded-full bg-[#121214] border border-[#26262B] flex items-center justify-center text-white font-semibold">4</span>
-                      <div>
-                        <p className="font-bold text-white">User_04</p>
-                        <p className="text-[10px] text-[#8E8E93] mt-0.5">추천 순서: 4번째 (일반후원)</p>
-                      </div>
-                    </div>
-                    <span className="text-[10px] bg-[#30D5C8]/10 text-[#30D5C8] px-2 py-0.5 rounded font-bold">Active</span>
-                  </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -463,7 +528,7 @@ export default function MobileApp() {
                   </p>
                 </div>
 
-                {/* Placement Tree Visualizer (High-fidelity Layout mock) */}
+                {/* Placement Tree Visualizer */}
                 <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 flex flex-col items-center">
                   <span className="text-[10px] text-[#8E8E93] uppercase font-bold tracking-wider mb-4">후원 계보 시각화</span>
                   
@@ -478,42 +543,33 @@ export default function MobileApp() {
                     <div className="w-[2px] h-6 bg-[#26262B]" />
 
                     {/* Level 1 Row */}
-                    <div className="flex justify-between w-full px-4 relative">
+                    <div className="flex justify-between w-full px-1 relative">
                       {/* Horizonal connector bar */}
                       <div className="absolute top-0 left-12 right-12 h-[2px] bg-[#26262B]" />
                       
-                      {/* Node 1: User_01 */}
-                      <div className="flex flex-col items-center w-[28%] relative">
-                        <div className="absolute top-0 w-[2px] h-3 bg-[#26262B] -mt-3" />
-                        <div className="bg-[#1C1C21] border border-[#2C2C32] p-2 rounded-lg text-center w-full">
-                          <span className="text-[10px] font-bold text-white block">User_01</span>
-                          <span className="text-[8px] text-[#8E8E93]">1대 후원</span>
+                      {/* Node 1: First Tier Members */}
+                      {placementTree.firstTier.map((node) => (
+                        <div key={node.id} className="flex flex-col items-center w-[30%] relative">
+                          <div className="absolute top-0 w-[2px] h-3 bg-[#26262B] -mt-3" />
+                          <div className="bg-[#1C1C21] border border-[#2C2C32] p-2 rounded-lg text-center w-full">
+                            <span className="text-[10px] font-bold text-white block truncate">{node.email}</span>
+                            <span className="text-[8px] text-[#8E8E93] block">1대 후원</span>
+                          </div>
+                          
+                          {/* Connection line to child */}
+                          <div className="w-[2px] h-5 bg-[#26262B]" />
+                          
+                          {/* Render Rolled Up grandchildren who belong to this first-tier node in placement */}
+                          {placementTree.secondTier
+                            .filter(child => child.placementId === node.id || child.parentId === node.id)
+                            .map(child => (
+                              <div key={child.id} className="bg-[#FF9F0A]/10 border border-[#FF9F0A] p-1.5 rounded text-center w-full mt-1">
+                                <span className="text-[9px] font-bold text-[#FF9F0A] block truncate">{child.email}</span>
+                                <span className="text-[7px] text-[#FF9F0A]/80 block">{child.isRolledUp ? "롤업 패스업" : "2대 후원"}</span>
+                              </div>
+                          ))}
                         </div>
-                        <div className="w-[2px] h-5 bg-[#26262B]" />
-                        {/* Node 1-3 Rollup Under Me */}
-                        <div className="bg-[#FF9F0A]/10 border border-[#FF9F0A] p-1.5 rounded text-center w-full">
-                          <span className="text-[9px] font-bold text-[#FF9F0A] block">User_01-3</span>
-                          <span className="text-[7px] text-[#FF9F0A]/80">롤업 패스업</span>
-                        </div>
-                      </div>
-
-                      {/* Node 2: User_02 */}
-                      <div className="flex flex-col items-center w-[28%]">
-                        <div className="absolute top-0 w-[2px] h-3 bg-[#26262B] -mt-3" />
-                        <div className="bg-[#1C1C21] border border-[#2C2C32] p-2 rounded-lg text-center w-full">
-                          <span className="text-[10px] font-bold text-white block">User_02</span>
-                          <span className="text-[8px] text-[#8E8E93]">1대 후원</span>
-                        </div>
-                      </div>
-
-                      {/* Node 3: User_01-3 (Rolled up member from downline User_01) */}
-                      <div className="flex flex-col items-center w-[28%] relative">
-                        <div className="absolute top-0 w-[2px] h-3 bg-[#26262B] -mt-3" />
-                        <div className="bg-[#1C1C21] border border-[#2C2C32] p-2 rounded-lg text-center w-full">
-                          <span className="text-[10px] font-bold text-white block">User_04</span>
-                          <span className="text-[8px] text-[#8E8E93]">1대 후원</span>
-                        </div>
-                      </div>
+                      ))}
                     </div>
                   </div>
                 </div>
