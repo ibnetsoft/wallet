@@ -22,7 +22,7 @@
 ```mermaid
 graph TD
     %% Nodes
-    RN[React Native User App<br/>Expo / iOS & Android]
+    UserWeb[Next.js User WebApp<br/>PWA / Mobile Standalone]
     Next[Next.js Admin Web<br/>TailwindCSS / Desktop]
     
     subgraph Supabase [Supabase Platform]
@@ -37,11 +37,11 @@ graph TD
 
     subgraph Blockchain [BNB Smart Chain]
         RPC[BSC Node / RPC Endpoint]
-        Contract[USDT & Own Token Contracts]
+        Contract[USDT & URC Token Contracts]
     end
 
     %% Connections
-    RN -->|REST API / Auth / Realtime| Supabase
+    UserWeb -->|REST API / Auth / Realtime| Supabase
     Next -->|REST API / Service Key| Supabase
     
     Worker -->|Read/Write Ledger| DB
@@ -54,20 +54,19 @@ graph TD
     style Supabase fill:#1C1C1E,stroke:#00D2FF,stroke-width:2px,color:#fff
     style Backend_Worker fill:#1C1C1E,stroke:#FF9F0A,stroke-width:2px,color:#fff
     style Blockchain fill:#1C1C1E,stroke:#30D158,stroke-width:2px,color:#fff
-    style RN fill:#2A2A2E,stroke:#fff,color:#fff
+    style UserWeb fill:#2A2A2E,stroke:#fff,color:#fff
     style Next fill:#2A2A2E,stroke:#fff,color:#fff
 ```
 
 ### 2.1 컴포넌트별 역할 정의
 
-#### 📱 사용자 앱 (React Native / Expo)
-*   **플랫폼:** iOS 및 Android (크로스 플랫폼)
+#### 📱 사용자 웹앱 (Next.js PWA Client)
+*   **플랫폼:** 모바일 브라우저 최적화 & PWA Standalone 지원 (바탕화면 아이콘 추가)
 *   **핵심 기능:**
-    *   보안 강화 생체 인증 (FaceID / TouchID) 및 하이브리드 JWT 세션 관리.
-    *   입금 주소 QR 코드 스캔 및 생성.
-    *   실시간 자산 잔고 대시보드 (Supabase Realtime 연동).
-    *   USDT ↔ 자체 토큰 스왑 및 전송 인터페이스.
-    *   추천인 코드를 활용한 계층형 조직도 트리 뷰 구현.
+    *   하단 고정식 탭 바 네비게이션 (홈, 지갑, 게임, 조직, 설정).
+    *   카메라 및 QR 코드 스캔, 입금용 QR 생성.
+    *   실시간 자산 잔고 대시보드 및 USDT ↔ URC 스왑 인터페이스.
+    *   **조직(Network) 관리**: 추천계보도(직속 1대 리스트)와 후원계보도(369 패스업 롤업 트리) 탭 이원화 노출.
 
 #### 🖥️ 관리자 웹 (Next.js / TailwindCSS)
 *   **플랫폼:** 데스크톱 브라우저 최적화 백오피스
