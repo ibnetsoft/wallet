@@ -324,7 +324,7 @@ async function settleRankBonuses(
 async function runDailySettlement() {
   const settlementDate = new Date().toISOString().split('T')[0];
   console.log(`\n${'═'.repeat(64)}`);
-  console.log(`📅 [SETTLEMENT] Daily Close: ${settlementDate} (KST 00:00)`);
+  console.log(`📅 [SETTLEMENT] Daily Close: ${settlementDate} (00:00 Beijing Time)`);
   console.log(`${'═'.repeat(64)}`);
 
   const client = await pool.connect();
@@ -399,13 +399,13 @@ async function main() {
     process.exit(1);
   }
 
-  // 매일 KST 00:00 = UTC 15:00 실행
-  cron.schedule('0 15 * * *', async () => {
-    console.log('\n⏰ Cron triggered (00:00 KST)');
+  // 매일 북경 시간(CST) 00:00 = UTC 16:00 실행
+  cron.schedule('0 16 * * *', async () => {
+    console.log('\n⏰ Cron triggered (00:00 Beijing Time)');
     await runDailySettlement();
   }, { timezone: 'UTC' });
 
-  console.log('⌛ Waiting for next run at 15:00 UTC (00:00 KST)...');
+  console.log('⌛ Waiting for next run at 16:00 UTC (00:00 Beijing Time)...');
 
   if (process.env.RUN_NOW === 'true') {
     console.log('\n🧪 RUN_NOW=true — 즉시 테스트 실행');
