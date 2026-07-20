@@ -99,7 +99,8 @@ export default function MobileApp() {
   }, []);
 
   const copyReferral = () => {
-    navigator.clipboard.writeText("https://app.urc369.com/ref/URC883920");
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://app.urc369.com";
+    navigator.clipboard.writeText(`${origin}/register?ref=URC883920`);
     setReferralCopied(true);
     setTimeout(() => setReferralCopied(false), 2000);
   };
@@ -412,6 +413,8 @@ export default function MobileApp() {
         {activeTab === "settings" && (
           <div className="p-5 space-y-5">
             <h1 className="text-xl font-black text-[#EAECEF]">设置</h1>
+            
+            {/* User Profile Card */}
             <div className="bg-[#1E2329] rounded-xl p-4 flex items-center space-x-3">
               <div className="w-12 h-12 rounded-full bg-[#2B3139] flex justify-center items-center font-bold text-[#FCD535]">U</div>
               <div>
@@ -421,6 +424,25 @@ export default function MobileApp() {
                 </button>
               </div>
             </div>
+
+            {/* Referral Link Card */}
+            <div className="bg-[#1E2329] rounded-xl p-4 space-y-3">
+              <div className="flex items-center space-x-2 text-[#FCD535]">
+                <Users size={16} />
+                <h3 className="font-bold text-[#EAECEF]">分享推荐链接</h3>
+              </div>
+              <p className="text-xs text-[#848E9C]">复制下方链接发送给好友，对方点击即可自动填入邀请码并跳转至注册页面。</p>
+              
+              <div className="flex items-center justify-between bg-[#0B0E11] p-3 rounded-lg border border-[#2B3139]">
+                <span className="text-[10px] text-[#EAECEF] font-mono truncate mr-2">
+                  {typeof window !== "undefined" ? window.location.origin : "https://app.urc369.com"}/register?ref=URC883920
+                </span>
+                <button onClick={copyReferral} className="p-2 bg-[#2B3139] hover:bg-[#FCD535] hover:text-[#0B0E11] rounded text-[#848E9C] transition-colors flex-shrink-0">
+                  {referralCopied ? <Check size={14} /> : <Copy size={14} />}
+                </button>
+              </div>
+            </div>
+
           </div>
         )}
       </main>
