@@ -1,7 +1,7 @@
 # 📄 BSC 기반 멀티 토큰 중앙화 지갑 및 관리자 시스템 개발 사양서
 > **BSC-based Multi-Token Centralized Wallet & Admin System Technical Specification**
 
-본 문서는 BNB Smart Chain(BSC) 메인넷의 **USDT(BEP-20)** 및 **자체 발행 토큰(BEP-20)**을 지원하는 중앙화 지갑 플랫폼의 핵심 설계 및 개발 지침을 정의합니다. 본 시스템은 고성능 실시간 자산 관리, 철저한 트랜잭션 원장 무결성 보장, 그리고 다계층 보안 모델을 지향합니다.
+본 문서는 BNB Smart Chain(BSC) 메인넷의 **USDT(BEP-20)** 및 **자체 발행 토큰인 URC(Universal Real Currency)**를 지원하는 중앙화 지갑 플랫폼의 핵심 설계 및 개발 지침을 정의합니다. 본 시스템은 고성능 실시간 자산 관리, 철저한 트랜잭션 원장 무결성 보장, 그리고 다계층 보안 모델을 지향합니다.
 
 ---
 
@@ -10,8 +10,8 @@
 본 프로젝트는 안전하고 신뢰할 수 있는 가상자산 예치·송금·스왑 환경과 계층형 조직도(마케팅 보너스)를 지원하는 **모바일 사용자 앱(React Native)** 및 **관리자 백오피스 웹(Next.js)**, 그리고 **백엔드(Supabase & DB / RPC Node Worker)**로 구성된 중앙화 지갑 솔루션입니다.
 
 *   **지원 네트워크:** BNB Smart Chain (BSC) Mainnet
-*   **지원 자산:** BNB (네이티브 가스비), USDT (BEP-20), 자체 토큰 (BEP-20)
-*   **핵심 비즈니스:** 실시간 자산 대시보드, 간편 스왑, 추천인 트리(조직도), 마케팅 보너스 정산, 중앙 집중형 출금 제어 및 핫월렛 보안 관리.
+*   **지원 자산:** BNB (네이티브 가스비), USDT (BEP-20), URC (BEP-20, $1 고정 가치)
+*   **핵심 비즈니스:** 실시간 자산 대시보드, 0.1% 수수료 기반 스왑, 추천인 트리(조직도 진입 조건), 다양한 마케팅 보너스 정산 (추천, 육성, 임마, 최탄, 직급), $50 단위의 출금 제어(5% 수수료) 및 핫월렛 보안 관리.
 
 ---
 
@@ -274,7 +274,9 @@ CREATE TABLE public.users (
     email TEXT UNIQUE NOT NULL,
     nickname TEXT,
     parent_id UUID REFERENCES public.users(id), -- 추천인 (조직도 구현용)
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    status TEXT DEFAULT 'PENDING' NOT NULL, -- PENDING (조직도 미노출/수당 제외), ACTIVE (결제 후 트리 노드 배치/수당 개시)
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    CONSTRAINT check_user_status CHECK (status IN ('PENDING', 'ACTIVE'))
 );
 
 -- RLS 활성화
@@ -308,8 +310,8 @@ CREATE POLICY "Users can view their own wallet addresses"
 -- ==========================================
 CREATE TABLE public.assets (
     id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    symbol TEXT UNIQUE NOT NULL, -- 'USDT', 'MYTOKEN'
-    contract_address TEXT, -- USDT contract 주소 혹은 자체토큰 주소 (BNB일 경우 NULL)
+    symbol TEXT UNIQUE NOT NULL, -- 'USDT', 'URC'
+    contract_address TEXT, -- USDT contract 주소 혹은 URC 토큰 주소 (BNB일 경우 NULL)
     decimals INT DEFAULT 18 NOT NULL,
     is_active BOOLEAN DEFAULT true NOT NULL
 );
