@@ -16,14 +16,31 @@ import {
   AlertCircle
 } from "lucide-react";
 
-export default function DashboardPage() {
-  // State for mock real-time countdown to daily settlement (00:00 KST)
-  const [timeLeft, setTimeLeft] = useState("");
+interface PendingWithdrawal {
+  id: string;
+  userId: string;
+  email: string;
+  amount: number;
+  fee: number;
+  asset: string;
+  txHash: string;
+  status: string;
+  time: string;
+}
 
+export default function DashboardPage() {
+  const [timeLeft, setTimeLeft] = useState("");
+  const [loadingWithdrawals, setLoadingWithdrawals] = useState(false);
+  const [pendingWithdrawals, setPendingWithdrawals] = useState<PendingWithdrawal[]>([
+    { id: "wd-883", userId: "u1", email: "active_whale@example.com", asset: "USDT", amount: 1545.50, fee: 77.28, txHash: "0xec65...5a8c", status: "PENDING", time: "5 mins ago" },
+    { id: "wd-882", userId: "u2", email: "trader_vip@example.com", asset: "USDT", amount: 73.00, fee: 3.65, txHash: "0x91ad...8e00", status: "PENDING", time: "15 mins ago" },
+    { id: "wd-881", userId: "u3", email: "crypto_guy@example.com", asset: "USDT", amount: 50.00, fee: 2.50, txHash: "0x88c2...fa90", status: "PENDING", time: "42 mins ago" },
+  ]);
+
+  // Fetch KST Countdown
   useEffect(() => {
     const calculateTimeLeft = () => {
       const now = new Date();
-      // KST is UTC+9. We calculate the time remaining until the next 00:00 KST.
       const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
       const kstTime = new Date(utc + (3600000 * 9));
       
@@ -51,13 +68,68 @@ export default function DashboardPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // Mock Data aligned with v1.1 Specs
-  // Swap fee: 0.1%, Withdraw fee: 5% (min $50, any decimal allowed above $50)
-  const [pendingWithdrawals, setPendingWithdrawals] = useState([
-    { id: "wd-883", email: "active_whale@example.com", asset: "USDT", amount: 1545.50, target: "0xec65...5a8c", time: "5 mins ago" },
-    { id: "wd-882", email: "trader_vip@example.com", asset: "USDT", amount: 73.00, target: "0x91ad...8e00", time: "15 mins ago" },
-    { id: "wd-881", email: "crypto_guy@example.com", asset: "USDT", amount: 50.00, target: "0x88c2...fa90", time: "42 mins ago" },
-  ]);
+  // Fetch Pending Withdrawals from DB
+  const fetchPendingWithdrawals = async () => {
+    setLoadingWithdrawals(true);
+    try {
+      const res = await fetch("/api/withdrawals");
+      const result = await res.json();
+      if (result.success && result.withdrawals && result.withdrawals.length > 0) {
+        setPendingWithdrawals(result.withdrawals);
+      }
+    } catch (err) {
+      console.error("Failed to load pending withdrawals from API, using fallbacks.", err);
+    } finally {
+      setLoadingWithdrawals(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPendingWithdrawals();
+  }, []);
+
+  const handleApprove = async (id: string) => {
+    if (!confirm(`Are you sure you want to APPROVE withdrawal request ${id}?`)) return;
+    
+    try {
+      const res = await fetch("/api/withdrawals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ withdrawalId: id, action: "APPROVE" })
+      });
+      const result = await res.json();
+      if (result.success) {
+        alert("Approved successfully.");
+        fetchPendingWithdrawals();
+      } else {
+        alert(`Approval failed: ${result.error}`);
+      }
+    } catch (err) {
+      alert("API request failed.");
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    const reason = prompt("Enter rejection reason for refunding user balances:");
+    if (reason === null) return;
+
+    try {
+      const res = await fetch("/api/withdrawals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ withdrawalId: id, action: "REJECT", reason })
+      });
+      const result = await res.json();
+      if (result.success) {
+        alert("Rejected and refunded successfully.");
+        fetchPendingWithdrawals();
+      } else {
+        alert(`Rejection failed: ${result.error}`);
+      }
+    } catch (err) {
+      alert("API request failed.");
+    }
+  };
 
   const recentTransactions = [
     { id: "tx-1005", email: "investor@example.com", asset: "USDT", amount: "+250.00", type: "DEPOSIT", hash: "0x5320...3a17", status: "COMPLETED", date: "15:24" },
@@ -65,21 +137,7 @@ export default function DashboardPage() {
     { id: "tx-1003", email: "active_whale@example.com", asset: "USDT", amount: "+99.90", type: "SWAP_IN", hash: "Internal", status: "COMPLETED", date: "15:10", details: "Fee: 0.1 USDT (0.1%)" },
     { id: "tx-1002", email: "trader_vip@example.com", asset: "USDT", amount: "-73.00", type: "WITHDRAW", hash: "0x91ad...8e00", status: "PENDING", date: "15:02", details: "Fee: 3.65 USDT (5%)" },
     { id: "tx-1001", email: "min_user@example.com", asset: "USDT", amount: "-50.00", type: "WITHDRAW", hash: "0x88c2...fa90", status: "PENDING", date: "14:42", details: "Fee: 2.50 USDT (5%)" },
-    { id: "tx-1000", email: "earner@example.com", asset: "USDT", amount: "+450.00", type: "REFERRAL_BONUS", hash: "Internal", status: "COMPLETED", date: "Yesterday" },
   ];
-
-  const handleApprove = (id: string) => {
-    alert(`Withdrawal request ${id} approved. Triggering blockchain hot-wallet sign engine.`);
-    setPendingWithdrawals(pendingWithdrawals.filter(w => w.id !== id));
-  };
-
-  const handleReject = (id: string) => {
-    const reason = prompt("Enter rejection reason:");
-    if (reason !== null) {
-      alert(`Withdrawal request ${id} rejected. Refunding locked balance to user.`);
-      setPendingWithdrawals(pendingWithdrawals.filter(w => w.id !== id));
-    }
-  };
 
   return (
     <div className="space-y-8">
@@ -176,15 +234,12 @@ export default function DashboardPage() {
 
           {/* SVG Custom Chart Canvas */}
           <div className="relative w-full h-48 bg-[#121215]/40 rounded-xl border border-[#26262B]/50 flex items-end p-2">
-            {/* Background grid lines */}
             <div className="absolute inset-0 flex flex-col justify-between p-4 py-8 pointer-events-none">
               <div className="w-full h-[1px] bg-[#26262B]/30" />
               <div className="w-full h-[1px] bg-[#26262B]/30" />
               <div className="w-full h-[1px] bg-[#26262B]/30" />
             </div>
-            {/* Custom High-Fidelity SVG Path Chart */}
             <svg viewBox="0 0 600 160" className="w-full h-full">
-              {/* Deposit Path (Cyan) */}
               <path
                 d="M 0 130 Q 100 110, 200 80 T 400 40 T 600 20"
                 fill="none"
@@ -197,7 +252,6 @@ export default function DashboardPage() {
                 fill="url(#gradient-cyan)"
                 opacity="0.08"
               />
-              {/* Withdraw Path (Violet) */}
               <path
                 d="M 0 145 Q 100 135, 200 120 T 400 90 T 600 70"
                 fill="none"
@@ -210,7 +264,6 @@ export default function DashboardPage() {
                 fill="url(#gradient-violet)"
                 opacity="0.05"
               />
-              {/* Gradients Definition */}
               <defs>
                 <linearGradient id="gradient-cyan" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#00D2FF" />
@@ -235,14 +288,18 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Pending Withdrawals Quick Action Panel (v1.1 Aligned) */}
+        {/* Pending Withdrawals Action Panel */}
         <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 shadow-lg flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-1">
               <h4 className="text-sm font-bold text-white uppercase tracking-wider">Pending Withdrawals</h4>
-              <span className="text-[10px] bg-[#FF9F0A]/10 text-[#FF9F0A] px-2 py-0.5 rounded-full border border-[#FF9F0A]/20">
-                Fee: 5%
-              </span>
+              <button 
+                onClick={fetchPendingWithdrawals}
+                disabled={loadingWithdrawals}
+                className="text-[#00D2FF] hover:opacity-85"
+              >
+                <RefreshCw size={14} className={loadingWithdrawals ? "animate-spin" : ""} />
+              </button>
             </div>
             <p className="text-[11px] text-[#8E8E93]">Requires review. Minimum withdrawal: $50.</p>
             
@@ -254,32 +311,31 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 pendingWithdrawals.map((wd) => {
-                  const fee = wd.amount * 0.05;
-                  const finalTransfer = wd.amount - fee;
+                  const finalTransfer = wd.amount - wd.fee;
                   return (
                     <div key={wd.id} className="p-3.5 bg-[#121215]/60 rounded-xl border border-[#26262B] space-y-2">
                       <div className="flex justify-between items-center text-xs">
-                        <span className="font-semibold text-white">{wd.email}</span>
+                        <span className="font-semibold text-white block truncate w-[130px]">{wd.email}</span>
                         <span className="text-[10px] text-[#8E8E93]">{wd.time}</span>
                       </div>
                       
                       <div className="flex justify-between items-end bg-[#16161A]/80 p-2 rounded-lg border border-[#26262B]/50">
                         <div>
                           <p className="text-[9px] text-[#8E8E93] uppercase font-semibold">Request Amt</p>
-                          <p className="text-sm font-bold text-white">${wd.amount.toFixed(2)}</p>
+                          <p className="text-xs font-bold text-white">${wd.amount.toFixed(2)}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-[9px] text-[#FF9F0A] uppercase font-semibold">Fee (5%)</p>
-                          <p className="text-xs font-semibold text-[#FF9F0A]">${fee.toFixed(2)}</p>
+                          <p className="text-[10px] font-semibold text-[#FF9F0A]">${wd.fee.toFixed(2)}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-[9px] text-[#30D5C8] uppercase font-semibold">Final Send</p>
-                          <p className="text-sm font-bold text-[#30D5C8]">${finalTransfer.toFixed(2)}</p>
+                          <p className="text-xs font-bold text-[#30D5C8]">${finalTransfer.toFixed(2)}</p>
                         </div>
                       </div>
 
                       <div className="text-[10px] text-[#8E8E93] flex items-center space-x-1.5">
-                        <span className="bg-[#26262B] text-white px-1.5 py-0.5 rounded font-mono text-[9px]">{wd.target}</span>
+                        <span className="bg-[#26262B] text-white px-1.5 py-0.5 rounded font-mono text-[9px] truncate block max-w-full">{wd.txHash}</span>
                       </div>
 
                       <div className="flex space-x-2 pt-1 border-t border-[#26262B]/50">
