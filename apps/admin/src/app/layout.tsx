@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import "./globals.css";
 import { 
   LayoutDashboard, 
@@ -37,26 +38,22 @@ export default function RootLayout({
 
           {/* Sidebar Menu */}
           <nav className="flex-1 px-4 py-6 space-y-1.5">
-            <a href="#" className="flex items-center space-x-3 px-4 py-3 rounded-xl bg-[#00D2FF]/10 text-[#00D2FF] font-semibold transition-all">
+            <Link href="/" className="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-[#00D2FF]/10 hover:text-[#00D2FF] text-[#8E8E93] font-semibold transition-all">
               <LayoutDashboard size={18} />
               <span>Dashboard</span>
-            </a>
-            <a href="#" className="flex items-center space-x-3 px-4 py-3 rounded-xl text-[#8E8E93] hover:bg-[#1C1C21] hover:text-[#FFFFFF] transition-all">
+            </Link>
+            <Link href="/users" className="flex items-center space-x-3 px-4 py-3 rounded-xl text-[#8E8E93] hover:bg-[#1C1C21] hover:text-[#FFFFFF] transition-all">
               <Users size={18} />
               <span>User Manager</span>
-            </a>
-            <a href="#" className="flex items-center space-x-3 px-4 py-3 rounded-xl text-[#8E8E93] hover:bg-[#1C1C21] hover:text-[#FFFFFF] transition-all">
-              <ArrowDownUp size={18} />
-              <span>Withdrawals</span>
-            </a>
-            <a href="#" className="flex items-center space-x-3 px-4 py-3 rounded-xl text-[#8E8E93] hover:bg-[#1C1C21] hover:text-[#FFFFFF] transition-all">
-              <TrendingUp size={18} />
-              <span>Bonus System</span>
-            </a>
-            <a href="#" className="flex items-center space-x-3 px-4 py-3 rounded-xl text-[#8E8E93] hover:bg-[#1C1C21] hover:text-[#FFFFFF] transition-all">
+            </Link>
+            <Link href="/wallet" className="flex items-center space-x-3 px-4 py-3 rounded-xl text-[#8E8E93] hover:bg-[#1C1C21] hover:text-[#FFFFFF] transition-all">
+              <Wallet size={18} />
+              <span>Wallet Sweep</span>
+            </Link>
+            <Link href="/settings" className="flex items-center space-x-3 px-4 py-3 rounded-xl text-[#8E8E93] hover:bg-[#1C1C21] hover:text-[#FFFFFF] transition-all">
               <Settings size={18} />
               <span>System Settings</span>
-            </a>
+            </Link>
           </nav>
 
           {/* Sidebar Footer (Wallet Monitors) */}
