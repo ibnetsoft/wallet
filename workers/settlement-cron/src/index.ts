@@ -62,21 +62,72 @@ async function creditBonus(
   if (amount <= 0) return;
   const txHash = dedupeKey ?? `${txType}-${Date.now()}-${userId.substring(0, 8)}-${Math.random().toString(36).slice(2, 7)}`;
 
-  await client.query(
-    `INSERT INTO public.ledger_entries (user_id, asset_id, amount, tx_type, status, tx_hash, details)
-     VALUES ($1, $2, $3, $4, 'COMPLETED', $5, $6::jsonb)
-     ON CONFLICT (tx_hash) DO NOTHING`,
-    [userId, assetId, amount.toFixed(4), txType, txHash, JSON.stringify({ description })]
+  // 1. Fetch user's active game machines sequentially (oldest first)
+  const machinesRes = await client.query(
+    `SELECT id, payout_limit_usd, accumulated_payout_usd 
+     FROM public.user_game_machines 
+     WHERE user_id = $1 AND accumulated_payout_usd < payout_limit_usd
+     ORDER BY created_at ASC`,
+    [userId]
   );
 
-  await client.query(
-    `INSERT INTO public.user_balances (user_id, asset_id, available_balance, locked_balance, updated_at)
-     VALUES ($1, $2, $3, 0, NOW())
-     ON CONFLICT (user_id, asset_id)
-     DO UPDATE SET available_balance = user_balances.available_balance + EXCLUDED.available_balance,
-                   updated_at = NOW()`,
-    [userId, assetId, amount.toFixed(4)]
-  );
+  let remainingBonus = amount;
+  let actualPayout = 0;
+
+  for (const machine of machinesRes.rows) {
+    if (remainingBonus <= 0) break;
+
+    const limit = Number(machine.payout_limit_usd);
+    const accumulated = Number(machine.accumulated_payout_usd);
+    const availableCap = limit - accumulated;
+
+    let payoutForThisMachine = 0;
+    if (remainingBonus <= availableCap) {
+      payoutForThisMachine = remainingBonus;
+      remainingBonus = 0;
+    } else {
+      payoutForThisMachine = availableCap;
+      remainingBonus -= availableCap;
+    }
+
+    // Update the machine's accumulated payout
+    await client.query(
+      `UPDATE public.user_game_machines 
+       SET accumulated_payout_usd = accumulated_payout_usd + $1 
+       WHERE id = $2`,
+      [payoutForThisMachine, machine.id]
+    );
+
+    actualPayout += payoutForThisMachine;
+  }
+
+  if (actualPayout > 0) {
+    // Modify description if it was partially flushed
+    let finalDescription = description;
+    if (actualPayout < amount) {
+      finalDescription += ` (Max-out applied: Flushed $${(amount - actualPayout).toFixed(2)})`;
+    }
+
+    await client.query(
+      `INSERT INTO public.ledger_entries (user_id, asset_id, amount, tx_type, status, tx_hash, details)
+       VALUES ($1, $2, $3, $4, 'COMPLETED', $5, $6::jsonb)
+       ON CONFLICT (tx_hash) DO NOTHING`,
+      [userId, assetId, actualPayout.toFixed(4), txType, txHash, JSON.stringify({ description: finalDescription })]
+    );
+
+    await client.query(
+      `INSERT INTO public.user_balances (user_id, asset_id, available_balance, locked_balance, updated_at)
+       VALUES ($1, $2, $3, 0, NOW())
+       ON CONFLICT (user_id, asset_id)
+       DO UPDATE SET available_balance = user_balances.available_balance + EXCLUDED.available_balance,
+                     updated_at = NOW()`,
+      [userId, assetId, actualPayout.toFixed(4)]
+    );
+  }
+
+  if (remainingBonus > 0) {
+    console.log(`      ⚠️ MAX-OUT: $${remainingBonus.toFixed(2)} flushed for user ${userId.substring(0,8)}...`);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════

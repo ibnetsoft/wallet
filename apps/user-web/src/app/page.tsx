@@ -241,6 +241,26 @@ export default function MobileApp() {
               </div>
             </div>
 
+            {/* Max-Out Payout Progress Gauge */}
+            <div className="bg-[#141418] border border-[#26262B] rounded-2xl p-5">
+              <div className="flex justify-between items-end mb-3">
+                <div className="flex items-baseline space-x-1">
+                  <span className="text-lg font-bold text-white tracking-tight">0</span>
+                  <span className="text-[#8E8E93] font-medium">/ 3,000</span>
+                </div>
+                <span className="text-xs font-bold text-[#FFCC00]">잔여 한도 3,000</span>
+              </div>
+              
+              <div className="w-full bg-[#26262B] rounded-full h-3 mb-2 overflow-hidden">
+                <div className="bg-gradient-to-r from-[#00D2FF] to-[#30D5C8] h-3 rounded-full" style={{ width: "0%" }}></div>
+              </div>
+              
+              <div className="flex justify-between items-center text-[10px] text-[#8E8E93]">
+                <span>누적출금</span>
+                <span>0% 사용</span>
+              </div>
+            </div>
+
             {/* Quick Actions */}
             <div className="grid grid-cols-4 gap-2.5">
               {[
