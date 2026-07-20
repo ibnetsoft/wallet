@@ -13,6 +13,20 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState("");
   const [perms, setPerms] = useState({ withdraw: false, wallet: false, users: true });
 
+  // Global Fee Settings
+  const [swapFee, setSwapFee] = useState("0.1");
+  const [withdrawalFee, setWithdrawalFee] = useState("5.0");
+  const [savingFees, setSavingFees] = useState(false);
+
+  const handleSaveFees = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingFees(true);
+    setTimeout(() => {
+      setSavingFees(false);
+      alert("플랫폼 수수료율이 성공적으로 업데이트되었습니다.");
+    }, 1000);
+  };
+
   const handleAddSubAdmin = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEmail || !newPassword) return;
@@ -49,12 +63,61 @@ export default function SettingsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Add Sub Admin Form */}
-        <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 shadow-lg">
-          <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center mb-6">
-            <UserPlus size={16} className="mr-2 text-[#BF5AF2]" />
-            서브 관리자 추가
-          </h4>
+        <div className="space-y-6">
+          {/* Global Fee Settings */}
+          <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 shadow-lg">
+            <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center mb-6">
+              <Settings size={16} className="mr-2 text-[#FCD535]" />
+              플랫폼 수수료 설정
+            </h4>
+
+            <form onSubmit={handleSaveFees} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] text-[#8E8E93] uppercase font-bold">스왑 수수료율 (URC ↔ USDT)</label>
+                <div className="relative">
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    required
+                    value={swapFee}
+                    onChange={e => setSwapFee(e.target.value)}
+                    className="w-full bg-[#1C1C21] border border-[#26262B] focus:border-[#FCD535] pl-3 pr-8 py-2.5 rounded-lg text-sm text-white outline-none"
+                  />
+                  <span className="absolute right-3 top-2.5 text-[#8E8E93] text-sm">%</span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] text-[#8E8E93] uppercase font-bold">출금 수수료율 (Withdrawal)</label>
+                <div className="relative">
+                  <input 
+                    type="number" 
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    required
+                    value={withdrawalFee}
+                    onChange={e => setWithdrawalFee(e.target.value)}
+                    className="w-full bg-[#1C1C21] border border-[#26262B] focus:border-[#FCD535] pl-3 pr-8 py-2.5 rounded-lg text-sm text-white outline-none"
+                  />
+                  <span className="absolute right-3 top-2.5 text-[#8E8E93] text-sm">%</span>
+                </div>
+              </div>
+
+              <button type="submit" disabled={savingFees} className="w-full py-3 mt-2 bg-[#FCD535] hover:bg-[#F3BA2F] text-[#0B0E11] font-bold rounded-lg transition-colors text-sm disabled:opacity-50">
+                {savingFees ? "저장 중..." : "수수료율 적용하기"}
+              </button>
+            </form>
+          </div>
+
+          {/* Add Sub Admin Form */}
+          <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 shadow-lg">
+            <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center mb-6">
+              <UserPlus size={16} className="mr-2 text-[#BF5AF2]" />
+              서브 관리자 추가
+            </h4>
 
           <form onSubmit={handleAddSubAdmin} className="space-y-4">
             <div className="space-y-1.5">
@@ -112,6 +175,7 @@ export default function SettingsPage() {
               계정 생성하기
             </button>
           </form>
+        </div>
         </div>
 
         {/* Sub Admin List */}
