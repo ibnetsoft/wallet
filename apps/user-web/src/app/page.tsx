@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase/client";
 import {
   Home,
   Wallet,
@@ -89,6 +91,7 @@ function StarBadge({ level }: { level: number }) {
 
 /* ═══════════════════════ MAIN COMPONENT ═══════════════════════ */
 export default function MobileApp() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>("home");
   const [networkTab, setNetworkTab] = useState<NetworkTabType>("referral");
   const [referralCopied, setReferralCopied] = useState(false);
@@ -100,6 +103,23 @@ export default function MobileApp() {
   const [loadingNetwork, setLoadingNetwork] = useState(false);
   const [directTree, setDirectTree] = useState<DirectMember[]>(MOCK_DIRECT);
   const [sponsorTree, setSponsorTree] = useState<SponsorMember[]>(MOCK_SPONSOR);
+  const [userEmail, setUserEmail] = useState("Loading...");
+
+  // Supabase Auth check
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUserEmail(session.user.email || "Unknown");
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
 
   // KST daily close countdown
   const [countdown, setCountdown] = useState("");
@@ -723,7 +743,7 @@ export default function MobileApp() {
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#00D2FF] to-[#BF5AF2] flex items-center justify-center font-black text-xl text-white">C</div>
               <div className="flex-1">
                 <p className="text-sm font-black text-white">C (나)</p>
-                <p className="text-[10px] text-[#8E8E93] mt-0.5">c@example.com</p>
+                <p className="text-[10px] text-[#8E8E93] mt-0.5">{userEmail}</p>
                 <div className="flex items-center space-x-2 mt-1.5">
                   <StarBadge level={2} />
                   <span className="text-[9px] text-[#8E8E93]">누적 $3,200</span>
@@ -804,7 +824,10 @@ export default function MobileApp() {
             </div>
 
             {/* Logout */}
-            <button className="w-full py-3.5 bg-[#FF453A]/10 border border-[#FF453A]/25 text-[#FF453A] font-bold rounded-xl text-sm hover:bg-[#FF453A]/20 active:scale-95 transition-all">
+            <button 
+              onClick={handleLogout}
+              className="w-full py-3.5 bg-[#FF453A]/10 border border-[#FF453A]/25 text-[#FF453A] font-bold rounded-xl text-sm hover:bg-[#FF453A]/20 active:scale-95 transition-all"
+            >
               로그아웃
             </button>
           </div>
