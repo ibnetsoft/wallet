@@ -68,6 +68,19 @@ const I18N = {
     active: "활성", inactive: "미활성",
     shopTitle: "게임기 노드 상품몰", buyProduct: "노드 구매하기",
     myActiveNodes: "보유 게임기 노드 현황",
+    runningCount: "개 구동 중", runningStatus: "구동 중", cap: "한도", purchaseDate: "구매일", achievement: "달성율",
+    node100Name: "$100 노드", node500Name: "$500 노드", node1000Name: "$1,000 노드",
+    confirmPurchaseTitle: "노드 상품 구매 확인", confirmPurchaseMsg: "USDT로 선택하신 노드 상품을 구매하시겠습니까?",
+    confirm: "확인 구매", cancel: "취소",
+    unpaidMembersTitle: "상품 미구매 추천 회원", unpaidMembersSub: "X버튼 클릭 시 숨김",
+    directTreeSub: "직추천 조직", sponsorTreeSub: "후원 계보 조직",
+    bet1minLimit: "마감 1분 전 배팅 마감", round: "회차", round1: "1회차", round2: "2회차", round3: "3회차",
+    betTime: "참여 가능 시간", aiDraw: "AI 당첨 발표", drawTime: "발표 시각", selectRound: "참여 회차 선택",
+    selectBetCount: "배팅 횟수 선택 (회당 10 URD)", totalCost: "총 소모", manualBetBtn: "배팅 참여하기",
+    autoBetRounds: "자동 참여 회차 (다중 선택)", dailyRepeat: "매일 반복 자동 참여",
+    dailyRepeatSub: "매일 지정 시각에 자동으로 URD 배팅 참여",
+    saveAutoSettings: "⚡ 자동 배팅 세팅 저장 및 시작", stopAutoSettings: "✓ 자동 배팅 구동 중 (클릭 시 중지)",
+    recentBets: "내 최근 참여 내역", waitingAnnouncement: "대기 중 (발표 예정)",
   },
   en: {
     home: "Home", wallet: "Wallet", products: "Products", game: "Game Zone", network: "Network", settings: "Settings",
@@ -82,11 +95,24 @@ const I18N = {
     active: "Active", inactive: "Inactive",
     shopTitle: "Game Node Equipment Shop", buyProduct: "Buy Node Equipment",
     myActiveNodes: "My Active Game Nodes",
+    runningCount: "Nodes Running", runningStatus: "Running", cap: "Cap", purchaseDate: "Purchased", achievement: "Progress",
+    node100Name: "$100 Node", node500Name: "$500 Node", node1000Name: "$1,000 Node",
+    confirmPurchaseTitle: "Confirm Node Purchase", confirmPurchaseMsg: "Do you want to purchase the selected node equipment with USDT?",
+    confirm: "Confirm Purchase", cancel: "Cancel",
+    unpaidMembersTitle: "Unpurchased Referral Members", unpaidMembersSub: "Click X to dismiss",
+    directTreeSub: "Direct Referral Tree", sponsorTreeSub: "Sponsor Tree",
+    bet1minLimit: "Betting closes 1 min before deadline", round: "Round", round1: "Round 1", round2: "Round 2", round3: "Round 3",
+    betTime: "Betting Time", aiDraw: "AI Draw Announcement", drawTime: "Draw Time", selectRound: "Select Round",
+    selectBetCount: "Select Bets (10 URD each)", totalCost: "Total Cost", manualBetBtn: "Submit Bet",
+    autoBetRounds: "Auto Rounds (Multi-select)", dailyRepeat: "Daily Auto Repeat",
+    dailyRepeatSub: "Automatically bet URD at scheduled times daily",
+    saveAutoSettings: "⚡ Save & Start Auto Betting", stopAutoSettings: "✓ Auto Betting Running (Click to stop)",
+    recentBets: "My Recent Bet Records", waitingAnnouncement: "Waiting for Draw",
   },
   zh: {
-    home: "首页", wallet: "钱包", products: "商城", game: "游戏区", network: "团队", settings: "设置",
+    home: "首页", wallet: "钱包", products: "商城", game: "竞技场", network: "团队", settings: "设置",
     miningStatus: "设备运行状态", dailyYield: "日收益率", gaugeTitle: "封顶额度进度 (200% ~ 300%)",
-    usdtBalance: "USDT 余额", urcBalance: "URC 余额", urdBalance: "URD代币余额",
+    usdtBalance: "USDT 余额", urcBalance: "URC 余额", urdBalance: "URD 代币余额",
     instantSwap: "闪兑 (手续费 0.1%)", pay: "支付", receive: "获得 (预计)", confirmSwap: "确认兑换",
     withdrawUsdt: "提现 USDT (BSC)", applyWithdraw: "申请提现", depositUsdt: "充值 USDT (BSC)",
     gameNodes: "游戏节点设备 (购买赠送URD)", startGame: "启动游戏 (消耗 10 URD)",
@@ -96,6 +122,19 @@ const I18N = {
     active: "活跃", inactive: "未激活",
     shopTitle: "游戏节点设备商城", buyProduct: "购买节点设备",
     myActiveNodes: "我的运行节点设备",
+    runningCount: "个运行中", runningStatus: "运行中", cap: "额度", purchaseDate: "购买日", achievement: "达成率",
+    node100Name: "$100 节点", node500Name: "$500 节点", node1000Name: "$1,000 节点",
+    confirmPurchaseTitle: "确认购买节点设备", confirmPurchaseMsg: "确定使用 USDT 购买所选节点设备吗？",
+    confirm: "确认购买", cancel: "取消",
+    unpaidMembersTitle: "未购设备推荐会员", unpaidMembersSub: "点击X隐藏",
+    directTreeSub: "直推谱系团队", sponsorTreeSub: "安置架构团队",
+    bet1minLimit: "截止前1分钟停止下注", round: "轮次", round1: "第1轮", round2: "第2轮", round3: "第3轮",
+    betTime: "可下注时间", aiDraw: "AI 抽奖公布", drawTime: "公布时间", selectRound: "选择下注轮次",
+    selectBetCount: "选择下注次数 (每轮10 URD)", totalCost: "总消耗", manualBetBtn: "参与下注",
+    autoBetRounds: "自动参与轮次 (多选)", dailyRepeat: "每日重复自动下注",
+    dailyRepeatSub: "每日在指定时间自动参与URD下注",
+    saveAutoSettings: "⚡ 保存并启动自动下注设置", stopAutoSettings: "✓ 自动下注运行中 (点击停止)",
+    recentBets: "我的近期下注记录", waitingAnnouncement: "等待公布",
   }
 };
 
@@ -148,8 +187,8 @@ export default function MobileApp() {
 
   // Pending Unpurchased Members List
   const [unpaidMembers, setUnpaidMembers] = useState<UnpaidMember[]>([
-    { id: "u-1", nickname: "User B (김철수)", email: "b_kim@urc369.com", joinedAt: "2026-07-21" },
-    { id: "u-2", nickname: "User E (박영희)", email: "yh_park@urc369.com", joinedAt: "2026-07-20" },
+    { id: "u-1", nickname: "User B", email: "b_kim@urc369.com", joinedAt: "2026-07-21" },
+    { id: "u-2", nickname: "User E", email: "yh_park@urc369.com", joinedAt: "2026-07-20" },
   ]);
 
   const handleDismissUnpaidMember = (id: string) => {
@@ -232,17 +271,41 @@ export default function MobileApp() {
     { id: "m-2", level: 3, name: "$1,000 노드", price: 1000, urdBonus: 17000, payoutCap: 3000, accumulatedPayout: 800, purchasedAt: "2026-07-21" },
   ]);
 
-  const handlePurchaseProduct = (level: number, price: number, urdBonus: number, capRate: number) => {
+  // Purchase Confirmation Modal State
+  const [confirmPurchaseModal, setConfirmPurchaseModal] = useState<{
+    show: boolean;
+    level: number;
+    price: number;
+    urdBonus: number;
+    capRate: number;
+  } | null>(null);
+
+  const handleRequestPurchase = (level: number, price: number, urdBonus: number, capRate: number) => {
     if (usdtBalance < price) {
       alert(lang === "ko" ? "USDT 잔액이 부족합니다. 먼저 USDT를 입금해 주세요!" : lang === "en" ? "Insufficient USDT balance! Please deposit first." : "USDT 余额不足！请先充值。");
       return;
     }
 
+    setConfirmPurchaseModal({ show: true, level, price, urdBonus, capRate });
+  };
+
+  const executePurchaseProduct = () => {
+    if (!confirmPurchaseModal) return;
+    const { price, urdBonus, capRate, level } = confirmPurchaseModal;
+
+    if (usdtBalance < price) {
+      alert(lang === "ko" ? "USDT 잔액이 부족합니다. 먼저 USDT를 입금해 주세요!" : lang === "en" ? "Insufficient USDT balance! Please deposit first." : "USDT 余额不足！请先充值。");
+      setConfirmPurchaseModal(null);
+      return;
+    }
+
     const payoutCap = price * capRate;
+    const nodeName = level === 1 ? t.node100Name : level === 2 ? t.node500Name : t.node1000Name;
+
     const newMachine: ActiveMachine = {
       id: `m-${Date.now()}`,
       level,
-      name: `$${price.toLocaleString()} ${lang === "ko" ? "노드" : lang === "en" ? "Node" : "节点"}`,
+      name: nodeName,
       price,
       urdBonus,
       payoutCap,
@@ -253,12 +316,13 @@ export default function MobileApp() {
     setUsdtBalance((prev) => prev - price);
     setUrdBalance((prev) => prev + urdBonus);
     setMyMachines((prev) => [...prev, newMachine]);
+    setConfirmPurchaseModal(null);
 
     alert(lang === "ko" 
       ? `🎉 $${price.toLocaleString()} 게임기 구매 성공! ${urdBonus.toLocaleString()} URD 토큰이 즉시 지급되었습니다.` 
       : lang === "en" 
       ? `🎉 Purchased $${price.toLocaleString()} Node! +${urdBonus.toLocaleString()} URD credited.` 
-      : `🎉 成功购买 $${price.toLocaleString()} 节点！赠送 ${urdBonus.toLocaleString()} URD代币！`);
+      : `🎉 成功购买 $${price.toLocaleString()} 节点！赠送 ${urdBonus.toLocaleString()} URD 代币！`);
   };
   const [directTree] = useState([
     { id: 1, nickname: "User A", referralSeq: 1, status: "ACTIVE" },
@@ -828,6 +892,61 @@ export default function MobileApp() {
           </div>
         )}
 
+        {/* ── PURCHASE CONFIRMATION MODAL ── */}
+        {confirmPurchaseModal?.show && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-[#1E2329] border border-[#FCD535]/40 rounded-2xl p-6 max-w-xs w-full text-center space-y-4 shadow-[0_0_40px_rgba(252,213,53,0.2)] relative">
+              <button 
+                onClick={() => setConfirmPurchaseModal(null)}
+                className="absolute top-3 right-3 text-[#848E9C] hover:text-[#EAECEF] text-sm font-bold p-1 hover:bg-[#2B3139] rounded"
+              >
+                ✕
+              </button>
+              
+              <div className="w-14 h-14 mx-auto rounded-full bg-[#FCD535]/10 text-[#FCD535] flex items-center justify-center text-2xl border border-[#FCD535]/30">
+                🛍️
+              </div>
+
+              <div>
+                <h3 className="text-base font-extrabold text-[#EAECEF]">{t.confirmPurchaseTitle}</h3>
+                <p className="text-xs text-[#848E9C] mt-1.5">{t.confirmPurchaseMsg}</p>
+              </div>
+
+              <div className="bg-[#0B0E11] p-3 rounded-xl border border-[#2B3139] space-y-1.5 text-left text-xs">
+                <div className="flex justify-between">
+                  <span className="text-[#848E9C]">
+                    {lang === "ko" ? "구매 상품:" : lang === "en" ? "Item:" : "购买设备:"}
+                  </span>
+                  <span className="font-bold text-[#FCD535]">
+                    ${confirmPurchaseModal.price.toLocaleString()} {confirmPurchaseModal.level === 1 ? t.node100Name : confirmPurchaseModal.level === 2 ? t.node500Name : t.node1000Name}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#848E9C]">
+                    {lang === "ko" ? "보너스 토큰:" : lang === "en" ? "Bonus Tokens:" : "赠送代币:"}
+                  </span>
+                  <span className="font-bold text-[#0ECB81]">+{confirmPurchaseModal.urdBonus.toLocaleString()} URD</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <button
+                  onClick={() => setConfirmPurchaseModal(null)}
+                  className="py-2.5 bg-[#2B3139] text-[#EAECEF] font-bold rounded-xl text-xs hover:bg-[#3A424D] transition-colors"
+                >
+                  {t.cancel}
+                </button>
+                <button
+                  onClick={executePurchaseProduct}
+                  className="py-2.5 bg-[#FCD535] text-[#0B0E11] font-black rounded-xl text-xs hover:opacity-90 transition-opacity shadow-md"
+                >
+                  {t.confirm}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ═══════════════ PRODUCTS SHOP ═══════════════ */}
         {activeTab === "products" && (
           <div className="p-5 space-y-5">
@@ -896,7 +1015,7 @@ export default function MobileApp() {
                   </p>
 
                   <button 
-                    onClick={() => handlePurchaseProduct(p.level, p.price, p.urdBonus, p.capRate)}
+                    onClick={() => handleRequestPurchase(p.level, p.price, p.urdBonus, p.capRate)}
                     className="w-full py-3 bg-[#FCD535] text-[#0B0E11] font-black rounded-xl text-sm hover:opacity-90 active:scale-95 transition-all shadow-[0_0_20px_rgba(252,213,53,0.2)] flex items-center justify-center space-x-1.5"
                   >
                     <ShoppingBag size={16} />
@@ -1137,13 +1256,13 @@ export default function MobileApp() {
 
         {/* ═══════════════ NETWORK ═══════════════ */}
         {activeTab === "network" && (
-          <div className="p-5 space-y-5">
+          <div className="p-5 space-y-4">
             <div className="flex justify-between items-center">
               <h1 className="text-xl font-black text-[#EAECEF]">
                 {lang === "ko" ? "조직도 (팀 계보)" : lang === "en" ? "Network Tree" : "团队架构"}
               </h1>
               <span className="text-[10px] text-[#848E9C]">
-                {networkTab === "referral" ? "직추천 조직" : "후원 계보 조직"}
+                {networkTab === "referral" ? t.directTreeSub : t.sponsorTreeSub}
               </span>
             </div>
 
@@ -1167,117 +1286,109 @@ export default function MobileApp() {
               </button>
             </div>
 
-            {/* Interactive Pannable/Zoomable Tree Viewer Container */}
-            <div className="bg-[#1E2329] border border-[#2B3139] rounded-2xl p-4 space-y-3 shadow-inner">
-              <div className="flex justify-between items-center text-[10px] text-[#848E9C]">
-                <span>🔍 {lang === "ko" ? "터치 드래그로 하위 레그 탐색 가능" : "Drag / Scroll to explore legs"}</span>
-                <span className="text-[#0ECB81] font-bold">● 활성(상품보유) / ○ 미활성</span>
-              </div>
-
-              {/* Scrollable Tree Canvas */}
-              <div className="w-full overflow-x-auto overflow-y-auto py-4 bg-[#0B0E11] rounded-xl border border-[#2B3139]/50 min-h-[320px] flex justify-center items-start scrollbar-thin">
-                <div className="min-w-[420px] px-4 py-2 flex flex-col items-center space-y-6">
-                  
-                  {/* Root Node: Me (User) */}
-                  <div className="relative flex flex-col items-center">
-                    <div className="bg-[#FCD535] text-[#0B0E11] border-2 border-[#FCD535] rounded-2xl px-5 py-2.5 shadow-[0_0_20px_rgba(252,213,53,0.3)] text-center">
-                      <div className="flex items-center justify-center space-x-1">
-                        <span className="text-xs font-black">👑 User (Me / 나)</span>
-                        <StarBadge level={2} />
-                      </div>
-                      <p className="text-[10px] font-bold opacity-80 mt-0.5">본인 계정 • 활성 (V2)</p>
+            {/* Frameless Max-Width/Height Scrollable Tree Canvas */}
+            <div className="w-full overflow-x-auto overflow-y-auto py-5 px-2 bg-[#0B0E11] rounded-2xl border border-[#2B3139] min-h-[380px] flex justify-center items-start scrollbar-thin">
+              <div className="min-w-[440px] px-2 py-1 flex flex-col items-center space-y-6">
+                
+                {/* Root Node: Me (User) */}
+                <div className="relative flex flex-col items-center">
+                  <div className="bg-[#FCD535] text-[#0B0E11] border-2 border-[#FCD535] rounded-2xl px-6 py-3 shadow-[0_0_25px_rgba(252,213,53,0.35)] text-center">
+                    <div className="flex items-center justify-center space-x-1.5">
+                      <span className="text-sm font-black">👑 User ({lang === "ko" ? "나" : lang === "en" ? "Me" : "我"})</span>
+                      <StarBadge level={2} />
                     </div>
-                    {/* Down Branch Line */}
-                    <div className="w-0.5 h-6 bg-[#FCD535]/60" />
+                    <p className="text-[10px] font-bold opacity-80 mt-0.5">
+                      {lang === "ko" ? "본인 계정 • 활성 (V2)" : lang === "en" ? "My Account • Active (V2)" : "本人账号 • 活跃 (V2)"}
+                    </p>
                   </div>
+                  {/* Down Branch Line */}
+                  <div className="w-0.5 h-6 bg-[#FCD535]/60" />
+                </div>
 
-                  {/* Level 1 Horizontal Branch Bar */}
-                  <div className="relative w-full flex justify-center">
-                    <div className="absolute top-0 w-3/4 h-0.5 bg-[#2B3139]" />
-                    
-                    <div className="w-full flex justify-between pt-4">
-                      {/* Left Leg: User A */}
-                      <div className="flex flex-col items-center w-1/2">
-                        <div className="w-0.5 h-4 bg-[#2B3139] -mt-4 mb-1" />
-                        <div className="bg-[#1E2329] border border-[#0ECB81] rounded-xl p-2.5 text-center min-w-[130px] shadow-md">
-                          <p className="text-xs font-bold text-[#EAECEF]">User A (김대표)</p>
-                          <div className="flex items-center justify-center space-x-1 mt-1">
-                            <span className="text-[9px] font-bold text-[#0ECB81] bg-[#0ECB81]/10 px-1.5 py-0.5 rounded">● 활성</span>
-                            <span className="text-[9px] text-[#848E9C]">$500 노드</span>
-                          </div>
-                        </div>
-
-                        {/* Level 2 Sub-Legs */}
-                        <div className="w-0.5 h-5 bg-[#2B3139] my-1" />
-                        <div className="flex space-x-2">
-                          <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[90px]">
-                            <p className="text-[10px] font-bold text-[#EAECEF]">User C</p>
-                            <span className="text-[8px] text-[#0ECB81]">● 활성 ($100)</span>
-                          </div>
-                          <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[90px]">
-                            <p className="text-[10px] font-bold text-[#EAECEF]">User D</p>
-                            <span className="text-[8px] text-[#0ECB81]">● 활성 ($1,000)</span>
-                          </div>
+                {/* Level 1 Horizontal Branch Bar */}
+                <div className="relative w-full flex justify-center">
+                  <div className="absolute top-0 w-3/4 h-0.5 bg-[#2B3139]" />
+                  
+                  <div className="w-full flex justify-between pt-4">
+                    {/* Left Leg: User A */}
+                    <div className="flex flex-col items-center w-1/2">
+                      <div className="w-0.5 h-4 bg-[#2B3139] -mt-4 mb-1" />
+                      <div className="bg-[#1E2329] border border-[#0ECB81] rounded-xl p-3 text-center min-w-[135px] shadow-md">
+                        <p className="text-xs font-bold text-[#EAECEF]">User A</p>
+                        <div className="flex items-center justify-center space-x-1 mt-1">
+                          <span className="text-[9px] font-bold text-[#0ECB81] bg-[#0ECB81]/10 px-1.5 py-0.5 rounded">● {t.active}</span>
+                          <span className="text-[9px] text-[#848E9C]">$500</span>
                         </div>
                       </div>
 
-                      {/* Right Leg: User B */}
-                      <div className="flex flex-col items-center w-1/2">
-                        <div className="w-0.5 h-4 bg-[#2B3139] -mt-4 mb-1" />
-                        <div className="bg-[#1E2329] border border-[#F6465D]/60 rounded-xl p-2.5 text-center min-w-[130px] shadow-md">
-                          <p className="text-xs font-bold text-[#EAECEF]">User B (이회장)</p>
-                          <div className="flex items-center justify-center space-x-1 mt-1">
-                            <span className="text-[9px] font-bold text-[#F6465D] bg-[#F6465D]/10 px-1.5 py-0.5 rounded">○ 미활성</span>
-                            <span className="text-[9px] text-[#848E9C]">미구매</span>
-                          </div>
+                      {/* Level 2 Sub-Legs */}
+                      <div className="w-0.5 h-5 bg-[#2B3139] my-1" />
+                      <div className="flex space-x-2">
+                        <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[90px]">
+                          <p className="text-[10px] font-bold text-[#EAECEF]">User C</p>
+                          <span className="text-[8px] text-[#0ECB81]">● {t.active} ($100)</span>
                         </div>
-
-                        {/* Level 2 Sub-Leg */}
-                        <div className="w-0.5 h-5 bg-[#2B3139] my-1" />
-                        <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[100px]">
-                          <p className="text-[10px] font-bold text-[#EAECEF]">User E</p>
-                          <span className="text-[8px] text-[#848E9C]">○ 미활성</span>
+                        <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[90px]">
+                          <p className="text-[10px] font-bold text-[#EAECEF]">User D</p>
+                          <span className="text-[8px] text-[#0ECB81]">● {t.active} ($1,000)</span>
                         </div>
                       </div>
                     </div>
 
+                    {/* Right Leg: User B */}
+                    <div className="flex flex-col items-center w-1/2">
+                      <div className="w-0.5 h-4 bg-[#2B3139] -mt-4 mb-1" />
+                      <div className="bg-[#1E2329] border border-[#F6465D]/60 rounded-xl p-3 text-center min-w-[135px] shadow-md">
+                        <p className="text-xs font-bold text-[#EAECEF]">User B</p>
+                        <div className="flex items-center justify-center space-x-1 mt-1">
+                          <span className="text-[9px] font-bold text-[#F6465D] bg-[#F6465D]/10 px-1.5 py-0.5 rounded">○ {t.inactive}</span>
+                          <span className="text-[9px] text-[#848E9C]">
+                            {lang === "ko" ? "미구매" : lang === "en" ? "Unpurchased" : "未购设备"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Level 2 Sub-Leg */}
+                      <div className="w-0.5 h-5 bg-[#2B3139] my-1" />
+                      <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[100px]">
+                        <p className="text-[10px] font-bold text-[#EAECEF]">User E</p>
+                        <span className="text-[8px] text-[#848E9C]">○ {t.inactive}</span>
+                      </div>
+                    </div>
                   </div>
 
                 </div>
+
               </div>
             </div>
 
-            {/* Floating Unpurchased Recommended Members Cards (하단 미구매 추천 회원 카운트 및 X버튼 닫기) */}
+            {/* Clean 1-Line Pending Unpurchased Members List (Positioned at bottom above nav) */}
             {unpaidMembers.length > 0 && (
-              <div className="space-y-2.5 pt-2">
+              <div className="space-y-2 pt-2">
                 <div className="flex justify-between items-center px-1">
                   <h3 className="text-xs font-extrabold text-[#F6465D] flex items-center space-x-1.5">
-                    <span>⚠️ {lang === "ko" ? "상품 미구매 추천 회원" : "Unpurchased Referral Members"}</span>
+                    <span>⚠️ {t.unpaidMembersTitle}</span>
                     <span className="bg-[#F6465D]/10 border border-[#F6465D]/30 text-[#F6465D] text-[10px] px-2 py-0.5 rounded-full font-bold">
-                      {unpaidMembers.length}명
+                      {unpaidMembers.length}
                     </span>
                   </h3>
-                  <span className="text-[10px] text-[#848E9C]">X버튼 클릭 시 숨김</span>
+                  <span className="text-[10px] text-[#848E9C]">{t.unpaidMembersSub}</span>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {unpaidMembers.map((m) => (
-                    <div key={m.id} className="bg-[#1E2329] border border-[#F6465D]/40 rounded-xl p-3.5 flex justify-between items-center relative shadow-md">
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-xs font-bold text-[#EAECEF]">{m.nickname}</span>
-                          <span className="text-[9px] font-extrabold text-[#F6465D] bg-[#F6465D]/10 px-1.5 py-0.5 rounded">
-                            미구매 회원
-                          </span>
-                        </div>
-                        <p className="text-[10px] text-[#848E9C] mt-1 font-mono">{m.email} • 가입일: {m.joinedAt}</p>
-                        <p className="text-[10px] text-[#FCD535] mt-0.5">※ 상품을 구매하면 추천 수당이 소급 지급됩니다.</p>
+                    <div key={m.id} className="bg-[#1E2329] border border-[#F6465D]/30 rounded-xl px-3.5 py-2.5 flex justify-between items-center shadow-sm">
+                      <div className="flex items-center space-x-2 min-w-0 pr-2">
+                        <span className="text-xs font-bold text-[#EAECEF] flex-shrink-0">{m.nickname}</span>
+                        <span className="text-[11px] font-mono text-[#848E9C] truncate">
+                          {m.email} • {m.joinedAt}
+                        </span>
                       </div>
 
                       <button 
                         onClick={() => handleDismissUnpaidMember(m.id)}
-                        className="p-1.5 text-[#848E9C] hover:text-[#EAECEF] hover:bg-[#2B3139] rounded transition-colors ml-2 flex-shrink-0"
-                        title="닫기"
+                        className="p-1 text-[#848E9C] hover:text-[#EAECEF] hover:bg-[#2B3139] rounded transition-colors flex-shrink-0 text-xs font-bold"
+                        title={t.cancel}
                       >
                         ✕
                       </button>
