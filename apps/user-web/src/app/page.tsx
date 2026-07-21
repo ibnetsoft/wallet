@@ -1,5 +1,5 @@
 "use client";
-
+// URC369 Wallet App - Production Vercel Build Trigger
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
