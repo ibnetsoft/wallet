@@ -66,14 +66,65 @@ export default function MobileApp() {
     { id: 3, nickname: "User C", tier: 1, status: "ACTIVE" },
     { id: 4, nickname: "User D", tier: 2, status: "ACTIVE" }
   ]);
+  const [userEmail, setUserEmail] = useState("user@urc369.com");
+  const [countdown, setCountdown] = useState("");
+  const [urdBalance, setUrdBalance] = useState(1500);
+  const [usdtBalance, setUsdtBalance] = useState(100.00);
+  const [urcBalance, setUrcBalance] = useState(250.00);
   const [fromAmount, setFromAmount] = useState("");
   const [toAmount, setToAmount] = useState("");
   const [isUsdtToUrc, setIsUsdtToUrc] = useState(true);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawAddress, setWithdrawAddress] = useState("");
   const [loadingNetwork, setLoadingNetwork] = useState(false);
-  const [userEmail, setUserEmail] = useState("Loading...");
-  const [countdown, setCountdown] = useState("");
+  
+  // Game Play Modal Result State
+  const [gameResultModal, setGameResultModal] = useState<{
+    show: boolean;
+    type: "USDT_WIN" | "COIN_WIN";
+    usdtAmount?: number;
+    urcAmount?: number;
+    urdAmount?: number;
+  } | null>(null);
+
+  const [isPlayingGame, setIsPlayingGame] = useState(false);
+
+  const handlePlayGame = (betAmount: number = 100) => {
+    if (urdBalance < 10) {
+      alert("URD代币不足！(单次游戏需消耗 10 URD)");
+      return;
+    }
+
+    setIsPlayingGame(true);
+    setUrdBalance((prev) => prev - 10);
+
+    setTimeout(() => {
+      // 50% random chance for USDT 102% vs Coin 120% (80% URC + 40% URD)
+      const isUsdtWin = Math.random() > 0.5;
+
+      if (isUsdtWin) {
+        const rewardUsdt = betAmount * 1.02; // 102% payout
+        setUsdtBalance((prev) => prev + rewardUsdt);
+        setGameResultModal({
+          show: true,
+          type: "USDT_WIN",
+          usdtAmount: rewardUsdt,
+        });
+      } else {
+        const rewardUrc = betAmount * 0.80; // 80% URC
+        const rewardUrd = betAmount * 0.40; // 40% URD
+        setUrcBalance((prev) => prev + rewardUrc);
+        setUrdBalance((prev) => prev + rewardUrd);
+        setGameResultModal({
+          show: true,
+          type: "COIN_WIN",
+          urcAmount: rewardUrc,
+          urdAmount: rewardUrd,
+        });
+      }
+      setIsPlayingGame(false);
+    }, 1200);
+  };
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -348,49 +399,102 @@ export default function MobileApp() {
           <div className="p-5 space-y-5">
             <h1 className="text-xl font-black text-[#EAECEF]">游戏区</h1>
             
-            <div className="bg-[#1E2329] rounded-xl p-5 flex justify-between items-center">
+            {/* URD Token Balance Card */}
+            <div className="bg-[#1E2329] rounded-xl p-5 flex justify-between items-center border border-[#2B3139]">
               <div>
-                <p className="text-xs text-[#848E9C]">能量球余额</p>
-                <h2 className="text-2xl font-bold text-[#FCD535] mt-1">540</h2>
+                <p className="text-xs text-[#848E9C]">URD代币余额 (1回=10 URD)</p>
+                <h2 className="text-2xl font-bold text-[#FCD535] mt-1">{urdBalance.toLocaleString()} <span className="text-xs text-[#EAECEF]">URD</span></h2>
               </div>
-              <button className="px-4 py-2 bg-[#FCD535] text-[#0B0E11] font-bold rounded text-sm">购买</button>
+              <button 
+                onClick={() => alert("请在下方选择节点设备进行购买，即可赠送URD代币！")}
+                className="px-4 py-2 bg-[#FCD535] text-[#0B0E11] font-bold rounded text-sm hover:opacity-90 transition-opacity"
+              >
+                获取代币
+              </button>
             </div>
 
+            {/* Mining Node Packages */}
             <div className="space-y-3">
-              <h3 className="text-xs font-bold text-[#848E9C]">我的设备</h3>
+              <div className="flex justify-between items-center">
+                <h3 className="text-xs font-bold text-[#848E9C]">游戏节点设备 (购买赠送URD)</h3>
+              </div>
               {[
-                { level: 1, price: "$100", rem: 6, total: 10, pct: 60 },
-                { level: 3, price: "$1,000", rem: 88, total: 100, pct: 88 },
+                { level: 1, price: "$100", urd: "1,500 URD", rem: 10, total: 10, pct: 100 },
+                { level: 2, price: "$500", urd: "8,000 URD", rem: 50, total: 50, pct: 100 },
+                { level: 3, price: "$1,000", urd: "17,000 URD", rem: 100, total: 100, pct: 100 },
               ].map((m) => (
-                <div key={m.level} className="bg-[#1E2329] rounded-xl p-4">
-                  <div className="flex justify-between items-center mb-3">
+                <div key={m.level} className="bg-[#1E2329] rounded-xl p-4 border border-[#2B3139] hover:border-[#FCD535]/50 transition-colors">
+                  <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-bold text-[#EAECEF]">{m.price} 节点</span>
-                    <span className="text-[10px] text-[#FCD535]">剩余 {m.rem} 次</span>
+                    <span className="text-xs font-bold text-[#FCD535]">赠送 {m.urd}</span>
                   </div>
-                  <div className="w-full bg-[#0B0E11] rounded-full h-1.5">
-                    <div className="h-1.5 rounded-full bg-[#FCD535]" style={{ width: `${m.pct}%` }} />
+                  <div className="flex justify-between items-center text-[10px] text-[#848E9C] mb-3">
+                    <span>剩余运行: {m.rem} 次</span>
+                    <span>消耗: 10 URD / 回</span>
                   </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="space-y-3">
-              <h3 className="text-xs font-bold text-[#848E9C]">今日轮次</h3>
-              {[
-                { r: 1, t: "11:00-12:00", s: "进行中" },
-                { r: 2, t: "14:00-15:00", s: "等待中" },
-              ].map((r) => (
-                <div key={r.r} className="bg-[#1E2329] rounded-xl p-4 flex justify-between items-center">
-                  <div>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${r.s === "进行中" ? "bg-[#0ECB81]/20 text-[#0ECB81]" : "bg-[#2B3139] text-[#848E9C]"}`}>{r.s}</span>
-                    <p className="text-sm font-bold text-[#EAECEF] mt-2">{r.t}</p>
-                  </div>
-                  <button className={`px-4 py-2 rounded font-bold text-xs ${r.s === "进行中" ? "bg-[#FCD535] text-[#0B0E11]" : "bg-[#2B3139] text-[#848E9C]"}`}>
-                    参与
+                  <button 
+                    onClick={() => handlePlayGame(m.level === 1 ? 100 : m.level === 2 ? 500 : 1000)}
+                    disabled={isPlayingGame}
+                    className="w-full py-2 bg-[#2B3139] hover:bg-[#FCD535] hover:text-[#0B0E11] text-[#EAECEF] text-xs font-bold rounded transition-all flex items-center justify-center space-x-1 disabled:opacity-50"
+                  >
+                    {isPlayingGame ? (
+                      <RefreshCw size={14} className="animate-spin" />
+                    ) : (
+                      <>
+                        <Play size={12} />
+                        <span>启动游戏 (消耗 10 URD)</span>
+                      </>
+                    )}
                   </button>
                 </div>
               ))}
             </div>
+
+            {/* Game Result Modal Popup */}
+            {gameResultModal?.show && (
+              <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                <div className="bg-[#1E2329] border border-[#FCD535]/40 rounded-2xl p-6 max-w-xs w-full text-center space-y-4 shadow-[0_0_40px_rgba(252,213,53,0.2)]">
+                  {gameResultModal.type === "USDT_WIN" ? (
+                    <>
+                      <div className="w-16 h-16 mx-auto rounded-full bg-[#0ECB81]/10 text-[#0ECB81] flex items-center justify-center text-3xl">
+                        🎉
+                      </div>
+                      <h3 className="text-lg font-extrabold text-[#EAECEF]">USDT 中奖！</h3>
+                      <p className="text-xs text-[#848E9C]">恭喜！本次游戏获得 102% USDT 奖励返还！</p>
+                      <div className="p-3 bg-[#0B0E11] rounded-xl border border-[#0ECB81]/30">
+                        <span className="text-xs text-[#848E9C]">获得奖励:</span>
+                        <p className="text-xl font-black text-[#0ECB81] mt-0.5">+{gameResultModal.usdtAmount?.toFixed(2)} USDT</p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-16 h-16 mx-auto rounded-full bg-[#FCD535]/10 text-[#FCD535] flex items-center justify-center text-3xl">
+                        🪙
+                      </div>
+                      <h3 className="text-lg font-extrabold text-[#EAECEF]">币种中奖 (120%)</h3>
+                      <p className="text-xs text-[#848E9C]">未中USDT，触发 120% 币种返还 (URC 80% + URD 40%)！</p>
+                      <div className="p-3 bg-[#0B0E11] rounded-xl border border-[#FCD535]/30 space-y-1 text-left">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-[#848E9C]">URC 奖励 (80%):</span>
+                          <span className="font-bold text-[#FCD535]">+{gameResultModal.urcAmount?.toFixed(1)} URC</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-[#848E9C]">URD 奖励 (40%):</span>
+                          <span className="font-bold text-[#0ECB81]">+{gameResultModal.urdAmount?.toFixed(1)} URD</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  <button
+                    onClick={() => setGameResultModal(null)}
+                    className="w-full py-3 bg-[#FCD535] text-[#0B0E11] font-bold rounded-xl text-sm"
+                  >
+                    确认收下
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
