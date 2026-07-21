@@ -170,6 +170,37 @@ export default function MobileApp() {
     setToAmount(val && !isNaN(Number(val)) ? (Number(val) * 0.999).toFixed(4) : "");
   };
 
+  const handleConfirmSwap = () => {
+    const val = Number(fromAmount);
+    if (!val || val <= 0) {
+      alert("请输入有效的兑换金额");
+      return;
+    }
+
+    if (isUsdtToUrc) {
+      if (val > usdtBalance) {
+        alert("USDT 余额不足");
+        return;
+      }
+      const received = val * 0.999;
+      setUsdtBalance((prev) => prev - val);
+      setUrcBalance((prev) => prev + received);
+      alert(`成功将 ${val} USDT 闪兑为 ${received.toFixed(2)} URC !`);
+    } else {
+      if (val > urcBalance) {
+        alert("URC 余额不足");
+        return;
+      }
+      const received = val * 0.999;
+      setUrcBalance((prev) => prev - val);
+      setUsdtBalance((prev) => prev + received);
+      alert(`成功将 ${val} URC 闪兑为 ${received.toFixed(2)} USDT !`);
+    }
+
+    setFromAmount("");
+    setToAmount("");
+  };
+
   const withdrawFee = Number(withdrawAmount) ? Number(withdrawAmount) * 0.05 : 0;
   const withdrawFinal = Number(withdrawAmount) ? Number(withdrawAmount) * 0.95 : 0;
 
@@ -321,8 +352,8 @@ export default function MobileApp() {
 
             <div className="grid grid-cols-2 gap-3">
               {[
-                { symbol: "USDT", balance: "10,500.00" },
-                { symbol: "URC",  balance: "4,980.00" },
+                { symbol: "USDT", balance: usdtBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) },
+                { symbol: "URC",  balance: urcBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) },
               ].map((t) => (
                 <div key={t.symbol} className="bg-[#1E2329] rounded-xl p-4">
                   <span className="text-[10px] font-bold text-[#848E9C]">{t.symbol}</span>
@@ -336,7 +367,7 @@ export default function MobileApp() {
               <div className="bg-[#0B0E11] p-3 rounded-lg">
                 <div className="flex justify-between text-[10px] text-[#848E9C] mb-1">
                   <span>支付</span>
-                  <span>余额: {isUsdtToUrc ? "10,500.00 USDT" : "4,980.00 URC"}</span>
+                  <span>余额: {isUsdtToUrc ? `${usdtBalance.toFixed(2)} USDT` : `${urcBalance.toFixed(2)} URC`}</span>
                 </div>
                 <div className="flex justify-between">
                   <input type="number" placeholder="0.00" value={fromAmount} onChange={(e) => handleSwapChange(e.target.value)}
@@ -353,7 +384,7 @@ export default function MobileApp() {
               <div className="bg-[#0B0E11] p-3 rounded-lg">
                 <div className="flex justify-between text-[10px] text-[#848E9C] mb-1">
                   <span>获得 (预计)</span>
-                  <span>余额: {isUsdtToUrc ? "4,980.00 URC" : "10,500.00 USDT"}</span>
+                  <span>余额: {isUsdtToUrc ? `${urcBalance.toFixed(2)} URC` : `${usdtBalance.toFixed(2)} USDT`}</span>
                 </div>
                 <div className="flex justify-between">
                   <input type="number" placeholder="0.00" value={toAmount} disabled
@@ -361,7 +392,7 @@ export default function MobileApp() {
                   <span className="text-[#FCD535] font-bold">{isUsdtToUrc ? "URC" : "USDT"}</span>
                 </div>
               </div>
-              <button className="w-full py-3 bg-[#FCD535] text-[#0B0E11] font-bold rounded-lg text-sm">确认兑换</button>
+              <button onClick={handleConfirmSwap} className="w-full py-3 bg-[#FCD535] text-[#0B0E11] font-bold rounded-lg text-sm hover:opacity-90 transition-opacity">确认兑换</button>
             </div>
 
             <div className="bg-[#1E2329] rounded-xl p-4 space-y-3">
