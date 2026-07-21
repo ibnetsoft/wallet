@@ -52,9 +52,52 @@ function StarBadge({ level }: { level: number }) {
   );
 }
 
+type Language = "ko" | "en" | "zh";
+
+const I18N = {
+  ko: {
+    home: "홈", wallet: "지갑", game: "게임구역", network: "조직도", settings: "설정",
+    miningStatus: "게임기 구동 현황", dailyYield: "일일 수익률", gaugeTitle: "수당 한도 달성률 (200% ~ 300%)",
+    usdtBalance: "USDT 잔액", urcBalance: "URC 잔액", urdBalance: "URD 토큰 잔액",
+    instantSwap: "실시간 스왑 (수수료 0.1%)", pay: "지불", receive: "수령 (예상)", confirmSwap: "실시간 스왑 실행",
+    withdrawUsdt: "USDT 출금 (BSC)", applyWithdraw: "출금 신청", depositUsdt: "USDT 입금 (BSC)",
+    gameNodes: "게임 노드 기기 (구매 시 URD 증정)", startGame: "게임 실행 (10 URD 소모)",
+    node100: "$100 노드 (1,500 URD 증정)", node500: "$500 노드 (8,000 URD 증정)", node1000: "$1,000 노드 (17,000 URD 증정)",
+    directRef: "직추천", sponsorArch: "후원 조직",
+    langSetting: "언어 설정 (Language)", shareRefLink: "내 추천 링크 공유", logout: "로그아웃",
+    active: "활성", inactive: "미활성",
+  },
+  en: {
+    home: "Home", wallet: "Wallet", game: "Game Zone", network: "Network", settings: "Settings",
+    miningStatus: "Game Node Machine Status", dailyYield: "Daily Yield Rate", gaugeTitle: "Payout Cap Limit Progress (200% ~ 300%)",
+    usdtBalance: "USDT Balance", urcBalance: "URC Balance", urdBalance: "URD Token Balance",
+    instantSwap: "Instant Swap (0.1% Fee)", pay: "Pay", receive: "Receive (Est.)", confirmSwap: "Execute Swap",
+    withdrawUsdt: "Withdraw USDT (BSC)", applyWithdraw: "Request Withdrawal", depositUsdt: "Deposit USDT (BSC)",
+    gameNodes: "Game Node Equipment (Bonus URD on Purchase)", startGame: "Start Game (Cost 10 URD)",
+    node100: "$100 Node (1,500 URD Bonus)", node500: "$500 Node (8,000 URD Bonus)", node1000: "$1,000 Node (17,000 URD Bonus)",
+    directRef: "Direct Referral", sponsorArch: "Sponsor Tree",
+    langSetting: "Language Settings", shareRefLink: "Share Referral Link", logout: "Log Out",
+    active: "Active", inactive: "Inactive",
+  },
+  zh: {
+    home: "首页", wallet: "钱包", game: "游戏区", network: "团队", settings: "设置",
+    miningStatus: "设备运行状态", dailyYield: "日收益率", gaugeTitle: "封顶额度进度 (200% ~ 300%)",
+    usdtBalance: "USDT 余额", urcBalance: "URC 余额", urdBalance: "URD代币余额",
+    instantSwap: "闪兑 (手续费 0.1%)", pay: "支付", receive: "获得 (预计)", confirmSwap: "确认兑换",
+    withdrawUsdt: "提现 USDT (BSC)", applyWithdraw: "申请提现", depositUsdt: "充值 USDT (BSC)",
+    gameNodes: "游戏节点设备 (购买赠送URD)", startGame: "启动游戏 (消耗 10 URD)",
+    node100: "$100 节点 (赠 1,500 URD)", node500: "$500 节点 (赠 8,000 URD)", node1000: "$1,000 节点 (赠 17,000 URD)",
+    directRef: "直推", sponsorArch: "架构",
+    langSetting: "语言设置 (Language)", shareRefLink: "分享推荐链接", logout: "退出登录",
+    active: "活跃", inactive: "未激活",
+  }
+};
+
 export default function MobileApp() {
   const supabase = createClient();
   const router = useRouter();
+  const [lang, setLang] = useState<Language>("ko");
+  const t = I18N[lang];
   const [activeTab, setActiveTab] = useState<TabType>("home");
   const [networkTab, setNetworkTab] = useState<NetworkTabType>("referral");
   const [referralCopied, setReferralCopied] = useState(false);
@@ -556,7 +599,7 @@ export default function MobileApp() {
         {/* ═══════════════ SETTINGS ═══════════════ */}
         {activeTab === "settings" && (
           <div className="p-5 space-y-5">
-            <h1 className="text-xl font-black text-[#EAECEF]">设置</h1>
+            <h1 className="text-xl font-black text-[#EAECEF]">{t.settings}</h1>
             
             {/* User Profile Card */}
             <div className="bg-[#1E2329] rounded-xl p-4 flex items-center space-x-3">
@@ -564,8 +607,35 @@ export default function MobileApp() {
               <div>
                 <p className="font-bold text-[#EAECEF]">{userEmail}</p>
                 <button onClick={handleLogout} className="text-xs text-[#F6465D] mt-1 flex items-center">
-                  <LogOut size={12} className="mr-1" /> 退出登录
+                  <LogOut size={12} className="mr-1" /> {t.logout}
                 </button>
+              </div>
+            </div>
+
+            {/* Language Selector Card */}
+            <div className="bg-[#1E2329] rounded-xl p-4 space-y-3 border border-[#2B3139]">
+              <div className="flex items-center space-x-2 text-[#FCD535]">
+                <Settings size={16} />
+                <h3 className="font-bold text-[#EAECEF]">{t.langSetting}</h3>
+              </div>
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                {[
+                  { code: "ko", label: "🇰🇷 한국어" },
+                  { code: "en", label: "🇺🇸 English" },
+                  { code: "zh", label: "🇨🇳 中文" },
+                ].map((l) => (
+                  <button
+                    key={l.code}
+                    onClick={() => setLang(l.code as Language)}
+                    className={`py-2.5 px-3 rounded-lg text-xs font-bold transition-all border ${
+                      lang === l.code
+                        ? "bg-[#FCD535] text-[#0B0E11] border-[#FCD535]"
+                        : "bg-[#0B0E11] text-[#848E9C] border-[#2B3139] hover:text-[#EAECEF]"
+                    }`}
+                  >
+                    {l.label}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -573,9 +643,13 @@ export default function MobileApp() {
             <div className="bg-[#1E2329] rounded-xl p-4 space-y-3">
               <div className="flex items-center space-x-2 text-[#FCD535]">
                 <Users size={16} />
-                <h3 className="font-bold text-[#EAECEF]">分享推荐链接</h3>
+                <h3 className="font-bold text-[#EAECEF]">{t.shareRefLink}</h3>
               </div>
-              <p className="text-xs text-[#848E9C]">复制下方链接发送给好友，对方点击即可自动填入邀请码并跳转至注册页面。</p>
+              <p className="text-xs text-[#848E9C]">
+                {lang === "ko" ? "아래 추천 링크를 복사하여 전달하면 상대방이 가입 페이지로 바로 이동합니다." : 
+                 lang === "en" ? "Copy the referral link below. Clicking it pre-fills the referral code on signup." :
+                 "复制下方链接发送给好友，对方点击即可自动填入邀请码并跳转至注册页面。"}
+              </p>
               
               <div className="flex items-center justify-between bg-[#0B0E11] p-3 rounded-lg border border-[#2B3139]">
                 <span className="text-[10px] text-[#EAECEF] font-mono truncate mr-2">
@@ -593,17 +667,18 @@ export default function MobileApp() {
 
       {/* ── BOTTOM NAV ── */}
       <nav className="fixed bottom-0 w-full max-w-md bg-[#0B0E11] border-t border-[#2B3139] pb-safe z-50">
-        <div className="flex justify-around items-center p-3">
+        <div className="flex justify-around items-center py-2 px-1">
           {[
-            { id: "home", icon: <Home size={22} /> },
-            { id: "wallet", icon: <Wallet size={22} /> },
-            { id: "game", icon: <Gamepad2 size={22} /> },
-            { id: "network", icon: <Users size={22} /> },
-            { id: "settings", icon: <Settings size={22} /> },
-          ].map((t) => (
-            <button key={t.id} onClick={() => setActiveTab(t.id as TabType)}
-              className={`p-2 transition-colors ${activeTab === t.id ? "text-[#FCD535]" : "text-[#848E9C] hover:text-[#EAECEF]"}`}>
-              {t.icon}
+            { id: "home", label: t.home, icon: <Home size={20} /> },
+            { id: "wallet", label: t.wallet, icon: <Wallet size={20} /> },
+            { id: "game", label: t.game, icon: <Gamepad2 size={20} /> },
+            { id: "network", label: t.network, icon: <Users size={20} /> },
+            { id: "settings", label: t.settings, icon: <Settings size={20} /> },
+          ].map((tab) => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id as TabType)}
+              className={`flex flex-col items-center space-y-0.5 p-1 transition-colors ${activeTab === tab.id ? "text-[#FCD535]" : "text-[#848E9C] hover:text-[#EAECEF]"}`}>
+              {tab.icon}
+              <span className="text-[9px] font-bold tracking-tight">{tab.label}</span>
             </button>
           ))}
         </div>

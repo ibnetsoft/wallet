@@ -96,7 +96,7 @@ function RegisterForm() {
         )}
 
         <div className="space-y-1">
-          <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1">邮箱地址</label>
+          <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1">邮箱地址 (이메일)</label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#848E9C]">
               <Mail size={16} />
@@ -113,7 +113,7 @@ function RegisterForm() {
         </div>
 
         <div className="space-y-1">
-          <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1">昵称</label>
+          <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1">昵称 (닉네임)</label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#848E9C]">
               <User size={16} />
@@ -123,14 +123,14 @@ function RegisterForm() {
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
               required
-              placeholder="请输入您的昵称"
+              placeholder="닉네임 / 昵称"
               className="w-full bg-[#1E2329] border border-[#2B3139] focus:border-[#FCD535] pl-11 pr-4 py-3 rounded text-sm text-[#EAECEF] font-semibold outline-none transition-colors"
             />
           </div>
         </div>
 
         <div className="space-y-1">
-          <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1">密码</label>
+          <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1">密码 (비밀번호)</label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#848E9C]">
               <Lock size={16} />
@@ -140,7 +140,7 @@ function RegisterForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              placeholder="最少 8 个字符"
+              placeholder="8자리 이상 / 最少 8 个字符"
               minLength={8}
               className="w-full bg-[#1E2329] border border-[#2B3139] focus:border-[#FCD535] pl-11 pr-4 py-3 rounded text-sm text-[#EAECEF] font-semibold outline-none transition-colors"
             />
@@ -148,7 +148,7 @@ function RegisterForm() {
         </div>
 
         <div className="space-y-1">
-          <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1">邀请码 (必填)</label>
+          <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1">邀请码 (추천코드 - 필수)</label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#848E9C]">
               <Shield size={16} />
@@ -158,8 +158,8 @@ function RegisterForm() {
               value={referralCode}
               onChange={(e) => setReferralCode(e.target.value)}
               required
-              placeholder="请输入邀请码"
-              className="w-full bg-[#1E2329] border border-[#2B3139] focus:border-[#FCD535] pl-11 pr-4 py-3 rounded text-sm text-[#EAECEF] font-semibold outline-none transition-colors uppercase"
+              placeholder="추천코드 / 邀请码"
+              className="w-full bg-[#1E2329] border border-[#2B3139] focus:border-[#FCD535] pl-11 pr-4 py-3 rounded text-sm text-[#EAECEF] font-semibold outline-none transition-colors"
             />
           </div>
         </div>
@@ -167,13 +167,13 @@ function RegisterForm() {
         <button 
           type="submit" 
           disabled={loading}
-          className="w-full py-3 mt-6 bg-[#FCD535] text-[#0B0E11] font-black rounded text-sm flex items-center justify-center space-x-2 active:scale-95 transition-transform disabled:opacity-50"
+          className="w-full py-3.5 mt-4 bg-[#FCD535] text-[#0B0E11] font-bold rounded-lg text-sm flex items-center justify-center space-x-2 active:scale-95 transition-all disabled:opacity-50"
         >
           {loading ? (
             <div className="w-5 h-5 border-2 border-[#0B0E11]/20 border-t-[#0B0E11] rounded-full animate-spin" />
           ) : (
             <>
-              <span>注册</span>
+              <span>注册 (회원가입)</span>
               <ArrowRight size={16} />
             </>
           )}
