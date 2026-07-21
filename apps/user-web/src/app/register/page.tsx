@@ -11,7 +11,7 @@ function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nickname, setNickname] = useState("");
-  const [referralCode, setReferralCode] = useState("");
+  const [referralCode, setReferralCode] = useState("URC883920");
   
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
