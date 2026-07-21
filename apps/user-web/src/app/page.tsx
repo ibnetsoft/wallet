@@ -57,6 +57,14 @@ export default function MobileApp() {
   const [activeTab, setActiveTab] = useState<TabType>("home");
   const [networkTab, setNetworkTab] = useState<NetworkTabType>("referral");
   const [referralCopied, setReferralCopied] = useState(false);
+  const [directTree] = useState([
+    { id: 1, nickname: "User A", referralSeq: 1, status: "ACTIVE" },
+    { id: 2, nickname: "User B", referralSeq: 2, status: "INACTIVE" }
+  ]);
+  const [sponsorTree] = useState([
+    { id: 3, nickname: "User C", tier: 1, status: "ACTIVE" },
+    { id: 4, nickname: "User D", tier: 2, status: "ACTIVE" }
+  ]);
   const [fromAmount, setFromAmount] = useState("");
   const [toAmount, setToAmount] = useState("");
   const [isUsdtToUrc, setIsUsdtToUrc] = useState(true);
