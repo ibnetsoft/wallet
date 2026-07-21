@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import {
   Home, Wallet, Gamepad2, Users, Settings, ArrowDownLeft, ArrowUpRight,
   RefreshCw, Copy, Check, Play, TrendingUp, Bell, ArrowRightLeft, Star,
-  Zap, BarChart3, Info, LogOut, ShoppingBag
+  Zap, BarChart3, Info, LogOut, ShoppingBag, FileText
 } from "lucide-react";
 
 type TabType = "home" | "wallet" | "products" | "game" | "network" | "settings";
@@ -52,6 +52,25 @@ function StarBadge({ level }: { level: number }) {
   );
 }
 
+const TetherLogo = () => (
+  <svg className="w-10 h-10 flex-shrink-0" viewBox="0 0 2000 2000" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="1000" cy="1000" r="1000" fill="#26A17B"/>
+    <path fillRule="evenodd" clipRule="evenodd" d="M1286.7 608.2h-573.4v132.8h221.7v492.3c-232.7-7.7-407-52.6-407-107.5 0-61.9 221.8-112.3 495.4-112.3 273.7 0 495.5 50.4 495.5 112.3 0 54.9-174.4 99.8-407.1 107.5v329.8h-132.8v-329.8c-255-8.5-446-59.5-446-121.7 0-77.9 261.3-141.1 583.7-141.1 322.4 0 583.7 63.2 583.7 141.1 0 62.2-191 113.2-446 121.7v101.4h232.2V608.2z" fill="#FFFFFF"/>
+  </svg>
+);
+
+const UrcLogo = () => (
+  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#FCD535] to-[#F39C12] flex items-center justify-center font-black text-[#0B0E11] text-xs shadow-md border border-[#FCD535]/40 flex-shrink-0">
+    URC
+  </div>
+);
+
+const UrdLogo = () => (
+  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#3498DB] to-[#2980B9] flex items-center justify-center font-black text-white text-xs shadow-md border border-[#3498DB]/40 flex-shrink-0">
+    URD
+  </div>
+);
+
 type Language = "ko" | "en" | "zh";
 
 const I18N = {
@@ -81,6 +100,9 @@ const I18N = {
     dailyRepeatSub: "매일 지정 시각에 자동으로 URD 배팅 참여",
     saveAutoSettings: "⚡ 자동 배팅 세팅 저장 및 시작", stopAutoSettings: "✓ 자동 배팅 구동 중 (클릭 시 중지)",
     recentBets: "내 최근 참여 내역", waitingAnnouncement: "대기 중 (발표 예정)",
+    holdings: "보유 자산", initialBalance: "최초잔고", totalProfit: "총 수익", yieldRate: "수익률",
+    deposit: "입금", withdraw: "출금", swap: "스왑", history: "내역", coinsCount: "3 종목",
+    txHistoryTitle: "입출금 및 수당 내역",
   },
   en: {
     home: "Home", wallet: "Wallet", products: "Products", game: "Game Zone", network: "Network", settings: "Settings",
@@ -108,6 +130,9 @@ const I18N = {
     dailyRepeatSub: "Automatically bet URD at scheduled times daily",
     saveAutoSettings: "⚡ Save & Start Auto Betting", stopAutoSettings: "✓ Auto Betting Running (Click to stop)",
     recentBets: "My Recent Bet Records", waitingAnnouncement: "Waiting for Draw",
+    holdings: "Holdings", initialBalance: "Initial Balance", totalProfit: "Total Profit", yieldRate: "Yield Rate",
+    deposit: "Deposit", withdraw: "Withdraw", swap: "Swap", history: "History", coinsCount: "3 Assets",
+    txHistoryTitle: "Transactions & Reward History",
   },
   zh: {
     home: "首页", wallet: "钱包", products: "商城", game: "竞技场", network: "团队", settings: "设置",
@@ -135,6 +160,9 @@ const I18N = {
     dailyRepeatSub: "每日在指定时间自动参与URD下注",
     saveAutoSettings: "⚡ 保存并启动自动下注设置", stopAutoSettings: "✓ 自动下注运行中 (点击停止)",
     recentBets: "我的近期下注记录", waitingAnnouncement: "等待公布",
+    holdings: "持有资产", initialBalance: "初始余额", totalProfit: "总收益", yieldRate: "收益率",
+    deposit: "充值", withdraw: "提现", swap: "闪兑", history: "记录", coinsCount: "3 种资产",
+    txHistoryTitle: "充提及奖励记录",
   }
 };
 
@@ -347,6 +375,9 @@ export default function MobileApp() {
   const [userDepositAddress] = useState("0x3a9B8f5C01A29D478b1E4109C2d4317e1D4A8912");
   const [addressCopied, setAddressCopied] = useState(false);
   const [showDepositModal, setShowDepositModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [showSwapModal, setShowSwapModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   const copyDepositAddress = () => {
     navigator.clipboard.writeText(userDepositAddress);
@@ -512,6 +543,21 @@ export default function MobileApp() {
           </button>
         </div>
       </div>
+
+      {/* Wallet Network & Price Sub Header (Below grey line) */}
+      {activeTab === "wallet" && (
+        <div className="bg-[#161A1E] border-b border-[#2B3139] px-5 py-2.5 flex justify-between items-center text-xs">
+          <div className="flex items-center space-x-1.5 font-mono">
+            <span className="text-[#848E9C]">USDT</span>
+            <span className="font-bold text-[#EAECEF]">$1.00</span>
+            <span className="text-[#0ECB81] text-[10px] flex items-center font-bold ml-1">▲ 0.01%</span>
+          </div>
+          <div className="flex items-center space-x-1.5">
+            <div className="w-2 h-2 rounded-full bg-[#0ECB81] animate-pulse" />
+            <span className="text-[11px] font-bold text-[#EAECEF]">BSC Network</span>
+          </div>
+        </div>
+      )}
 
       {/* ── MAIN SCROLL AREA ── */}
       <main className="flex-1 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
@@ -713,70 +759,158 @@ export default function MobileApp() {
         {/* ═══════════════ WALLET ═══════════════ */}
         {activeTab === "wallet" && (
           <div className="p-5 space-y-5">
-
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { symbol: "USDT", balance: usdtBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) },
-                { symbol: "URC",  balance: urcBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) },
-              ].map((t) => (
-                <div key={t.symbol} className="bg-[#1E2329] rounded-xl p-4">
-                  <span className="text-[10px] font-bold text-[#848E9C]">{t.symbol}</span>
-                  <p className="text-lg font-bold text-[#EAECEF] mt-1">{t.balance}</p>
+            {/* Main USDT Overview Card (Attached Image 2 Style) */}
+            <div className="bg-[#1E2329] border border-[#2B3139] rounded-2xl p-5 space-y-5 shadow-lg">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h2 className="text-3xl font-black text-[#EAECEF] tracking-tight">
+                    ${usdtBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    <span className="text-sm font-bold text-[#848E9C] ml-1.5">USDT</span>
+                  </h2>
                 </div>
-              ))}
-            </div>
-
-            <div className="bg-[#1E2329] rounded-xl p-4 space-y-3">
-              <h3 className="text-xs font-bold text-[#EAECEF]">闪兑 (手续费 0.1%)</h3>
-              <div className="bg-[#0B0E11] p-3 rounded-lg">
-                <div className="flex justify-between text-[10px] text-[#848E9C] mb-1">
-                  <span>支付</span>
-                  <span>余额: {isUsdtToUrc ? `${usdtBalance.toFixed(2)} USDT` : `${urcBalance.toFixed(2)} URC`}</span>
-                </div>
-                <div className="flex justify-between">
-                  <input type="number" placeholder="0.00" value={fromAmount} onChange={(e) => handleSwapChange(e.target.value)}
-                    className="bg-transparent text-xl font-bold text-[#EAECEF] outline-none w-1/2" />
-                  <span className="text-[#FCD535] font-bold">{isUsdtToUrc ? "USDT" : "URC"}</span>
+                {/* Green Status Progress Gauge Bar (Top Right) */}
+                <div className="w-28 pt-2">
+                  <div className="w-full bg-[#0B0E11] rounded-full h-1.5 border border-[#2B3139] overflow-hidden">
+                    <div className="bg-[#0ECB81] h-full rounded-full w-4/5" />
+                  </div>
                 </div>
               </div>
-              <div className="flex justify-center -my-2 relative z-10">
-                <button onClick={() => { setIsUsdtToUrc(!isUsdtToUrc); setFromAmount(""); setToAmount(""); }}
-                  className="w-8 h-8 rounded-full bg-[#2B3139] flex items-center justify-center text-[#FCD535]">
-                  <ArrowRightLeft size={12} className="rotate-90" />
+
+              {/* 3-Column Stats: Initial Balance | Total Profit | Yield Rate */}
+              <div className="grid grid-cols-3 gap-2 pt-1 border-t border-[#2B3139]/60">
+                <div>
+                  <p className="text-[10px] font-bold text-[#848E9C]">{t.initialBalance}</p>
+                  <p className="text-xs font-bold text-[#EAECEF] mt-1">$10,000.00</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-[#848E9C]">{t.totalProfit}</p>
+                  <p className="text-xs font-bold text-[#0ECB81] mt-1">+$500.00</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-[#848E9C]">{t.yieldRate}</p>
+                  <p className="text-xs font-bold text-[#0ECB81] mt-1">+5.00%</p>
+                </div>
+              </div>
+
+              {/* 4 Action Buttons: Deposit, Withdraw, Swap, History */}
+              <div className="grid grid-cols-4 gap-2 pt-2">
+                <button
+                  onClick={() => setShowDepositModal(true)}
+                  className="bg-[#0B0E11] hover:bg-[#2B3139] border border-[#2B3139] hover:border-[#FCD535] py-3 rounded-xl flex flex-col items-center justify-center space-y-1.5 transition-all group"
+                >
+                  <ArrowDownLeft size={18} className="text-[#0ECB81] group-hover:scale-110 transition-transform" />
+                  <span className="text-xs font-bold text-[#EAECEF]">{t.deposit}</span>
+                </button>
+
+                <button
+                  onClick={() => setShowWithdrawModal(true)}
+                  className="bg-[#0B0E11] hover:bg-[#2B3139] border border-[#2B3139] hover:border-[#FCD535] py-3 rounded-xl flex flex-col items-center justify-center space-y-1.5 transition-all group"
+                >
+                  <ArrowUpRight size={18} className="text-[#F6465D] group-hover:scale-110 transition-transform" />
+                  <span className="text-xs font-bold text-[#EAECEF]">{t.withdraw}</span>
+                </button>
+
+                <button
+                  onClick={() => setShowSwapModal(true)}
+                  className="bg-[#0B0E11] hover:bg-[#2B3139] border border-[#2B3139] hover:border-[#FCD535] py-3 rounded-xl flex flex-col items-center justify-center space-y-1.5 transition-all group"
+                >
+                  <ArrowRightLeft size={18} className="text-[#FCD535] group-hover:scale-110 transition-transform" />
+                  <span className="text-xs font-bold text-[#EAECEF]">{t.swap}</span>
+                </button>
+
+                <button
+                  onClick={() => setShowHistoryModal(true)}
+                  className="bg-[#0B0E11] hover:bg-[#2B3139] border border-[#2B3139] hover:border-[#FCD535] py-3 rounded-xl flex flex-col items-center justify-center space-y-1.5 transition-all group"
+                >
+                  <FileText size={18} className="text-[#848E9C] group-hover:scale-110 transition-transform" />
+                  <span className="text-xs font-bold text-[#EAECEF]">{t.history}</span>
                 </button>
               </div>
-              <div className="bg-[#0B0E11] p-3 rounded-lg">
-                <div className="flex justify-between text-[10px] text-[#848E9C] mb-1">
-                  <span>获得 (预计)</span>
-                  <span>余额: {isUsdtToUrc ? `${urcBalance.toFixed(2)} URC` : `${usdtBalance.toFixed(2)} USDT`}</span>
-                </div>
-                <div className="flex justify-between">
-                  <input type="number" placeholder="0.00" value={toAmount} disabled
-                    className="bg-transparent text-xl font-bold text-[#848E9C] outline-none w-1/2" />
-                  <span className="text-[#FCD535] font-bold">{isUsdtToUrc ? "URC" : "USDT"}</span>
-                </div>
-              </div>
-              <button onClick={handleConfirmSwap} className="w-full py-3 bg-[#FCD535] text-[#0B0E11] font-bold rounded-lg text-sm hover:opacity-90 transition-opacity">确认兑换</button>
             </div>
 
-            <div className="bg-[#1E2329] rounded-xl p-4 space-y-3">
-              <h3 className="text-xs font-bold text-[#EAECEF]">提现 USDT (BSC)</h3>
-              <div className="space-y-3">
-                <div className="bg-[#0B0E11] p-3 rounded-lg">
-                  <input type="number" placeholder="金额 (最小 $50)" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)}
-                    className="bg-transparent w-full text-sm text-[#EAECEF] outline-none" />
+            {/* Holdings Section (Attached Image 1 Style) */}
+            <div className="space-y-3">
+              <div className="flex justify-between items-center px-1">
+                <h3 className="text-xs font-extrabold text-[#EAECEF]">{t.holdings}</h3>
+                <span className="text-[10px] text-[#848E9C] font-bold">{t.coinsCount}</span>
+              </div>
+
+              <div className="space-y-2.5">
+                {/* Token 1: USDT (Tether) */}
+                <div className="bg-[#1E2329] border border-[#2B3139] hover:border-[#26A17B]/60 rounded-2xl p-4 flex justify-between items-center transition-all">
+                  <div className="flex items-center space-x-3">
+                    <TetherLogo />
+                    <div>
+                      <div className="flex items-center space-x-1.5">
+                        <span className="text-sm font-extrabold text-[#EAECEF]">USDT</span>
+                        <span className="text-[9px] font-extrabold text-[#26A17B] bg-[#26A17B]/10 border border-[#26A17B]/30 px-1.5 py-0.5 rounded">
+                          STABLE
+                        </span>
+                      </div>
+                      <p className="text-xs font-mono text-[#848E9C] mt-0.5">
+                        {usdtBalance.toLocaleString("en-US", { minimumFractionDigits: 4 })} USDT
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-extrabold font-mono text-[#EAECEF]">
+                      ${usdtBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                    <p className="text-[10px] font-bold text-[#848E9C] mt-0.5">0.00%</p>
+                  </div>
                 </div>
-                <div className="bg-[#0B0E11] p-3 rounded-lg">
-                  <input type="text" placeholder="BSC 提现地址" value={withdrawAddress} onChange={(e) => setWithdrawAddress(e.target.value)}
-                    className="bg-transparent w-full text-sm text-[#EAECEF] outline-none" />
+
+                {/* Token 2: URC */}
+                <div className="bg-[#1E2329] border border-[#2B3139] hover:border-[#FCD535]/60 rounded-2xl p-4 flex justify-between items-center transition-all">
+                  <div className="flex items-center space-x-3">
+                    <UrcLogo />
+                    <div>
+                      <div className="flex items-center space-x-1.5">
+                        <span className="text-sm font-extrabold text-[#EAECEF]">URC</span>
+                        <span className="text-[9px] font-extrabold text-[#FCD535] bg-[#FCD535]/10 border border-[#FCD535]/30 px-1.5 py-0.5 rounded">
+                          UTILITY
+                        </span>
+                      </div>
+                      <p className="text-xs font-mono text-[#848E9C] mt-0.5">
+                        {urcBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })} URC
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-extrabold font-mono text-[#EAECEF]">
+                      ${urcBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </p>
+                    <p className="text-[10px] font-bold text-[#0ECB81] mt-0.5">+12.40%</p>
+                  </div>
                 </div>
-                <button disabled={Number(withdrawAmount) < 50}
-                  className={`w-full py-3 font-bold rounded-lg text-sm ${Number(withdrawAmount) >= 50 ? "bg-[#FCD535] text-[#0B0E11]" : "bg-[#2B3139] text-[#848E9C]"}`}>
-                  申请提现
-                </button>
+
+                {/* Token 3: URD */}
+                <div className="bg-[#1E2329] border border-[#2B3139] hover:border-[#3498DB]/60 rounded-2xl p-4 flex justify-between items-center transition-all">
+                  <div className="flex items-center space-x-3">
+                    <UrdLogo />
+                    <div>
+                      <div className="flex items-center space-x-1.5">
+                        <span className="text-sm font-extrabold text-[#EAECEF]">URD</span>
+                        <span className="text-[9px] font-extrabold text-[#3498DB] bg-[#3498DB]/10 border border-[#3498DB]/30 px-1.5 py-0.5 rounded">
+                          GAME TOKEN
+                        </span>
+                      </div>
+                      <p className="text-xs font-mono text-[#848E9C] mt-0.5">
+                        {urdBalance.toLocaleString()} URD
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-extrabold font-mono text-[#EAECEF]">
+                      ${(urdBalance * 0.1).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </p>
+                    <p className="text-[10px] font-bold text-[#848E9C] mt-0.5">0.00%</p>
+                  </div>
+                </div>
+
               </div>
             </div>
-            
+
           </div>
         )}
 
@@ -836,6 +970,208 @@ export default function MobileApp() {
               >
                 {lang === "ko" ? "닫기" : lang === "en" ? "Close" : "关闭"}
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Withdraw Modal Popup */}
+        {showWithdrawModal && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-[#1E2329] border border-[#2B3139] rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-2xl relative">
+              <button 
+                onClick={() => setShowWithdrawModal(false)}
+                className="absolute top-3 right-3 text-[#848E9C] hover:text-[#EAECEF] text-sm font-bold p-1 hover:bg-[#2B3139] rounded"
+              >
+                ✕
+              </button>
+
+              <div className="flex items-center space-x-2 text-[#F6465D] border-b border-[#2B3139] pb-3">
+                <ArrowUpRight size={18} />
+                <h3 className="text-sm font-extrabold text-[#EAECEF]">{t.withdrawUsdt}</h3>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-[#848E9C] font-bold">BSC (BEP-20) {lang === "ko" ? "출금 주소" : lang === "en" ? "Withdrawal Address" : "提现地址"}</label>
+                  <input
+                    type="text"
+                    value={withdrawAddress}
+                    onChange={(e) => setWithdrawAddress(e.target.value)}
+                    placeholder="0x로 시작하는 BSC 지갑 주소 입력"
+                    className="w-full mt-1 bg-[#0B0E11] border border-[#2B3139] rounded-xl px-3 py-2.5 text-xs text-[#EAECEF] focus:outline-none focus:border-[#FCD535] font-mono"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center text-xs">
+                    <label className="text-[#848E9C] font-bold">{lang === "ko" ? "출금 금액 (USDT)" : lang === "en" ? "Amount (USDT)" : "提现金额 (USDT)"}</label>
+                    <span className="text-[#848E9C] text-[10px]">{lang === "ko" ? "보유" : lang === "en" ? "Bal" : "余额"}: ${usdtBalance.toFixed(2)}</span>
+                  </div>
+                  <input
+                    type="number"
+                    value={withdrawAmount}
+                    onChange={(e) => setWithdrawAmount(e.target.value)}
+                    placeholder="최소 10 USDT"
+                    className="w-full mt-1 bg-[#0B0E11] border border-[#2B3139] rounded-xl px-3 py-2.5 text-xs text-[#EAECEF] focus:outline-none focus:border-[#FCD535] font-mono"
+                  />
+                </div>
+
+                <div className="bg-[#0B0E11] rounded-xl p-3 border border-[#2B3139] space-y-1 text-xs">
+                  <div className="flex justify-between text-[#848E9C]">
+                    <span>{lang === "ko" ? "출금 수수료 (5%)" : lang === "en" ? "Fee (5%)" : "手续费 (5%)"}</span>
+                    <span>${withdrawFee.toFixed(2)} USDT</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-[#EAECEF] pt-1 border-t border-[#2B3139]">
+                    <span>{lang === "ko" ? "실제 수령 금액" : lang === "en" ? "You Receive" : "实际到账"}</span>
+                    <span className="text-[#0ECB81]">${withdrawFinal.toFixed(2)} USDT</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    if (!withdrawAmount || Number(withdrawAmount) < 10) {
+                      alert(lang === "ko" ? "최소 출금 금액은 10 USDT입니다." : "Minimum withdrawal is 10 USDT.");
+                      return;
+                    }
+                    if (Number(withdrawAmount) > usdtBalance) {
+                      alert(lang === "ko" ? "USDT 잔액이 부족합니다." : "Insufficient USDT balance.");
+                      return;
+                    }
+                    setUsdtBalance((prev) => prev - Number(withdrawAmount));
+                    setWithdrawAmount("");
+                    setShowWithdrawModal(false);
+                    alert(lang === "ko" ? "✅ 출금 신청이 성공적으로 접수되었습니다. (네트워크 승인 후 지급)" : "✅ Withdrawal request submitted.");
+                  }}
+                  className="w-full py-3 bg-[#FCD535] text-[#0B0E11] font-black rounded-xl text-sm hover:opacity-90 active:scale-95 transition-all"
+                >
+                  {t.applyWithdraw}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Swap Modal Popup */}
+        {showSwapModal && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-[#1E2329] border border-[#2B3139] rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-2xl relative">
+              <button 
+                onClick={() => setShowSwapModal(false)}
+                className="absolute top-3 right-3 text-[#848E9C] hover:text-[#EAECEF] text-sm font-bold p-1 hover:bg-[#2B3139] rounded"
+              >
+                ✕
+              </button>
+
+              <div className="flex items-center space-x-2 text-[#FCD535] border-b border-[#2B3139] pb-3">
+                <ArrowRightLeft size={18} />
+                <h3 className="text-sm font-extrabold text-[#EAECEF]">{t.instantSwap}</h3>
+              </div>
+
+              <div className="space-y-3">
+                {/* From Token */}
+                <div className="bg-[#0B0E11] p-3 rounded-xl border border-[#2B3139] space-y-1">
+                  <div className="flex justify-between items-center text-xs text-[#848E9C]">
+                    <span>{t.pay}</span>
+                    <span>{isUsdtToUrc ? `잔액: $${usdtBalance.toFixed(2)}` : `잔액: ${urcBalance.toFixed(2)}`}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="number"
+                      value={fromAmount}
+                      onChange={(e) => {
+                        setFromAmount(e.target.value);
+                        setToAmount(e.target.value ? (Number(e.target.value) * 0.999).toFixed(2) : "");
+                      }}
+                      placeholder="0.00"
+                      className="w-full bg-transparent text-lg font-black text-[#EAECEF] focus:outline-none font-mono"
+                    />
+                    <span className="text-xs font-bold text-[#FCD535] bg-[#FCD535]/10 px-2 py-1 rounded">
+                      {isUsdtToUrc ? "USDT" : "URC"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Switch Button */}
+                <div className="flex justify-center -my-2 relative z-10">
+                  <button
+                    onClick={() => { setIsUsdtToUrc(!isUsdtToUrc); setFromAmount(""); setToAmount(""); }}
+                    className="p-2 bg-[#2B3139] hover:bg-[#FCD535] hover:text-[#0B0E11] text-[#FCD535] rounded-full border border-[#2B3139] transition-all"
+                  >
+                    <ArrowRightLeft size={14} />
+                  </button>
+                </div>
+
+                {/* To Token */}
+                <div className="bg-[#0B0E11] p-3 rounded-xl border border-[#2B3139] space-y-1">
+                  <div className="flex justify-between items-center text-xs text-[#848E9C]">
+                    <span>{t.receive}</span>
+                    <span>{isUsdtToUrc ? `잔액: ${urcBalance.toFixed(2)}` : `잔액: $${usdtBalance.toFixed(2)}`}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={toAmount}
+                      placeholder="0.00"
+                      className="w-full bg-transparent text-lg font-black text-[#0ECB81] focus:outline-none font-mono"
+                    />
+                    <span className="text-xs font-bold text-[#0ECB81] bg-[#0ECB81]/10 px-2 py-1 rounded">
+                      {isUsdtToUrc ? "URC" : "USDT"}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    handleConfirmSwap();
+                    setShowSwapModal(false);
+                  }}
+                  className="w-full py-3 bg-[#FCD535] text-[#0B0E11] font-black rounded-xl text-sm hover:opacity-90 active:scale-95 transition-all"
+                >
+                  {t.confirmSwap}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* History Modal Popup */}
+        {showHistoryModal && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-[#1E2329] border border-[#2B3139] rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-2xl relative">
+              <button 
+                onClick={() => setShowHistoryModal(false)}
+                className="absolute top-3 right-3 text-[#848E9C] hover:text-[#EAECEF] text-sm font-bold p-1 hover:bg-[#2B3139] rounded"
+              >
+                ✕
+              </button>
+
+              <div className="flex items-center space-x-2 text-[#848E9C] border-b border-[#2B3139] pb-3">
+                <FileText size={18} />
+                <h3 className="text-sm font-extrabold text-[#EAECEF]">{t.txHistoryTitle}</h3>
+              </div>
+
+              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                {[
+                  { id: "h1", type: lang === "ko" ? "입금 완료" : lang === "en" ? "Deposit Completed" : "充值成功", amount: "+500.00 USDT", time: "2026-07-21 14:20", status: lang === "ko" ? "성공" : "Success", isPlus: true },
+                  { id: "h2", type: lang === "ko" ? "직추천 수당" : lang === "en" ? "Direct Bonus" : "直推奖励", amount: "+200.00 USDT", time: "2026-07-21 12:30", status: lang === "ko" ? "지급완료" : "Completed", isPlus: true },
+                  { id: "h3", type: lang === "ko" ? "노드 상품 구매" : lang === "en" ? "Node Purchased" : "购买节点设备", amount: "-500.00 USDT", time: "2026-07-20 18:10", status: lang === "ko" ? "완료" : "Done", isPlus: false },
+                  { id: "h4", type: lang === "ko" ? "USDT ➔ URC 스왑" : lang === "en" ? "USDT ➔ URC Swap" : "USDT ➔ URC 闪兑", amount: "-100.00 USDT", time: "2026-07-19 11:05", status: lang === "ko" ? "성공" : "Success", isPlus: false },
+                ].map((tx) => (
+                  <div key={tx.id} className="bg-[#0B0E11] p-3 rounded-xl border border-[#2B3139] flex justify-between items-center">
+                    <div>
+                      <p className="text-xs font-bold text-[#EAECEF]">{tx.type}</p>
+                      <p className="text-[10px] text-[#848E9C] mt-0.5">{tx.time}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className={`text-xs font-mono font-bold ${tx.isPlus ? "text-[#0ECB81]" : "text-[#EAECEF]"}`}>
+                        {tx.amount}
+                      </p>
+                      <span className="text-[9px] text-[#848E9C] font-bold">{tx.status}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
