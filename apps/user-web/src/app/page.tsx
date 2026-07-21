@@ -570,18 +570,20 @@ export default function MobileApp() {
                   <span>{t.myActiveNodes}</span>
                 </h3>
                 <span className="text-[10px] text-[#848E9C]">
-                  {myMachines.filter((m) => m.accumulatedPayout < m.payoutCap).length}개 구동 중
+                  {myMachines.filter((m) => m.accumulatedPayout < m.payoutCap).length}{t.runningCount}
                 </span>
               </div>
 
               {myMachines.filter((m) => m.accumulatedPayout < m.payoutCap).length === 0 ? (
                 <div className="bg-[#1E2329] rounded-xl p-4 text-center border border-[#2B3139]">
-                  <p className="text-xs text-[#848E9C]">구동 중인 게임기 노드가 없습니다.</p>
+                  <p className="text-xs text-[#848E9C]">
+                    {lang === "ko" ? "구동 중인 게임기 노드가 없습니다." : lang === "en" ? "No active game nodes." : "暂无运行中的游戏节点设备。"}
+                  </p>
                   <button 
                     onClick={() => setActiveTab("products")}
                     className="mt-2 text-xs font-bold text-[#FCD535] underline"
                   >
-                    상품몰에서 노드 구매하기 ➔
+                    {lang === "ko" ? "상품몰에서 노드 구매하기 ➔" : lang === "en" ? "Buy Nodes in Shop ➔" : "前往商城购买节点 ➔"}
                   </button>
                 </div>
               ) : (
@@ -595,12 +597,12 @@ export default function MobileApp() {
                           <div className="flex justify-between items-center">
                             <div className="flex items-center space-x-2">
                               <span className="text-xs font-black text-[#FCD535] bg-[#FCD535]/10 px-2 py-0.5 rounded">
-                                {m.name}
+                                {m.level === 1 ? t.node100Name : m.level === 2 ? t.node500Name : t.node1000Name}
                               </span>
-                              <span className="text-[10px] text-[#0ECB81] font-bold">● 구동 중</span>
+                              <span className="text-[10px] text-[#0ECB81] font-bold">● {t.runningStatus}</span>
                             </div>
                             <span className="text-[10px] font-mono text-[#848E9C]">
-                              한도: ${m.accumulatedPayout.toFixed(0)} / ${m.payoutCap.toFixed(0)}
+                              {t.cap}: ${m.accumulatedPayout.toFixed(0)} / ${m.payoutCap.toFixed(0)}
                             </span>
                           </div>
 
@@ -609,8 +611,8 @@ export default function MobileApp() {
                           </div>
 
                           <div className="flex justify-between items-center text-[9px] text-[#848E9C]">
-                            <span>구매일: {m.purchasedAt}</span>
-                            <span className="font-bold text-[#EAECEF]">달성율 {pct}%</span>
+                            <span>{t.purchaseDate}: {m.purchasedAt}</span>
+                            <span className="font-bold text-[#EAECEF]">{t.achievement} {pct}%</span>
                           </div>
                         </div>
                       );
@@ -684,15 +686,14 @@ export default function MobileApp() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Zap size={14} className="text-[#FCD535]" />
-                  <span className="text-xs font-bold text-[#EAECEF]">今日奖励</span>
+                  <span className="text-xs font-bold text-[#EAECEF]">{lang === "ko" ? "오늘의 수당" : lang === "en" ? "Today's Bonus" : "今日奖励"}</span>
                 </div>
               </div>
               <div className="space-y-2">
                 {[
-                  { label: "直推奖 (20%)", value: "+$200.00" },
-                  { label: "辅导奖 (10%)", value: "+$50.00" },
-                  { label: "平级奖 (100%)", value: "+$50.00" },
-                  { label: "分红奖 (4票)", value: "+$12.50" },
+                  { label: lang === "ko" ? "직추천 수당 (20%)" : lang === "en" ? "Direct Bonus (20%)" : "直推奖 (20%)", value: "+$200.00" },
+                  { label: lang === "ko" ? "후원/멘토 수당 (10%)" : lang === "en" ? "Matching Bonus (10%)" : "辅导奖 (10%)", value: "+$50.00" },
+                  { label: lang === "ko" ? "직급 수당 (100%)" : lang === "en" ? "Rank Bonus (100%)" : "平级奖 (100%)", value: "+$50.00" },
                 ].map((b) => (
                   <div key={b.label} className="flex justify-between text-xs">
                     <span className="text-[#848E9C]">{b.label}</span>
@@ -700,8 +701,8 @@ export default function MobileApp() {
                   </div>
                 ))}
                 <div className="border-t border-[#2B3139] pt-2 flex justify-between text-xs font-bold">
-                  <span>今日总计</span>
-                  <span className="text-[#FCD535]">+$312.50</span>
+                  <span>{lang === "ko" ? "오늘 총 수당" : lang === "en" ? "Today's Total" : "今日总计"}</span>
+                  <span className="text-[#FCD535]">+$300.00</span>
                 </div>
               </div>
             </div>
@@ -712,7 +713,6 @@ export default function MobileApp() {
         {/* ═══════════════ WALLET ═══════════════ */}
         {activeTab === "wallet" && (
           <div className="p-5 space-y-5">
-            <h1 className="text-xl font-black text-[#EAECEF]">钱包</h1>
 
             <div className="grid grid-cols-2 gap-3">
               {[
@@ -950,8 +950,6 @@ export default function MobileApp() {
         {/* ═══════════════ PRODUCTS SHOP ═══════════════ */}
         {activeTab === "products" && (
           <div className="p-5 space-y-5">
-            <h1 className="text-xl font-black text-[#EAECEF]">{t.shopTitle}</h1>
-            
             {/* Top USDT Balance & Quick Deposit Card */}
             <div className="bg-[#1E2329] rounded-xl p-5 border border-[#2B3139] flex justify-between items-center">
               <div>
@@ -1003,10 +1001,10 @@ export default function MobileApp() {
                   <div className="flex justify-between items-start">
                     <div>
                       <span className="text-2xl font-black text-[#FCD535]">${p.price.toLocaleString()}</span>
-                      <h4 className="text-sm font-bold text-[#EAECEF] mt-1">{p.level === 1 ? "$100 노드" : p.level === 2 ? "$500 노드" : "$1,000 노드"}</h4>
+                      <h4 className="text-sm font-bold text-[#EAECEF] mt-1">{p.level === 1 ? t.node100Name : p.level === 2 ? t.node500Name : t.node1000Name}</h4>
                     </div>
                     <span className="bg-[#0ECB81]/10 text-[#0ECB81] border border-[#0ECB81]/30 text-[10px] font-extrabold px-2.5 py-1 rounded-full">
-                      캡: {p.capUsd}
+                      {t.cap}: {p.capUsd}
                     </span>
                   </div>
 
@@ -1030,15 +1028,6 @@ export default function MobileApp() {
         {/* ═══════════════ GAME ═══════════════ */}
         {activeTab === "game" && (
           <div className="p-5 space-y-5">
-            <div className="flex justify-between items-center">
-              <h1 className="text-xl font-black text-[#EAECEF]">
-                {lang === "ko" ? "경기장 (AI 게임 구역)" : lang === "en" ? "Game Arena" : "竞技场"}
-              </h1>
-              <span className="text-xs text-[#0ECB81] font-bold bg-[#0ECB81]/10 border border-[#0ECB81]/30 px-2.5 py-1 rounded-full">
-                ● UTC+8 {countdown}
-              </span>
-            </div>
-            
             {/* 2-Column Balance Card: USDT (Left) | URD (Right) */}
             <div className="grid grid-cols-2 gap-3">
               {/* USDT Balance */}
@@ -1062,24 +1051,24 @@ export default function MobileApp() {
             <div className="bg-[#1E2329] border border-[#2B3139] rounded-2xl p-4 space-y-3">
               <h3 className="text-xs font-extrabold text-[#EAECEF] flex items-center justify-between">
                 <span>🕒 {lang === "ko" ? "일일 3회차 AI 추첨 시간표" : lang === "en" ? "Daily 3-Round Timetable" : "每日 3 轮 AI 抽奖时间表"}</span>
-                <span className="text-[10px] text-[#848E9C]">마감 1분 전 배팅 마감</span>
+                <span className="text-[10px] text-[#848E9C]">{t.bet1minLimit}</span>
               </h3>
 
               <div className="overflow-x-auto">
                 <table className="w-full text-center text-xs border-collapse">
                   <thead>
                     <tr className="bg-[#0B0E11] text-[#848E9C] text-[10px] border-b border-[#2B3139]">
-                      <th className="py-2 px-1">회차</th>
-                      <th className="py-2 px-1">참여 가능 시간</th>
-                      <th className="py-2 px-1">AI 당첨 발표</th>
-                      <th className="py-2 px-1">발표 시각</th>
+                      <th className="py-2 px-1">{t.round}</th>
+                      <th className="py-2 px-1">{t.betTime}</th>
+                      <th className="py-2 px-1">{t.aiDraw}</th>
+                      <th className="py-2 px-1">{t.drawTime}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#2B3139] text-[11px]">
                     {[
-                      { r: "1회차", time: "11:00 ~ 12:00", label: "AI 당첨발표", draw: "12:30" },
-                      { r: "2회차", time: "14:00 ~ 15:00", label: "AI 당첨발표", draw: "15:30" },
-                      { r: "3회차", time: "17:00 ~ 18:00", label: "AI 당첨발표", draw: "18:30" },
+                      { r: t.round1, time: "11:00 ~ 12:00", label: t.aiDraw, draw: "12:30" },
+                      { r: t.round2, time: "14:00 ~ 15:00", label: t.aiDraw, draw: "15:30" },
+                      { r: t.round3, time: "17:00 ~ 18:00", label: t.aiDraw, draw: "18:30" },
                     ].map((item, idx) => (
                       <tr key={idx} className="hover:bg-[#2B3139]/40 transition-colors">
                         <td className="py-2.5 font-bold text-[#FCD535]">{item.r}</td>
@@ -1118,7 +1107,7 @@ export default function MobileApp() {
               {gameBetMode === "manual" ? (
                 <div className="space-y-4 pt-1">
                   <div className="space-y-2">
-                    <label className="text-xs text-[#848E9C] font-bold">참여 회차 선택</label>
+                    <label className="text-xs text-[#848E9C] font-bold">{t.selectRound}</label>
                     <div className="grid grid-cols-3 gap-2">
                       {[1, 2, 3].map((rNum) => (
                         <button
@@ -1130,7 +1119,7 @@ export default function MobileApp() {
                               : "bg-[#0B0E11] border-[#2B3139] text-[#848E9C]"
                           }`}
                         >
-                          {rNum}회차
+                          {rNum === 1 ? t.round1 : rNum === 2 ? t.round2 : t.round3}
                         </button>
                       ))}
                     </div>
@@ -1138,8 +1127,8 @@ export default function MobileApp() {
 
                   <div className="space-y-2">
                     <div className="flex justify-between items-center text-xs">
-                      <span className="text-[#848E9C] font-bold">배팅 횟수 선택 (회당 10 URD)</span>
-                      <span className="text-[#FCD535] font-bold">총 소모: {manualBetsCount * 10} URD</span>
+                      <span className="text-[#848E9C] font-bold">{t.selectBetCount}</span>
+                      <span className="text-[#FCD535] font-bold">{t.totalCost}: {manualBetsCount * 10} URD</span>
                     </div>
                     <div className="grid grid-cols-4 gap-2">
                       {[1, 2, 5, 10].map((cnt) => (
@@ -1152,7 +1141,7 @@ export default function MobileApp() {
                               : "bg-[#0B0E11] border-[#2B3139] text-[#848E9C]"
                           }`}
                         >
-                          {cnt}회 ({cnt * 10} URD)
+                          {cnt}{lang === "ko" ? "회" : lang === "en" ? " Times" : "次"} ({cnt * 10} URD)
                         </button>
                       ))}
                     </div>
@@ -1163,14 +1152,16 @@ export default function MobileApp() {
                     className="w-full py-3.5 bg-[#FCD535] text-[#0B0E11] font-black rounded-xl text-sm hover:opacity-90 active:scale-95 transition-all shadow-[0_0_20px_rgba(252,213,53,0.2)] flex items-center justify-center space-x-2"
                   >
                     <Play size={16} />
-                    <span>{manualRound}회차 배팅 참여하기 ({manualBetsCount * 10} URD 소모)</span>
+                    <span>
+                      {manualRound === 1 ? t.round1 : manualRound === 2 ? t.round2 : t.round3} {t.manualBetBtn} ({manualBetsCount * 10} URD {lang === "ko" ? "소모" : lang === "en" ? "Cost" : "消耗"})
+                    </span>
                   </button>
                 </div>
               ) : (
                 /* Auto Betting Tab */
                 <div className="space-y-4 pt-1">
                   <div className="space-y-2">
-                    <label className="text-xs text-[#848E9C] font-bold">자동 참여 회차 (다중 선택)</label>
+                    <label className="text-xs text-[#848E9C] font-bold">{t.autoBetRounds}</label>
                     <div className="grid grid-cols-3 gap-2">
                       {[1, 2, 3].map((rNum) => {
                         const checked = autoSettings.rounds.includes(rNum);
@@ -1185,7 +1176,7 @@ export default function MobileApp() {
                             }`}
                           >
                             <span>{checked ? "✓" : "○"}</span>
-                            <span>{rNum}회차</span>
+                            <span>{rNum === 1 ? t.round1 : rNum === 2 ? t.round2 : t.round3}</span>
                           </button>
                         );
                       })}
@@ -1195,8 +1186,8 @@ export default function MobileApp() {
                   {/* Daily Auto Repeat Checkbox Toggle */}
                   <div className="bg-[#0B0E11] p-3.5 rounded-xl border border-[#2B3139] flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-bold text-[#EAECEF]">매일 반복 자동 참여</p>
-                      <p className="text-[10px] text-[#848E9C] mt-0.5">매일 지정 시각에 자동으로 URD 배팅 참여</p>
+                      <p className="text-xs font-bold text-[#EAECEF]">{t.dailyRepeat}</p>
+                      <p className="text-[10px] text-[#848E9C] mt-0.5">{t.dailyRepeatSub}</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -1224,7 +1215,7 @@ export default function MobileApp() {
                         : "bg-[#FCD535] text-[#0B0E11]"
                     }`}
                   >
-                    <span>{autoSettings.enabled ? "✓ 자동 배팅 구동 중 (클릭 시 중지)" : "⚡ 자동 배팅 세팅 저장 및 시작"}</span>
+                    <span>{autoSettings.enabled ? t.stopAutoSettings : t.saveAutoSettings}</span>
                   </button>
                 </div>
               )}
@@ -1232,19 +1223,23 @@ export default function MobileApp() {
 
             {/* My Betting History List */}
             <div className="space-y-2.5">
-              <h3 className="text-xs font-extrabold text-[#848E9C] uppercase px-1">내 최근 참여 내역</h3>
+              <h3 className="text-xs font-extrabold text-[#848E9C] uppercase px-1">{t.recentBets}</h3>
               <div className="space-y-2">
                 {myBets.map((b) => (
                   <div key={b.id} className="bg-[#1E2329] border border-[#2B3139] rounded-xl p-3 flex justify-between items-center">
                     <div>
                       <div className="flex items-center space-x-2">
-                        <span className="text-xs font-bold text-[#FCD535]">{b.round}회차 참여</span>
+                        <span className="text-xs font-bold text-[#FCD535]">
+                          {b.round === 1 ? t.round1 : b.round === 2 ? t.round2 : t.round3} {lang === "ko" ? "참여" : lang === "en" ? "Joined" : "参与"}
+                        </span>
                         <span className="text-[10px] text-[#848E9C]">({b.betAt})</span>
                       </div>
-                      <p className="text-[10px] text-[#848E9C] mt-0.5">{b.betsCount}회 배팅 • {b.urdSpent} URD 소모</p>
+                      <p className="text-[10px] text-[#848E9C] mt-0.5">
+                        {b.betsCount}{lang === "ko" ? "회 배팅" : lang === "en" ? " Bets" : "次下注"} • {b.urdSpent} URD {lang === "ko" ? "소모" : lang === "en" ? "Cost" : "消耗"}
+                      </p>
                     </div>
                     <span className="text-[10px] font-bold text-[#FCD535] bg-[#FCD535]/10 px-2 py-1 rounded">
-                      ● 대기 중 ({b.round === 1 ? "12:30" : b.round === 2 ? "15:30" : "18:30"} 발표)
+                      ● {lang === "ko" ? "대기 중" : lang === "en" ? "Waiting" : "等待中"} ({b.round === 1 ? "12:30" : b.round === 2 ? "15:30" : "18:30"} {lang === "ko" ? "발표" : lang === "en" ? "Draw" : "公布"})
                     </span>
                   </div>
                 ))}
@@ -1256,115 +1251,108 @@ export default function MobileApp() {
 
         {/* ═══════════════ NETWORK ═══════════════ */}
         {activeTab === "network" && (
-          <div className="p-5 space-y-4">
-            <div className="flex justify-between items-center">
-              <h1 className="text-xl font-black text-[#EAECEF]">
-                {lang === "ko" ? "조직도 (팀 계보)" : lang === "en" ? "Network Tree" : "团队架构"}
-              </h1>
-              <span className="text-[10px] text-[#848E9C]">
-                {networkTab === "referral" ? t.directTreeSub : t.sponsorTreeSub}
-              </span>
-            </div>
+          <div className="p-4 flex flex-col justify-between min-h-[calc(100vh-140px)]">
+            <div className="space-y-4 flex-1 flex flex-col">
+              {/* Tree Type Tabs: Direct Tree vs Sponsor Tree */}
+              <div className="flex bg-[#1E2329] p-1 rounded-xl">
+                <button 
+                  onClick={() => setNetworkTab("referral")} 
+                  className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${
+                    networkTab === "referral" ? "bg-[#FCD535] text-[#0B0E11]" : "text-[#848E9C] hover:text-[#EAECEF]"
+                  }`}
+                >
+                  {t.directRef}
+                </button>
+                <button 
+                  onClick={() => setNetworkTab("sponsor")} 
+                  className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${
+                    networkTab === "sponsor" ? "bg-[#FCD535] text-[#0B0E11]" : "text-[#848E9C] hover:text-[#EAECEF]"
+                  }`}
+                >
+                  {t.sponsorArch}
+                </button>
+              </div>
 
-            {/* Tree Type Tabs: Direct Tree vs Sponsor Tree */}
-            <div className="flex bg-[#1E2329] p-1 rounded-xl border border-[#2B3139]">
-              <button 
-                onClick={() => setNetworkTab("referral")} 
-                className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${
-                  networkTab === "referral" ? "bg-[#FCD535] text-[#0B0E11]" : "text-[#848E9C] hover:text-[#EAECEF]"
-                }`}
-              >
-                {t.directRef}
-              </button>
-              <button 
-                onClick={() => setNetworkTab("sponsor")} 
-                className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${
-                  networkTab === "sponsor" ? "bg-[#FCD535] text-[#0B0E11]" : "text-[#848E9C] hover:text-[#EAECEF]"
-                }`}
-              >
-                {t.sponsorArch}
-              </button>
-            </div>
-
-            {/* Frameless Max-Width/Height Scrollable Tree Canvas */}
-            <div className="w-full overflow-x-auto overflow-y-auto py-5 px-2 bg-[#0B0E11] rounded-2xl border border-[#2B3139] min-h-[380px] flex justify-center items-start scrollbar-thin">
-              <div className="min-w-[440px] px-2 py-1 flex flex-col items-center space-y-6">
-                
-                {/* Root Node: Me (User) */}
-                <div className="relative flex flex-col items-center">
-                  <div className="bg-[#FCD535] text-[#0B0E11] border-2 border-[#FCD535] rounded-2xl px-6 py-3 shadow-[0_0_25px_rgba(252,213,53,0.35)] text-center">
-                    <div className="flex items-center justify-center space-x-1.5">
-                      <span className="text-sm font-black">👑 User ({lang === "ko" ? "나" : lang === "en" ? "Me" : "我"})</span>
-                      <StarBadge level={2} />
-                    </div>
-                    <p className="text-[10px] font-bold opacity-80 mt-0.5">
-                      {lang === "ko" ? "본인 계정 • 활성 (V2)" : lang === "en" ? "My Account • Active (V2)" : "本人账号 • 活跃 (V2)"}
-                    </p>
-                  </div>
-                  {/* Down Branch Line */}
-                  <div className="w-0.5 h-6 bg-[#FCD535]/60" />
-                </div>
-
-                {/* Level 1 Horizontal Branch Bar */}
-                <div className="relative w-full flex justify-center">
-                  <div className="absolute top-0 w-3/4 h-0.5 bg-[#2B3139]" />
+              {/* Frameless Expanded Tree Canvas (No outer borders, no scrollbars visible) */}
+              <div className="w-full flex-1 overflow-x-auto overflow-y-auto py-6 flex justify-center items-start [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                <div className="min-w-[440px] px-2 flex flex-col items-center space-y-6">
                   
-                  <div className="w-full flex justify-between pt-4">
-                    {/* Left Leg: User A */}
-                    <div className="flex flex-col items-center w-1/2">
-                      <div className="w-0.5 h-4 bg-[#2B3139] -mt-4 mb-1" />
-                      <div className="bg-[#1E2329] border border-[#0ECB81] rounded-xl p-3 text-center min-w-[135px] shadow-md">
-                        <p className="text-xs font-bold text-[#EAECEF]">User A</p>
-                        <div className="flex items-center justify-center space-x-1 mt-1">
-                          <span className="text-[9px] font-bold text-[#0ECB81] bg-[#0ECB81]/10 px-1.5 py-0.5 rounded">● {t.active}</span>
-                          <span className="text-[9px] text-[#848E9C]">$500</span>
+                  {/* Root Node: Me (User) */}
+                  <div className="relative flex flex-col items-center">
+                    <div className="bg-[#FCD535] text-[#0B0E11] rounded-2xl px-6 py-3 shadow-[0_0_25px_rgba(252,213,53,0.35)] text-center">
+                      <div className="flex items-center justify-center space-x-1.5">
+                        <span className="text-sm font-black">👑 User ({lang === "ko" ? "나" : lang === "en" ? "Me" : "我"})</span>
+                        <StarBadge level={2} />
+                      </div>
+                      <p className="text-[10px] font-bold opacity-80 mt-0.5">
+                        {lang === "ko" ? "본인 계정 • 활성 (V2)" : lang === "en" ? "My Account • Active (V2)" : "本人账号 • 活跃 (V2)"}
+                      </p>
+                    </div>
+                    {/* Down Branch Line */}
+                    <div className="w-0.5 h-6 bg-[#FCD535]/60" />
+                  </div>
+
+                  {/* Level 1 Horizontal Branch Bar */}
+                  <div className="relative w-full flex justify-center">
+                    <div className="absolute top-0 w-3/4 h-0.5 bg-[#2B3139]" />
+                    
+                    <div className="w-full flex justify-between pt-4">
+                      {/* Left Leg: User A */}
+                      <div className="flex flex-col items-center w-1/2">
+                        <div className="w-0.5 h-4 bg-[#2B3139] -mt-4 mb-1" />
+                        <div className="bg-[#1E2329] border border-[#0ECB81] rounded-xl p-3 text-center min-w-[135px] shadow-md">
+                          <p className="text-xs font-bold text-[#EAECEF]">User A</p>
+                          <div className="flex items-center justify-center space-x-1 mt-1">
+                            <span className="text-[9px] font-bold text-[#0ECB81] bg-[#0ECB81]/10 px-1.5 py-0.5 rounded">● {t.active}</span>
+                            <span className="text-[9px] text-[#848E9C]">$500</span>
+                          </div>
+                        </div>
+
+                        {/* Level 2 Sub-Legs */}
+                        <div className="w-0.5 h-5 bg-[#2B3139] my-1" />
+                        <div className="flex space-x-2">
+                          <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[90px]">
+                            <p className="text-[10px] font-bold text-[#EAECEF]">User C</p>
+                            <span className="text-[8px] text-[#0ECB81]">● {t.active} ($100)</span>
+                          </div>
+                          <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[90px]">
+                            <p className="text-[10px] font-bold text-[#EAECEF]">User D</p>
+                            <span className="text-[8px] text-[#0ECB81]">● {t.active} ($1,000)</span>
+                          </div>
                         </div>
                       </div>
 
-                      {/* Level 2 Sub-Legs */}
-                      <div className="w-0.5 h-5 bg-[#2B3139] my-1" />
-                      <div className="flex space-x-2">
-                        <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[90px]">
-                          <p className="text-[10px] font-bold text-[#EAECEF]">User C</p>
-                          <span className="text-[8px] text-[#0ECB81]">● {t.active} ($100)</span>
+                      {/* Right Leg: User B */}
+                      <div className="flex flex-col items-center w-1/2">
+                        <div className="w-0.5 h-4 bg-[#2B3139] -mt-4 mb-1" />
+                        <div className="bg-[#1E2329] border border-[#F6465D]/60 rounded-xl p-3 text-center min-w-[135px] shadow-md">
+                          <p className="text-xs font-bold text-[#EAECEF]">User B</p>
+                          <div className="flex items-center justify-center space-x-1 mt-1">
+                            <span className="text-[9px] font-bold text-[#F6465D] bg-[#F6465D]/10 px-1.5 py-0.5 rounded">○ {t.inactive}</span>
+                            <span className="text-[9px] text-[#848E9C]">
+                              {lang === "ko" ? "미구매" : lang === "en" ? "Unpurchased" : "未购设备"}
+                            </span>
+                          </div>
                         </div>
-                        <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[90px]">
-                          <p className="text-[10px] font-bold text-[#EAECEF]">User D</p>
-                          <span className="text-[8px] text-[#0ECB81]">● {t.active} ($1,000)</span>
+
+                        {/* Level 2 Sub-Leg */}
+                        <div className="w-0.5 h-5 bg-[#2B3139] my-1" />
+                        <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[100px]">
+                          <p className="text-[10px] font-bold text-[#EAECEF]">User E</p>
+                          <span className="text-[8px] text-[#848E9C]">○ {t.inactive}</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Right Leg: User B */}
-                    <div className="flex flex-col items-center w-1/2">
-                      <div className="w-0.5 h-4 bg-[#2B3139] -mt-4 mb-1" />
-                      <div className="bg-[#1E2329] border border-[#F6465D]/60 rounded-xl p-3 text-center min-w-[135px] shadow-md">
-                        <p className="text-xs font-bold text-[#EAECEF]">User B</p>
-                        <div className="flex items-center justify-center space-x-1 mt-1">
-                          <span className="text-[9px] font-bold text-[#F6465D] bg-[#F6465D]/10 px-1.5 py-0.5 rounded">○ {t.inactive}</span>
-                          <span className="text-[9px] text-[#848E9C]">
-                            {lang === "ko" ? "미구매" : lang === "en" ? "Unpurchased" : "未购设备"}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Level 2 Sub-Leg */}
-                      <div className="w-0.5 h-5 bg-[#2B3139] my-1" />
-                      <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[100px]">
-                        <p className="text-[10px] font-bold text-[#EAECEF]">User E</p>
-                        <span className="text-[8px] text-[#848E9C]">○ {t.inactive}</span>
-                      </div>
-                    </div>
                   </div>
 
                 </div>
-
               </div>
             </div>
 
             {/* Clean 1-Line Pending Unpurchased Members List (Positioned at bottom above nav) */}
             {unpaidMembers.length > 0 && (
-              <div className="space-y-2 pt-2">
+              <div className="space-y-2 pt-2 mt-auto">
                 <div className="flex justify-between items-center px-1">
                   <h3 className="text-xs font-extrabold text-[#F6465D] flex items-center space-x-1.5">
                     <span>⚠️ {t.unpaidMembersTitle}</span>
@@ -1372,7 +1360,6 @@ export default function MobileApp() {
                       {unpaidMembers.length}
                     </span>
                   </h3>
-                  <span className="text-[10px] text-[#848E9C]">{t.unpaidMembersSub}</span>
                 </div>
 
                 <div className="space-y-1.5">
@@ -1388,7 +1375,6 @@ export default function MobileApp() {
                       <button 
                         onClick={() => handleDismissUnpaidMember(m.id)}
                         className="p-1 text-[#848E9C] hover:text-[#EAECEF] hover:bg-[#2B3139] rounded transition-colors flex-shrink-0 text-xs font-bold"
-                        title={t.cancel}
                       >
                         ✕
                       </button>
@@ -1404,8 +1390,6 @@ export default function MobileApp() {
         {/* ═══════════════ SETTINGS ═══════════════ */}
         {activeTab === "settings" && (
           <div className="p-5 space-y-5">
-            <h1 className="text-xl font-black text-[#EAECEF]">{t.settings}</h1>
-            
             {/* User Profile Card */}
             <div className="bg-[#1E2329] rounded-xl p-4 flex items-center space-x-3">
               <div className="w-12 h-12 rounded-full bg-[#2B3139] flex justify-center items-center font-bold text-[#FCD535]">U</div>
