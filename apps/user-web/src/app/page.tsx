@@ -6,10 +6,10 @@ import { createClient } from "@/lib/supabase/client";
 import {
   Home, Wallet, Gamepad2, Users, Settings, ArrowDownLeft, ArrowUpRight,
   RefreshCw, Copy, Check, Play, TrendingUp, Bell, ArrowRightLeft, Star,
-  Zap, BarChart3, Info, LogOut
+  Zap, BarChart3, Info, LogOut, ShoppingBag
 } from "lucide-react";
 
-type TabType = "home" | "wallet" | "game" | "network" | "settings";
+type TabType = "home" | "wallet" | "products" | "game" | "network" | "settings";
 type NetworkTabType = "referral" | "sponsor";
 
 interface DirectMember {
@@ -56,42 +56,86 @@ type Language = "ko" | "en" | "zh";
 
 const I18N = {
   ko: {
-    home: "홈", wallet: "지갑", game: "게임구역", network: "조직도", settings: "설정",
+    home: "홈", wallet: "지갑", products: "상품", game: "게임구역", network: "조직도", settings: "설정",
     miningStatus: "게임기 구동 현황", dailyYield: "일일 수익률", gaugeTitle: "수당 한도 달성률 (200% ~ 300%)",
     usdtBalance: "USDT 잔액", urcBalance: "URC 잔액", urdBalance: "URD 토큰 잔액",
     instantSwap: "실시간 스왑 (수수료 0.1%)", pay: "지불", receive: "수령 (예상)", confirmSwap: "실시간 스왑 실행",
     withdrawUsdt: "USDT 출금 (BSC)", applyWithdraw: "출금 신청", depositUsdt: "USDT 입금 (BSC)",
     gameNodes: "게임 노드 기기 (구매 시 URD 증정)", startGame: "게임 실행 (10 URD 소모)",
     node100: "$100 노드 (1,500 URD 증정)", node500: "$500 노드 (8,000 URD 증정)", node1000: "$1,000 노드 (17,000 URD 증정)",
-    directRef: "직추천", sponsorArch: "후원 조직",
+    directRef: "추천 계보", sponsorArch: "후원 계보",
     langSetting: "언어 설정 (Language)", shareRefLink: "내 추천 링크 공유", logout: "로그아웃",
     active: "활성", inactive: "미활성",
+    shopTitle: "게임기 노드 상품몰", buyProduct: "노드 구매하기",
+    myActiveNodes: "보유 게임기 노드 현황",
   },
   en: {
-    home: "Home", wallet: "Wallet", game: "Game Zone", network: "Network", settings: "Settings",
+    home: "Home", wallet: "Wallet", products: "Products", game: "Game Zone", network: "Network", settings: "Settings",
     miningStatus: "Game Node Machine Status", dailyYield: "Daily Yield Rate", gaugeTitle: "Payout Cap Limit Progress (200% ~ 300%)",
     usdtBalance: "USDT Balance", urcBalance: "URC Balance", urdBalance: "URD Token Balance",
     instantSwap: "Instant Swap (0.1% Fee)", pay: "Pay", receive: "Receive (Est.)", confirmSwap: "Execute Swap",
     withdrawUsdt: "Withdraw USDT (BSC)", applyWithdraw: "Request Withdrawal", depositUsdt: "Deposit USDT (BSC)",
     gameNodes: "Game Node Equipment (Bonus URD on Purchase)", startGame: "Start Game (Cost 10 URD)",
     node100: "$100 Node (1,500 URD Bonus)", node500: "$500 Node (8,000 URD Bonus)", node1000: "$1,000 Node (17,000 URD Bonus)",
-    directRef: "Direct Referral", sponsorArch: "Sponsor Tree",
+    directRef: "Direct Referral Tree", sponsorArch: "Sponsor Tree",
     langSetting: "Language Settings", shareRefLink: "Share Referral Link", logout: "Log Out",
     active: "Active", inactive: "Inactive",
+    shopTitle: "Game Node Equipment Shop", buyProduct: "Buy Node Equipment",
+    myActiveNodes: "My Active Game Nodes",
   },
   zh: {
-    home: "首页", wallet: "钱包", game: "游戏区", network: "团队", settings: "设置",
+    home: "首页", wallet: "钱包", products: "商城", game: "游戏区", network: "团队", settings: "设置",
     miningStatus: "设备运行状态", dailyYield: "日收益率", gaugeTitle: "封顶额度进度 (200% ~ 300%)",
     usdtBalance: "USDT 余额", urcBalance: "URC 余额", urdBalance: "URD代币余额",
     instantSwap: "闪兑 (手续费 0.1%)", pay: "支付", receive: "获得 (预计)", confirmSwap: "确认兑换",
     withdrawUsdt: "提现 USDT (BSC)", applyWithdraw: "申请提现", depositUsdt: "充值 USDT (BSC)",
     gameNodes: "游戏节点设备 (购买赠送URD)", startGame: "启动游戏 (消耗 10 URD)",
     node100: "$100 节点 (赠 1,500 URD)", node500: "$500 节点 (赠 8,000 URD)", node1000: "$1,000 节点 (赠 17,000 URD)",
-    directRef: "直推", sponsorArch: "架构",
+    directRef: "直推谱系", sponsorArch: "安置架构",
     langSetting: "语言设置 (Language)", shareRefLink: "分享推荐链接", logout: "退出登录",
     active: "活跃", inactive: "未激活",
+    shopTitle: "游戏节点设备商城", buyProduct: "购买节点设备",
+    myActiveNodes: "我的运行节点设备",
   }
 };
+
+interface ActiveMachine {
+  id: string;
+  level: number;
+  name: string;
+  price: number;
+  urdBonus: number;
+  payoutCap: number;
+  accumulatedPayout: number;
+  purchasedAt: string;
+}
+
+interface GameNotification {
+  id: string;
+  round: string;
+  time: string;
+  title: string;
+  resultType: "USDT_WIN" | "COIN_WIN";
+  rewardText: string;
+  createdAt: string;
+  read: boolean;
+}
+
+interface GameBetRecord {
+  id: string;
+  round: number;
+  betsCount: number;
+  urdSpent: number;
+  status: "WAITING" | "COMPLETED";
+  betAt: string;
+}
+
+interface UnpaidMember {
+  id: string;
+  nickname: string;
+  email: string;
+  joinedAt: string;
+}
 
 export default function MobileApp() {
   const supabase = createClient();
@@ -101,6 +145,121 @@ export default function MobileApp() {
   const [activeTab, setActiveTab] = useState<TabType>("home");
   const [networkTab, setNetworkTab] = useState<NetworkTabType>("referral");
   const [referralCopied, setReferralCopied] = useState(false);
+
+  // Pending Unpurchased Members List
+  const [unpaidMembers, setUnpaidMembers] = useState<UnpaidMember[]>([
+    { id: "u-1", nickname: "User B (김철수)", email: "b_kim@urc369.com", joinedAt: "2026-07-21" },
+    { id: "u-2", nickname: "User E (박영희)", email: "yh_park@urc369.com", joinedAt: "2026-07-20" },
+  ]);
+
+  const handleDismissUnpaidMember = (id: string) => {
+    setUnpaidMembers((prev) => prev.filter((m) => m.id !== id));
+  };
+
+  // Notifications Modal & List State
+  const [showNotifModal, setShowNotifModal] = useState(false);
+  const [notifications, setNotifications] = useState<GameNotification[]>([
+    {
+      id: "n-1",
+      round: "1회차",
+      time: "12:30",
+      title: "🎉 1회차 AI 당첨 결과 발표",
+      resultType: "USDT_WIN",
+      rewardText: "USDT 102% 당첨! (+102.00 USDT 지불 완료)",
+      createdAt: "12:30:05",
+      read: false,
+    },
+    {
+      id: "n-2",
+      round: "2회차",
+      time: "15:30",
+      title: "🪙 2회차 AI 당첨 결과 발표",
+      resultType: "COIN_WIN",
+      rewardText: "코인 페이백 당첨! (+80.00 URC, +40.00 URD 지급 완료)",
+      createdAt: "15:30:02",
+      read: false,
+    },
+  ]);
+
+  // Scheduled Game Engine States
+  const [gameBetMode, setGameBetMode] = useState<"manual" | "auto">("manual");
+  const [manualRound, setManualRound] = useState<number>(1);
+  const [manualBetsCount, setManualBetsCount] = useState<number>(1);
+  const [myBets, setMyBets] = useState<GameBetRecord[]>([
+    { id: "b-1", round: 1, betsCount: 2, urdSpent: 20, status: "WAITING", betAt: "11:45" },
+  ]);
+
+  // Auto Betting Settings State
+  const [autoSettings, setAutoSettings] = useState({
+    enabled: false,
+    dailyRepeat: true,
+    rounds: [1, 2, 3],
+    betsPerRound: 1,
+  });
+
+  const handleManualBet = () => {
+    const cost = manualBetsCount * 10;
+    if (urdBalance < cost) {
+      alert(`URD 토큰이 부족합니다! (필요: ${cost} URD, 보유: ${urdBalance} URD)`);
+      return;
+    }
+
+    setUrdBalance((prev) => prev - cost);
+    const newBet: GameBetRecord = {
+      id: `b-${Date.now()}`,
+      round: manualRound,
+      betsCount: manualBetsCount,
+      urdSpent: cost,
+      status: "WAITING",
+      betAt: new Date().toLocaleTimeString("ko-KR", { hour12: false, hour: "2-digit", minute: "2-digit" }),
+    };
+
+    setMyBets((prev) => [newBet, ...prev]);
+    alert(`🎉 ${manualRound}회차 배팅 완료! (${manualBetsCount}회 / ${cost} URD 소모)\nAI 당첨 발표 시각에 결과가 발표됩니다.`);
+  };
+
+  const toggleAutoRound = (roundNum: number) => {
+    setAutoSettings((prev) => {
+      const exists = prev.rounds.includes(roundNum);
+      const nextRounds = exists ? prev.rounds.filter((r) => r !== roundNum) : [...prev.rounds, roundNum].sort();
+      return { ...prev, rounds: nextRounds };
+    });
+  };
+
+  // Purchased Active Game Machines
+  const [myMachines, setMyMachines] = useState<ActiveMachine[]>([
+    { id: "m-1", level: 1, name: "$100 노드", price: 100, urdBonus: 1500, payoutCap: 200, accumulatedPayout: 50, purchasedAt: "2026-07-21" },
+    { id: "m-2", level: 3, name: "$1,000 노드", price: 1000, urdBonus: 17000, payoutCap: 3000, accumulatedPayout: 800, purchasedAt: "2026-07-21" },
+  ]);
+
+  const handlePurchaseProduct = (level: number, price: number, urdBonus: number, capRate: number) => {
+    if (usdtBalance < price) {
+      alert(lang === "ko" ? "USDT 잔액이 부족합니다. 먼저 USDT를 입금해 주세요!" : lang === "en" ? "Insufficient USDT balance! Please deposit first." : "USDT 余额不足！请先充值。");
+      return;
+    }
+
+    const payoutCap = price * capRate;
+    const newMachine: ActiveMachine = {
+      id: `m-${Date.now()}`,
+      level,
+      name: `$${price.toLocaleString()} ${lang === "ko" ? "노드" : lang === "en" ? "Node" : "节点"}`,
+      price,
+      urdBonus,
+      payoutCap,
+      accumulatedPayout: 0,
+      purchasedAt: new Date().toISOString().split("T")[0],
+    };
+
+    setUsdtBalance((prev) => prev - price);
+    setUrdBalance((prev) => prev + urdBonus);
+    setMyMachines((prev) => [...prev, newMachine]);
+
+    alert(lang === "ko" 
+      ? `🎉 $${price.toLocaleString()} 게임기 구매 성공! ${urdBonus.toLocaleString()} URD 토큰이 즉시 지급되었습니다.` 
+      : lang === "en" 
+      ? `🎉 Purchased $${price.toLocaleString()} Node! +${urdBonus.toLocaleString()} URD credited.` 
+      : `🎉 成功购买 $${price.toLocaleString()} 节点！赠送 ${urdBonus.toLocaleString()} URD代币！`);
+  };
   const [directTree] = useState([
     { id: 1, nickname: "User A", referralSeq: 1, status: "ACTIVE" },
     { id: 2, nickname: "User B", referralSeq: 2, status: "INACTIVE" }
@@ -123,6 +282,7 @@ export default function MobileApp() {
   
   const [userDepositAddress] = useState("0x3a9B8f5C01A29D478b1E4109C2d4317e1D4A8912");
   const [addressCopied, setAddressCopied] = useState(false);
+  const [showDepositModal, setShowDepositModal] = useState(false);
 
   const copyDepositAddress = () => {
     navigator.clipboard.writeText(userDepositAddress);
@@ -196,13 +356,9 @@ export default function MobileApp() {
       const now = new Date();
       const utc = now.getTime() + now.getTimezoneOffset() * 60000;
       const beijingTime = new Date(utc + 3600000 * 8);
-      const nextMidnight = new Date(beijingTime);
-      nextMidnight.setHours(24, 0, 0, 0);
-      const diff = nextMidnight.getTime() - beijingTime.getTime();
-      if (diff <= 0) { setCountdown("00:00:00"); return; }
-      const h = Math.floor(diff / 3600000).toString().padStart(2, "0");
-      const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, "0");
-      const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, "0");
+      const h = beijingTime.getHours().toString().padStart(2, "0");
+      const m = beijingTime.getMinutes().toString().padStart(2, "0");
+      const s = beijingTime.getSeconds().toString().padStart(2, "0");
       setCountdown(`${h}:${m}:${s}`);
     };
     tick();
@@ -274,12 +430,20 @@ export default function MobileApp() {
           <span className="text-sm font-bold text-[#EAECEF]">URC369</span>
         </div>
         <div className="flex items-center space-x-3">
-          <div className="flex items-center space-x-1.5 bg-[#1E2329] rounded px-2.5 py-1.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#0ECB81] animate-pulse" />
-            <span className="text-[10px] text-[#0ECB81] font-bold">UTC+8 {countdown}</span>
-          </div>
-          <button className="relative p-1.5 bg-[#1E2329] rounded">
-            <Bell size={14} className="text-[#848E9C]" />
+          {activeTab === "game" && (
+            <div className="flex items-center space-x-1.5 bg-[#1E2329] rounded px-2.5 py-1.5 border border-[#2B3139]">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#0ECB81] animate-pulse" />
+              <span className="text-[10px] text-[#0ECB81] font-bold">UTC+8 {countdown}</span>
+            </div>
+          )}
+          <button 
+            onClick={() => setShowNotifModal(true)} 
+            className="relative p-1.5 bg-[#1E2329] hover:bg-[#2B3139] rounded transition-colors"
+          >
+            <Bell size={14} className="text-[#FCD535]" />
+            {notifications.some((n) => !n.read) && (
+              <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-[#F6465D] rounded-full animate-ping" />
+            )}
             <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-[#F6465D] rounded-full" />
           </button>
         </div>
@@ -334,33 +498,117 @@ export default function MobileApp() {
               </div>
             </div>
 
-            {/* Max-Out Gauge */}
-            <div className="bg-[#1E2329] rounded-xl p-4">
-              <div className="flex justify-between items-end mb-2">
-                <div className="flex items-baseline space-x-1">
-                  <span className="text-base font-bold text-[#EAECEF]">0</span>
-                  <span className="text-[#848E9C] text-xs">/ 3,000</span>
+            {/* Active Purchased Game Machines Section */}
+            <div className="space-y-2.5">
+              <div className="flex justify-between items-center px-1">
+                <h3 className="text-xs font-extrabold text-[#EAECEF] flex items-center space-x-1.5">
+                  <Gamepad2 size={14} className="text-[#FCD535]" />
+                  <span>{t.myActiveNodes}</span>
+                </h3>
+                <span className="text-[10px] text-[#848E9C]">
+                  {myMachines.filter((m) => m.accumulatedPayout < m.payoutCap).length}개 구동 중
+                </span>
+              </div>
+
+              {myMachines.filter((m) => m.accumulatedPayout < m.payoutCap).length === 0 ? (
+                <div className="bg-[#1E2329] rounded-xl p-4 text-center border border-[#2B3139]">
+                  <p className="text-xs text-[#848E9C]">구동 중인 게임기 노드가 없습니다.</p>
+                  <button 
+                    onClick={() => setActiveTab("products")}
+                    className="mt-2 text-xs font-bold text-[#FCD535] underline"
+                  >
+                    상품몰에서 노드 구매하기 ➔
+                  </button>
                 </div>
-                <span className="text-[10px] text-[#FCD535]">剩余额度 3,000</span>
-              </div>
-              <div className="w-full bg-[#0B0E11] rounded-full h-2 mb-2">
-                <div className="bg-[#FCD535] h-2 rounded-full" style={{ width: "0%" }}></div>
-              </div>
-              <div className="flex justify-between text-[10px] text-[#848E9C]">
-                <span>累计提取</span>
-                <span>0% 已用</span>
-              </div>
+              ) : (
+                <div className="space-y-2">
+                  {myMachines
+                    .filter((m) => m.accumulatedPayout < m.payoutCap)
+                    .map((m) => {
+                      const pct = Math.min(100, Math.floor((m.accumulatedPayout / m.payoutCap) * 100));
+                      return (
+                        <div key={m.id} className="bg-[#1E2329] border border-[#2B3139] hover:border-[#FCD535]/50 rounded-xl p-3.5 space-y-2 transition-all">
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-xs font-black text-[#FCD535] bg-[#FCD535]/10 px-2 py-0.5 rounded">
+                                {m.name}
+                              </span>
+                              <span className="text-[10px] text-[#0ECB81] font-bold">● 구동 중</span>
+                            </div>
+                            <span className="text-[10px] font-mono text-[#848E9C]">
+                              한도: ${m.accumulatedPayout.toFixed(0)} / ${m.payoutCap.toFixed(0)}
+                            </span>
+                          </div>
+
+                          <div className="w-full bg-[#0B0E11] rounded-full h-1.5">
+                            <div className="bg-[#0ECB81] h-1.5 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                          </div>
+
+                          <div className="flex justify-between items-center text-[9px] text-[#848E9C]">
+                            <span>구매일: {m.purchasedAt}</span>
+                            <span className="font-bold text-[#EAECEF]">달성율 {pct}%</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
             </div>
+
+            {/* Max-Out Gauge Card (Cumulative Payout Cap Progress) */}
+            {(() => {
+              const totalCap = myMachines.reduce((sum, m) => sum + m.payoutCap, 0);
+              const totalPayout = myMachines.reduce((sum, m) => sum + m.accumulatedPayout, 0);
+              const remainingCap = Math.max(0, totalCap - totalPayout);
+              const progressPct = totalCap > 0 ? Math.min(100, Math.floor((totalPayout / totalCap) * 100)) : 0;
+
+              return (
+                <div className="bg-[#1E2329] border border-[#2B3139] rounded-xl p-4 space-y-2.5">
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <p className="text-[10px] font-bold text-[#848E9C]">
+                        {lang === "ko" ? "누적 수당 수령액 / 총 한도" : lang === "en" ? "Total Payout / Cap" : "累计领奖 / 总额度"}
+                      </p>
+                      <div className="flex items-baseline space-x-1 mt-0.5">
+                        <span className="text-lg font-black text-[#EAECEF]">${totalPayout.toLocaleString()}</span>
+                        <span className="text-[#848E9C] text-xs font-bold">/ ${totalCap.toLocaleString()} USDT</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] font-bold text-[#848E9C]">
+                        {lang === "ko" ? "수령 가능 잔여 한도" : lang === "en" ? "Remaining Cap" : "剩余可领额度"}
+                      </p>
+                      <span className="text-xs font-mono font-extrabold text-[#FCD535]">
+                        ${remainingCap.toLocaleString()} USDT
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Progress Gauge Bar */}
+                  <div className="w-full bg-[#0B0E11] rounded-full h-2.5 overflow-hidden border border-[#2B3139]">
+                    <div 
+                      className="bg-gradient-to-r from-[#FCD535] to-[#0ECB81] h-full rounded-full transition-all duration-500" 
+                      style={{ width: `${progressPct}%` }}
+                    />
+                  </div>
+
+                  <div className="flex justify-between items-center text-[10px] text-[#848E9C]">
+                    <span>{lang === "ko" ? "전체 노드 통합 수당 달성률" : lang === "en" ? "Overall Node Cap Progress" : "全节点整合封顶进度"}</span>
+                    <span className="font-extrabold text-[#0ECB81]">{progressPct}% {lang === "ko" ? "달성" : lang === "en" ? "Used" : "已用"}</span>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Quick Actions (Icons Only) */}
             <div className="grid grid-cols-4 gap-3">
               {[
-                { icon: <ArrowDownLeft size={20} />, tab: "wallet" as TabType },
-                { icon: <ArrowUpRight size={20} />, tab: "wallet" as TabType },
-                { icon: <ArrowRightLeft size={20} />, tab: "wallet" as TabType },
-                { icon: <Gamepad2 size={20} />, tab: "game" as TabType },
+                { icon: <ArrowDownLeft size={20} />, onClick: () => { setActiveTab("wallet"); setShowDepositModal(true); } },
+                { icon: <ArrowUpRight size={20} />, onClick: () => setActiveTab("wallet") },
+                { icon: <ArrowRightLeft size={20} />, onClick: () => setActiveTab("wallet") },
+                { icon: <Gamepad2 size={20} />, onClick: () => setActiveTab("game") },
               ].map((a, i) => (
-                <button key={i} onClick={() => setActiveTab(a.tab)}
+                <button key={i} onClick={a.onClick}
                   className="bg-[#1E2329] hover:bg-[#2B3139] py-3 rounded-xl flex items-center justify-center text-[#FCD535] transition-colors">
                   {a.icon}
                 </button>
@@ -465,11 +713,23 @@ export default function MobileApp() {
               </div>
             </div>
             
-            {/* Deposit Card */}
-            <div className="bg-[#1E2329] rounded-xl p-5 border border-[#2B3139] space-y-4">
-              <div className="flex items-center space-x-2 text-[#FCD535]">
-                <Wallet size={16} />
-                <h3 className="text-xs font-bold text-[#EAECEF]">{t.depositUsdt}</h3>
+          </div>
+        )}
+
+        {/* Deposit Modal Popup */}
+        {showDepositModal && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-[#1E2329] border border-[#FCD535]/40 rounded-2xl p-6 max-w-xs w-full text-center space-y-4 shadow-[0_0_40px_rgba(252,213,53,0.2)] relative">
+              <button 
+                onClick={() => setShowDepositModal(false)}
+                className="absolute top-3 right-3 text-[#848E9C] hover:text-[#EAECEF] text-sm font-bold p-1 hover:bg-[#2B3139] rounded"
+              >
+                ✕
+              </button>
+              
+              <div className="flex items-center justify-center space-x-2 text-[#FCD535]">
+                <Wallet size={20} />
+                <h3 className="text-sm font-bold text-[#EAECEF]">{t.depositUsdt}</h3>
               </div>
 
               {/* Dynamic QR Code Image */}
@@ -491,150 +751,542 @@ export default function MobileApp() {
                 </p>
 
                 <div className="bg-[#0B0E11] p-3 rounded-lg border border-[#2B3139] flex justify-between items-center space-x-2">
-                  <span className="text-[11px] font-mono text-[#EAECEF] break-all select-all">
+                  <span className="text-[10px] font-mono text-[#EAECEF] break-all select-all">
                     {userDepositAddress}
                   </span>
                   <button 
                     onClick={copyDepositAddress} 
-                    className="p-2 bg-[#2B3139] hover:bg-[#FCD535] hover:text-[#0B0E11] rounded text-[#848E9C] transition-colors flex-shrink-0 flex items-center space-x-1"
+                    className="p-1.5 bg-[#2B3139] hover:bg-[#FCD535] hover:text-[#0B0E11] rounded text-[#848E9C] transition-colors flex-shrink-0 flex items-center space-x-1"
                   >
-                    {addressCopied ? <Check size={14} className="text-[#0ECB81]" /> : <Copy size={14} />}
+                    {addressCopied ? <Check size={12} className="text-[#0ECB81]" /> : <Copy size={12} />}
                     <span className="text-[10px] font-bold">
                       {addressCopied ? (lang === "ko" ? "복사됨!" : lang === "en" ? "Copied!" : "已复制!") : (lang === "ko" ? "복사" : lang === "en" ? "Copy" : "复制")}
                     </span>
                   </button>
                 </div>
               </div>
+
+              <button
+                onClick={() => setShowDepositModal(false)}
+                className="w-full py-2.5 bg-[#FCD535] text-[#0B0E11] font-bold rounded-xl text-xs hover:opacity-90 transition-opacity"
+              >
+                {lang === "ko" ? "닫기" : lang === "en" ? "Close" : "关闭"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── NOTIFICATION MODAL (BELL 🔔) ── */}
+        {showNotifModal && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-[#1E2329] border border-[#FCD535]/40 rounded-2xl p-5 max-w-sm w-full space-y-4 shadow-[0_0_40px_rgba(252,213,53,0.2)] relative">
+              <button 
+                onClick={() => setShowNotifModal(false)}
+                className="absolute top-3 right-3 text-[#848E9C] hover:text-[#EAECEF] text-sm font-bold p-1 hover:bg-[#2B3139] rounded"
+              >
+                ✕
+              </button>
+
+              <div className="flex items-center space-x-2 text-[#FCD535]">
+                <Bell size={18} />
+                <h3 className="text-sm font-bold text-[#EAECEF]">
+                  {lang === "ko" ? "AI 당첨 결과 알림" : lang === "en" ? "AI Draw Notifications" : "AI 中奖通知"}
+                </h3>
+              </div>
+
+              <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+                {notifications.length === 0 ? (
+                  <div className="text-center py-6 text-xs text-[#848E9C]">
+                    {lang === "ko" ? "새로운 당첨 알림이 없습니다." : "No notifications available."}
+                  </div>
+                ) : (
+                  notifications.map((n) => (
+                    <div key={n.id} className="bg-[#0B0E11] p-3 rounded-xl border border-[#2B3139] space-y-1">
+                      <div className="flex justify-between items-center text-[10px]">
+                        <span className="font-extrabold text-[#FCD535] bg-[#FCD535]/10 px-2 py-0.5 rounded">{n.round}</span>
+                        <span className="text-[#848E9C] font-mono">{n.time} ({n.createdAt})</span>
+                      </div>
+                      <p className="text-xs font-bold text-[#EAECEF] pt-0.5">{n.title}</p>
+                      <p className={`text-[11px] font-semibold ${n.resultType === "USDT_WIN" ? "text-[#0ECB81]" : "text-[#FCD535]"}`}>
+                        {n.rewardText}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <button
+                onClick={() => {
+                  setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+                  setShowNotifModal(false);
+                }}
+                className="w-full py-2.5 bg-[#FCD535] text-[#0B0E11] font-bold rounded-xl text-xs hover:opacity-90 transition-opacity"
+              >
+                {lang === "ko" ? "모두 확인" : lang === "en" ? "Mark All Read" : "全部已读"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════ PRODUCTS SHOP ═══════════════ */}
+        {activeTab === "products" && (
+          <div className="p-5 space-y-5">
+            <h1 className="text-xl font-black text-[#EAECEF]">{t.shopTitle}</h1>
+            
+            {/* Top USDT Balance & Quick Deposit Card */}
+            <div className="bg-[#1E2329] rounded-xl p-5 border border-[#2B3139] flex justify-between items-center">
+              <div>
+                <p className="text-xs font-bold text-[#848E9C]">{t.usdtBalance}</p>
+                <h2 className="text-2xl font-black text-[#EAECEF] mt-1 tracking-tight">
+                  {usdtBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-normal text-[#848E9C]">USDT</span>
+                </h2>
+              </div>
+              <button 
+                onClick={() => { setActiveTab("wallet"); setShowDepositModal(true); }}
+                className="px-3.5 py-2 bg-[#FCD535] text-[#0B0E11] font-bold rounded-lg text-xs hover:opacity-90 transition-opacity flex items-center space-x-1"
+              >
+                <Wallet size={14} />
+                <span>USDT {lang === "ko" ? "입금" : lang === "en" ? "Deposit" : "充值"}</span>
+              </button>
             </div>
 
+            {/* Product Nodes List */}
+            <div className="space-y-3.5">
+              <h3 className="text-xs font-extrabold text-[#848E9C] uppercase px-1">{t.buyProduct}</h3>
+
+              {[
+                { 
+                  level: 1, 
+                  price: 100, 
+                  urdBonus: 1500, 
+                  capRate: 2.0, 
+                  capUsd: "$200 (200%)", 
+                  desc: lang === "ko" ? "1,500 URD 토큰 증정 • 수당 캡 200% 달성 시 소멸" : lang === "en" ? "Bonus 1,500 URD • Expires at 200% Payout Cap" : "赠送 1,500 URD 代币 • 200% 封顶" 
+                },
+                { 
+                  level: 2, 
+                  price: 500, 
+                  urdBonus: 8000, 
+                  capRate: 2.5, 
+                  capUsd: "$1,250 (250%)", 
+                  desc: lang === "ko" ? "8,000 URD 토큰 증정 • 수당 캡 250% 달성 시 소멸" : lang === "en" ? "Bonus 8,000 URD • Expires at 250% Payout Cap" : "赠送 8,000 URD 代币 • 250% 封顶" 
+                },
+                { 
+                  level: 3, 
+                  price: 1000, 
+                  urdBonus: 17000, 
+                  capRate: 3.0, 
+                  capUsd: "$3,000 (300%)", 
+                  desc: lang === "ko" ? "17,000 URD 토큰 증정 • 수당 캡 300% 달성 시 소멸" : lang === "en" ? "Bonus 17,000 URD • Expires at 300% Payout Cap" : "赠送 17,000 URD 代币 • 300% 封顶" 
+                },
+              ].map((p) => (
+                <div key={p.level} className="bg-[#1E2329] border border-[#2B3139] hover:border-[#FCD535] rounded-2xl p-5 space-y-4 transition-all shadow-lg">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="text-2xl font-black text-[#FCD535]">${p.price.toLocaleString()}</span>
+                      <h4 className="text-sm font-bold text-[#EAECEF] mt-1">{p.level === 1 ? "$100 노드" : p.level === 2 ? "$500 노드" : "$1,000 노드"}</h4>
+                    </div>
+                    <span className="bg-[#0ECB81]/10 text-[#0ECB81] border border-[#0ECB81]/30 text-[10px] font-extrabold px-2.5 py-1 rounded-full">
+                      캡: {p.capUsd}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-[#848E9C] bg-[#0B0E11] p-3 rounded-xl border border-[#2B3139]">
+                    {p.desc}
+                  </p>
+
+                  <button 
+                    onClick={() => handlePurchaseProduct(p.level, p.price, p.urdBonus, p.capRate)}
+                    className="w-full py-3 bg-[#FCD535] text-[#0B0E11] font-black rounded-xl text-sm hover:opacity-90 active:scale-95 transition-all shadow-[0_0_20px_rgba(252,213,53,0.2)] flex items-center justify-center space-x-1.5"
+                  >
+                    <ShoppingBag size={16} />
+                    <span>${p.price.toLocaleString()} USDT {t.buyProduct}</span>
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
         {/* ═══════════════ GAME ═══════════════ */}
         {activeTab === "game" && (
           <div className="p-5 space-y-5">
-            <h1 className="text-xl font-black text-[#EAECEF]">游戏区</h1>
+            <div className="flex justify-between items-center">
+              <h1 className="text-xl font-black text-[#EAECEF]">
+                {lang === "ko" ? "경기장 (AI 게임 구역)" : lang === "en" ? "Game Arena" : "竞技场"}
+              </h1>
+              <span className="text-xs text-[#0ECB81] font-bold bg-[#0ECB81]/10 border border-[#0ECB81]/30 px-2.5 py-1 rounded-full">
+                ● UTC+8 {countdown}
+              </span>
+            </div>
             
-            {/* URD Token Balance Card */}
-            <div className="bg-[#1E2329] rounded-xl p-5 flex justify-between items-center border border-[#2B3139]">
-              <div>
-                <p className="text-xs text-[#848E9C]">URD代币余额 (1回=10 URD)</p>
-                <h2 className="text-2xl font-bold text-[#FCD535] mt-1">{urdBalance.toLocaleString()} <span className="text-xs text-[#EAECEF]">URD</span></h2>
+            {/* 2-Column Balance Card: USDT (Left) | URD (Right) */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* USDT Balance */}
+              <div className="bg-[#1E2329] rounded-xl p-4 border border-[#2B3139]">
+                <p className="text-xs font-bold text-[#848E9C]">USDT {lang === "ko" ? "보유량" : lang === "en" ? "Balance" : "余额"}</p>
+                <h2 className="text-xl font-extrabold text-[#EAECEF] mt-1 tracking-tight">
+                  {usdtBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-normal text-[#848E9C]">USDT</span>
+                </h2>
               </div>
-              <button 
-                onClick={() => alert("请在下方选择节点设备进行购买，即可赠送URD代币！")}
-                className="px-4 py-2 bg-[#FCD535] text-[#0B0E11] font-bold rounded text-sm hover:opacity-90 transition-opacity"
-              >
-                获取代币
-              </button>
+
+              {/* URD Balance */}
+              <div className="bg-[#1E2329] rounded-xl p-4 border border-[#2B3139]">
+                <p className="text-xs font-bold text-[#848E9C]">URD {lang === "ko" ? "보유량" : lang === "en" ? "Balance" : "余额"}</p>
+                <h2 className="text-xl font-extrabold text-[#FCD535] mt-1 tracking-tight">
+                  {urdBalance.toLocaleString()} <span className="text-xs font-normal text-[#EAECEF]">URD</span>
+                </h2>
+              </div>
             </div>
 
-            {/* Mining Node Packages */}
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <h3 className="text-xs font-bold text-[#848E9C]">游戏节点设备 (购买赠送URD)</h3>
+            {/* Timetable Schedule Card */}
+            <div className="bg-[#1E2329] border border-[#2B3139] rounded-2xl p-4 space-y-3">
+              <h3 className="text-xs font-extrabold text-[#EAECEF] flex items-center justify-between">
+                <span>🕒 {lang === "ko" ? "일일 3회차 AI 추첨 시간표" : lang === "en" ? "Daily 3-Round Timetable" : "每日 3 轮 AI 抽奖时间表"}</span>
+                <span className="text-[10px] text-[#848E9C]">마감 1분 전 배팅 마감</span>
+              </h3>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-center text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-[#0B0E11] text-[#848E9C] text-[10px] border-b border-[#2B3139]">
+                      <th className="py-2 px-1">회차</th>
+                      <th className="py-2 px-1">참여 가능 시간</th>
+                      <th className="py-2 px-1">AI 당첨 발표</th>
+                      <th className="py-2 px-1">발표 시각</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#2B3139] text-[11px]">
+                    {[
+                      { r: "1회차", time: "11:00 ~ 12:00", label: "AI 당첨발표", draw: "12:30" },
+                      { r: "2회차", time: "14:00 ~ 15:00", label: "AI 당첨발표", draw: "15:30" },
+                      { r: "3회차", time: "17:00 ~ 18:00", label: "AI 당첨발표", draw: "18:30" },
+                    ].map((item, idx) => (
+                      <tr key={idx} className="hover:bg-[#2B3139]/40 transition-colors">
+                        <td className="py-2.5 font-bold text-[#FCD535]">{item.r}</td>
+                        <td className="py-2.5 text-[#EAECEF] font-mono">{item.time}</td>
+                        <td className="py-2.5 text-[#0ECB81] font-semibold">{item.label}</td>
+                        <td className="py-2.5 font-mono text-[#FCD535] font-bold">{item.draw}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              {[
-                { level: 1, price: "$100", urd: "1,500 URD", rem: 10, total: 10, pct: 100 },
-                { level: 2, price: "$500", urd: "8,000 URD", rem: 50, total: 50, pct: 100 },
-                { level: 3, price: "$1,000", urd: "17,000 URD", rem: 100, total: 100, pct: 100 },
-              ].map((m) => (
-                <div key={m.level} className="bg-[#1E2329] rounded-xl p-4 border border-[#2B3139] hover:border-[#FCD535]/50 transition-colors">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-bold text-[#EAECEF]">{m.price} 节点</span>
-                    <span className="text-xs font-bold text-[#FCD535]">赠送 {m.urd}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-[10px] text-[#848E9C] mb-3">
-                    <span>剩余运行: {m.rem} 次</span>
-                    <span>消耗: 10 URD / 回</span>
-                  </div>
-                  <button 
-                    onClick={() => handlePlayGame(m.level === 1 ? 100 : m.level === 2 ? 500 : 1000)}
-                    disabled={isPlayingGame}
-                    className="w-full py-2 bg-[#2B3139] hover:bg-[#FCD535] hover:text-[#0B0E11] text-[#EAECEF] text-xs font-bold rounded transition-all flex items-center justify-center space-x-1 disabled:opacity-50"
-                  >
-                    {isPlayingGame ? (
-                      <RefreshCw size={14} className="animate-spin" />
-                    ) : (
-                      <>
-                        <Play size={12} />
-                        <span>启动游戏 (消耗 10 URD)</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              ))}
             </div>
 
-            {/* Game Result Modal Popup */}
-            {gameResultModal?.show && (
-              <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                <div className="bg-[#1E2329] border border-[#FCD535]/40 rounded-2xl p-6 max-w-xs w-full text-center space-y-4 shadow-[0_0_40px_rgba(252,213,53,0.2)]">
-                  {gameResultModal.type === "USDT_WIN" ? (
-                    <>
-                      <div className="w-16 h-16 mx-auto rounded-full bg-[#0ECB81]/10 text-[#0ECB81] flex items-center justify-center text-3xl">
-                        🎉
-                      </div>
-                      <h3 className="text-lg font-extrabold text-[#EAECEF]">USDT 中奖！</h3>
-                      <p className="text-xs text-[#848E9C]">恭喜！本次游戏获得 102% USDT 奖励返还！</p>
-                      <div className="p-3 bg-[#0B0E11] rounded-xl border border-[#0ECB81]/30">
-                        <span className="text-xs text-[#848E9C]">获得奖励:</span>
-                        <p className="text-xl font-black text-[#0ECB81] mt-0.5">+{gameResultModal.usdtAmount?.toFixed(2)} USDT</p>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="w-16 h-16 mx-auto rounded-full bg-[#FCD535]/10 text-[#FCD535] flex items-center justify-center text-3xl">
-                        🪙
-                      </div>
-                      <h3 className="text-lg font-extrabold text-[#EAECEF]">币种中奖 (120%)</h3>
-                      <p className="text-xs text-[#848E9C]">未中USDT，触发 120% 币种返还 (URC 80% + URD 40%)！</p>
-                      <div className="p-3 bg-[#0B0E11] rounded-xl border border-[#FCD535]/30 space-y-1 text-left">
-                        <div className="flex justify-between text-xs">
-                          <span className="text-[#848E9C]">URC 奖励 (80%):</span>
-                          <span className="font-bold text-[#FCD535]">+{gameResultModal.urcAmount?.toFixed(1)} URC</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span className="text-[#848E9C]">URD 奖励 (40%):</span>
-                          <span className="font-bold text-[#0ECB81]">+{gameResultModal.urdAmount?.toFixed(1)} URD</span>
-                        </div>
-                      </div>
-                    </>
-                  )}
+            {/* Mode Tabs (Manual Betting vs Auto Betting Settings) */}
+            <div className="bg-[#1E2329] border border-[#2B3139] rounded-2xl p-4 space-y-4">
+              <div className="grid grid-cols-2 gap-2 bg-[#0B0E11] p-1 rounded-xl border border-[#2B3139]">
+                <button 
+                  onClick={() => setGameBetMode("manual")}
+                  className={`py-2 text-xs font-bold rounded-lg transition-all ${
+                    gameBetMode === "manual" ? "bg-[#FCD535] text-[#0B0E11]" : "text-[#848E9C] hover:text-[#EAECEF]"
+                  }`}
+                >
+                  🎲 {lang === "ko" ? "수동 배팅 참여" : lang === "en" ? "Manual Bet" : "手动下注"}
+                </button>
+                <button 
+                  onClick={() => setGameBetMode("auto")}
+                  className={`py-2 text-xs font-bold rounded-lg transition-all ${
+                    gameBetMode === "auto" ? "bg-[#FCD535] text-[#0B0E11]" : "text-[#848E9C] hover:text-[#EAECEF]"
+                  }`}
+                >
+                  ⚡ {lang === "ko" ? "자동 배팅 세팅" : lang === "en" ? "Auto Bet Settings" : "自动下注设置"}
+                </button>
+              </div>
+
+              {/* Manual Betting Tab */}
+              {gameBetMode === "manual" ? (
+                <div className="space-y-4 pt-1">
+                  <div className="space-y-2">
+                    <label className="text-xs text-[#848E9C] font-bold">참여 회차 선택</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[1, 2, 3].map((rNum) => (
+                        <button
+                          key={rNum}
+                          onClick={() => setManualRound(rNum)}
+                          className={`py-2.5 rounded-xl text-xs font-extrabold border transition-all ${
+                            manualRound === rNum
+                              ? "bg-[#FCD535]/10 border-[#FCD535] text-[#FCD535]"
+                              : "bg-[#0B0E11] border-[#2B3139] text-[#848E9C]"
+                          }`}
+                        >
+                          {rNum}회차
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-[#848E9C] font-bold">배팅 횟수 선택 (회당 10 URD)</span>
+                      <span className="text-[#FCD535] font-bold">총 소모: {manualBetsCount * 10} URD</span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[1, 2, 5, 10].map((cnt) => (
+                        <button
+                          key={cnt}
+                          onClick={() => setManualBetsCount(cnt)}
+                          className={`py-2 rounded-lg text-xs font-bold border ${
+                            manualBetsCount === cnt
+                              ? "bg-[#FCD535] text-[#0B0E11] border-[#FCD535]"
+                              : "bg-[#0B0E11] border-[#2B3139] text-[#848E9C]"
+                          }`}
+                        >
+                          {cnt}회 ({cnt * 10} URD)
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
                   <button
-                    onClick={() => setGameResultModal(null)}
-                    className="w-full py-3 bg-[#FCD535] text-[#0B0E11] font-bold rounded-xl text-sm"
+                    onClick={handleManualBet}
+                    className="w-full py-3.5 bg-[#FCD535] text-[#0B0E11] font-black rounded-xl text-sm hover:opacity-90 active:scale-95 transition-all shadow-[0_0_20px_rgba(252,213,53,0.2)] flex items-center justify-center space-x-2"
                   >
-                    确认收下
+                    <Play size={16} />
+                    <span>{manualRound}회차 배팅 참여하기 ({manualBetsCount * 10} URD 소모)</span>
                   </button>
                 </div>
+              ) : (
+                /* Auto Betting Tab */
+                <div className="space-y-4 pt-1">
+                  <div className="space-y-2">
+                    <label className="text-xs text-[#848E9C] font-bold">자동 참여 회차 (다중 선택)</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[1, 2, 3].map((rNum) => {
+                        const checked = autoSettings.rounds.includes(rNum);
+                        return (
+                          <button
+                            key={rNum}
+                            onClick={() => toggleAutoRound(rNum)}
+                            className={`py-2.5 rounded-xl text-xs font-bold border transition-all flex items-center justify-center space-x-1 ${
+                              checked
+                                ? "bg-[#0ECB81]/10 border-[#0ECB81] text-[#0ECB81]"
+                                : "bg-[#0B0E11] border-[#2B3139] text-[#848E9C]"
+                            }`}
+                          >
+                            <span>{checked ? "✓" : "○"}</span>
+                            <span>{rNum}회차</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Daily Auto Repeat Checkbox Toggle */}
+                  <div className="bg-[#0B0E11] p-3.5 rounded-xl border border-[#2B3139] flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-[#EAECEF]">매일 반복 자동 참여</p>
+                      <p className="text-[10px] text-[#848E9C] mt-0.5">매일 지정 시각에 자동으로 URD 배팅 참여</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={autoSettings.dailyRepeat}
+                        onChange={(e) => setAutoSettings({ ...autoSettings, dailyRepeat: e.target.checked })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-9 h-5 bg-[#2B3139] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#0ECB81]"></div>
+                    </label>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setAutoSettings((prev) => ({ ...prev, enabled: !prev.enabled }));
+                      alert(
+                        !autoSettings.enabled
+                          ? "⚡ 자동 배팅 세팅이 활성화되었습니다! 매일 지정 회차에 자동으로 실행됩니다."
+                          : "자동 배팅 비활성화 완료"
+                      );
+                    }}
+                    className={`w-full py-3.5 font-black rounded-xl text-sm transition-all flex items-center justify-center space-x-2 ${
+                      autoSettings.enabled
+                        ? "bg-[#0ECB81] text-[#0B0E11]"
+                        : "bg-[#FCD535] text-[#0B0E11]"
+                    }`}
+                  >
+                    <span>{autoSettings.enabled ? "✓ 자동 배팅 구동 중 (클릭 시 중지)" : "⚡ 자동 배팅 세팅 저장 및 시작"}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* My Betting History List */}
+            <div className="space-y-2.5">
+              <h3 className="text-xs font-extrabold text-[#848E9C] uppercase px-1">내 최근 참여 내역</h3>
+              <div className="space-y-2">
+                {myBets.map((b) => (
+                  <div key={b.id} className="bg-[#1E2329] border border-[#2B3139] rounded-xl p-3 flex justify-between items-center">
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs font-bold text-[#FCD535]">{b.round}회차 참여</span>
+                        <span className="text-[10px] text-[#848E9C]">({b.betAt})</span>
+                      </div>
+                      <p className="text-[10px] text-[#848E9C] mt-0.5">{b.betsCount}회 배팅 • {b.urdSpent} URD 소모</p>
+                    </div>
+                    <span className="text-[10px] font-bold text-[#FCD535] bg-[#FCD535]/10 px-2 py-1 rounded">
+                      ● 대기 중 ({b.round === 1 ? "12:30" : b.round === 2 ? "15:30" : "18:30"} 발표)
+                    </span>
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
+
           </div>
         )}
 
         {/* ═══════════════ NETWORK ═══════════════ */}
         {activeTab === "network" && (
-          <div className="p-5 space-y-4">
-            <h1 className="text-xl font-black text-[#EAECEF]">团队</h1>
-            
-            <div className="flex bg-[#1E2329] p-1 rounded-lg">
-              <button onClick={() => setNetworkTab("referral")} className={`flex-1 py-2 text-xs font-bold rounded ${networkTab === "referral" ? "bg-[#2B3139] text-[#EAECEF]" : "text-[#848E9C]"}`}>直推</button>
-              <button onClick={() => setNetworkTab("sponsor")} className={`flex-1 py-2 text-xs font-bold rounded ${networkTab === "sponsor" ? "bg-[#2B3139] text-[#EAECEF]" : "text-[#848E9C]"}`}>架构</button>
+          <div className="p-5 space-y-5">
+            <div className="flex justify-between items-center">
+              <h1 className="text-xl font-black text-[#EAECEF]">
+                {lang === "ko" ? "조직도 (팀 계보)" : lang === "en" ? "Network Tree" : "团队架构"}
+              </h1>
+              <span className="text-[10px] text-[#848E9C]">
+                {networkTab === "referral" ? "직추천 조직" : "후원 계보 조직"}
+              </span>
             </div>
 
-            <div className="bg-[#1E2329] rounded-xl divide-y divide-[#2B3139]">
-              {(networkTab === "referral" ? directTree : sponsorTree).map((m: any) => (
-                <div key={m.id} className="p-4 flex justify-between items-center">
-                  <div>
-                    <p className="text-sm font-bold text-[#EAECEF]">{m.nickname}</p>
-                    <p className="text-[10px] text-[#848E9C] mt-1">{networkTab === "referral" ? `直推第${m.referralSeq}人` : `架构第${m.tier}代`}</p>
-                  </div>
-                  <span className={`text-[10px] ${m.status === "ACTIVE" ? "text-[#0ECB81]" : "text-[#848E9C]"}`}>{m.status === "ACTIVE" ? "活跃" : "未激活"}</span>
-                </div>
-              ))}
+            {/* Tree Type Tabs: Direct Tree vs Sponsor Tree */}
+            <div className="flex bg-[#1E2329] p-1 rounded-xl border border-[#2B3139]">
+              <button 
+                onClick={() => setNetworkTab("referral")} 
+                className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${
+                  networkTab === "referral" ? "bg-[#FCD535] text-[#0B0E11]" : "text-[#848E9C] hover:text-[#EAECEF]"
+                }`}
+              >
+                {t.directRef}
+              </button>
+              <button 
+                onClick={() => setNetworkTab("sponsor")} 
+                className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${
+                  networkTab === "sponsor" ? "bg-[#FCD535] text-[#0B0E11]" : "text-[#848E9C] hover:text-[#EAECEF]"
+                }`}
+              >
+                {t.sponsorArch}
+              </button>
             </div>
+
+            {/* Interactive Pannable/Zoomable Tree Viewer Container */}
+            <div className="bg-[#1E2329] border border-[#2B3139] rounded-2xl p-4 space-y-3 shadow-inner">
+              <div className="flex justify-between items-center text-[10px] text-[#848E9C]">
+                <span>🔍 {lang === "ko" ? "터치 드래그로 하위 레그 탐색 가능" : "Drag / Scroll to explore legs"}</span>
+                <span className="text-[#0ECB81] font-bold">● 활성(상품보유) / ○ 미활성</span>
+              </div>
+
+              {/* Scrollable Tree Canvas */}
+              <div className="w-full overflow-x-auto overflow-y-auto py-4 bg-[#0B0E11] rounded-xl border border-[#2B3139]/50 min-h-[320px] flex justify-center items-start scrollbar-thin">
+                <div className="min-w-[420px] px-4 py-2 flex flex-col items-center space-y-6">
+                  
+                  {/* Root Node: Me (User) */}
+                  <div className="relative flex flex-col items-center">
+                    <div className="bg-[#FCD535] text-[#0B0E11] border-2 border-[#FCD535] rounded-2xl px-5 py-2.5 shadow-[0_0_20px_rgba(252,213,53,0.3)] text-center">
+                      <div className="flex items-center justify-center space-x-1">
+                        <span className="text-xs font-black">👑 User (Me / 나)</span>
+                        <StarBadge level={2} />
+                      </div>
+                      <p className="text-[10px] font-bold opacity-80 mt-0.5">본인 계정 • 활성 (V2)</p>
+                    </div>
+                    {/* Down Branch Line */}
+                    <div className="w-0.5 h-6 bg-[#FCD535]/60" />
+                  </div>
+
+                  {/* Level 1 Horizontal Branch Bar */}
+                  <div className="relative w-full flex justify-center">
+                    <div className="absolute top-0 w-3/4 h-0.5 bg-[#2B3139]" />
+                    
+                    <div className="w-full flex justify-between pt-4">
+                      {/* Left Leg: User A */}
+                      <div className="flex flex-col items-center w-1/2">
+                        <div className="w-0.5 h-4 bg-[#2B3139] -mt-4 mb-1" />
+                        <div className="bg-[#1E2329] border border-[#0ECB81] rounded-xl p-2.5 text-center min-w-[130px] shadow-md">
+                          <p className="text-xs font-bold text-[#EAECEF]">User A (김대표)</p>
+                          <div className="flex items-center justify-center space-x-1 mt-1">
+                            <span className="text-[9px] font-bold text-[#0ECB81] bg-[#0ECB81]/10 px-1.5 py-0.5 rounded">● 활성</span>
+                            <span className="text-[9px] text-[#848E9C]">$500 노드</span>
+                          </div>
+                        </div>
+
+                        {/* Level 2 Sub-Legs */}
+                        <div className="w-0.5 h-5 bg-[#2B3139] my-1" />
+                        <div className="flex space-x-2">
+                          <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[90px]">
+                            <p className="text-[10px] font-bold text-[#EAECEF]">User C</p>
+                            <span className="text-[8px] text-[#0ECB81]">● 활성 ($100)</span>
+                          </div>
+                          <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[90px]">
+                            <p className="text-[10px] font-bold text-[#EAECEF]">User D</p>
+                            <span className="text-[8px] text-[#0ECB81]">● 활성 ($1,000)</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right Leg: User B */}
+                      <div className="flex flex-col items-center w-1/2">
+                        <div className="w-0.5 h-4 bg-[#2B3139] -mt-4 mb-1" />
+                        <div className="bg-[#1E2329] border border-[#F6465D]/60 rounded-xl p-2.5 text-center min-w-[130px] shadow-md">
+                          <p className="text-xs font-bold text-[#EAECEF]">User B (이회장)</p>
+                          <div className="flex items-center justify-center space-x-1 mt-1">
+                            <span className="text-[9px] font-bold text-[#F6465D] bg-[#F6465D]/10 px-1.5 py-0.5 rounded">○ 미활성</span>
+                            <span className="text-[9px] text-[#848E9C]">미구매</span>
+                          </div>
+                        </div>
+
+                        {/* Level 2 Sub-Leg */}
+                        <div className="w-0.5 h-5 bg-[#2B3139] my-1" />
+                        <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[100px]">
+                          <p className="text-[10px] font-bold text-[#EAECEF]">User E</p>
+                          <span className="text-[8px] text-[#848E9C]">○ 미활성</span>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            {/* Floating Unpurchased Recommended Members Cards (하단 미구매 추천 회원 카운트 및 X버튼 닫기) */}
+            {unpaidMembers.length > 0 && (
+              <div className="space-y-2.5 pt-2">
+                <div className="flex justify-between items-center px-1">
+                  <h3 className="text-xs font-extrabold text-[#F6465D] flex items-center space-x-1.5">
+                    <span>⚠️ {lang === "ko" ? "상품 미구매 추천 회원" : "Unpurchased Referral Members"}</span>
+                    <span className="bg-[#F6465D]/10 border border-[#F6465D]/30 text-[#F6465D] text-[10px] px-2 py-0.5 rounded-full font-bold">
+                      {unpaidMembers.length}명
+                    </span>
+                  </h3>
+                  <span className="text-[10px] text-[#848E9C]">X버튼 클릭 시 숨김</span>
+                </div>
+
+                <div className="space-y-2">
+                  {unpaidMembers.map((m) => (
+                    <div key={m.id} className="bg-[#1E2329] border border-[#F6465D]/40 rounded-xl p-3.5 flex justify-between items-center relative shadow-md">
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs font-bold text-[#EAECEF]">{m.nickname}</span>
+                          <span className="text-[9px] font-extrabold text-[#F6465D] bg-[#F6465D]/10 px-1.5 py-0.5 rounded">
+                            미구매 회원
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-[#848E9C] mt-1 font-mono">{m.email} • 가입일: {m.joinedAt}</p>
+                        <p className="text-[10px] text-[#FCD535] mt-0.5">※ 상품을 구매하면 추천 수당이 소급 지급됩니다.</p>
+                      </div>
+
+                      <button 
+                        onClick={() => handleDismissUnpaidMember(m.id)}
+                        className="p-1.5 text-[#848E9C] hover:text-[#EAECEF] hover:bg-[#2B3139] rounded transition-colors ml-2 flex-shrink-0"
+                        title="닫기"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
           </div>
         )}
 
@@ -711,11 +1363,12 @@ export default function MobileApp() {
       <nav className="fixed bottom-0 w-full max-w-md bg-[#0B0E11] border-t border-[#2B3139] pb-safe z-50">
         <div className="flex justify-around items-center py-2 px-1">
           {[
-            { id: "home", label: t.home, icon: <Home size={20} /> },
-            { id: "wallet", label: t.wallet, icon: <Wallet size={20} /> },
-            { id: "game", label: t.game, icon: <Gamepad2 size={20} /> },
-            { id: "network", label: t.network, icon: <Users size={20} /> },
-            { id: "settings", label: t.settings, icon: <Settings size={20} /> },
+            { id: "home", label: t.home, icon: <Home size={18} /> },
+            { id: "wallet", label: t.wallet, icon: <Wallet size={18} /> },
+            { id: "products", label: t.products, icon: <ShoppingBag size={18} /> },
+            { id: "game", label: t.game, icon: <Gamepad2 size={18} /> },
+            { id: "network", label: t.network, icon: <Users size={18} /> },
+            { id: "settings", label: t.settings, icon: <Settings size={18} /> },
           ].map((tab) => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id as TabType)}
               className={`flex flex-col items-center space-y-0.5 p-1 transition-colors ${activeTab === tab.id ? "text-[#FCD535]" : "text-[#848E9C] hover:text-[#EAECEF]"}`}>
