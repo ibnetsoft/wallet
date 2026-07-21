@@ -1251,7 +1251,7 @@ export default function MobileApp() {
 
         {/* ═══════════════ NETWORK ═══════════════ */}
         {activeTab === "network" && (
-          <div className="p-4 flex flex-col justify-between min-h-[calc(100vh-140px)]">
+          <div className="p-5 flex flex-col justify-between min-h-[calc(100vh-140px)]">
             <div className="space-y-4 flex-1 flex flex-col">
               {/* Tree Type Tabs: Direct Tree vs Sponsor Tree */}
               <div className="flex bg-[#1E2329] p-1 rounded-xl">
