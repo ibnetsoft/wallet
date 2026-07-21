@@ -121,6 +121,15 @@ export default function MobileApp() {
   const [withdrawAddress, setWithdrawAddress] = useState("");
   const [loadingNetwork, setLoadingNetwork] = useState(false);
   
+  const [userDepositAddress] = useState("0x3a9B8f5C01A29D478b1E4109C2d4317e1D4A8912");
+  const [addressCopied, setAddressCopied] = useState(false);
+
+  const copyDepositAddress = () => {
+    navigator.clipboard.writeText(userDepositAddress);
+    setAddressCopied(true);
+    setTimeout(() => setAddressCopied(false), 2000);
+  };
+
   // Game Play Modal Result State
   const [gameResultModal, setGameResultModal] = useState<{
     show: boolean;
@@ -456,13 +465,46 @@ export default function MobileApp() {
               </div>
             </div>
             
-            <div className="bg-[#1E2329] rounded-xl p-4 text-center">
-              <h3 className="text-xs font-bold text-[#EAECEF] mb-3 text-left">充值 USDT (BSC)</h3>
-              <div className="w-32 h-32 bg-white rounded-lg mx-auto mb-3 flex items-center justify-center p-2">
-                {/* Mock QR */}
-                <div className="w-full h-full bg-black"></div>
+            {/* Deposit Card */}
+            <div className="bg-[#1E2329] rounded-xl p-5 border border-[#2B3139] space-y-4">
+              <div className="flex items-center space-x-2 text-[#FCD535]">
+                <Wallet size={16} />
+                <h3 className="text-xs font-bold text-[#EAECEF]">{t.depositUsdt}</h3>
               </div>
-              <p className="text-xs text-[#848E9C]">0xA3f2...d891</p>
+
+              {/* Dynamic QR Code Image */}
+              <div className="w-40 h-40 bg-white rounded-xl mx-auto p-2.5 flex items-center justify-center shadow-lg">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${userDepositAddress}`}
+                  alt="USDT BSC Deposit QR Code"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+
+              {/* Deposit Address Display */}
+              <div className="space-y-2">
+                <p className="text-[10px] text-[#848E9C] text-center">
+                  {lang === "ko" ? "개인 전용 BSC (BEP-20) 입금 주소" : 
+                   lang === "en" ? "Personal BSC (BEP-20) Deposit Address" : 
+                   "个人专属 BSC (BEP-20) 充值地址"}
+                </p>
+
+                <div className="bg-[#0B0E11] p-3 rounded-lg border border-[#2B3139] flex justify-between items-center space-x-2">
+                  <span className="text-[11px] font-mono text-[#EAECEF] break-all select-all">
+                    {userDepositAddress}
+                  </span>
+                  <button 
+                    onClick={copyDepositAddress} 
+                    className="p-2 bg-[#2B3139] hover:bg-[#FCD535] hover:text-[#0B0E11] rounded text-[#848E9C] transition-colors flex-shrink-0 flex items-center space-x-1"
+                  >
+                    {addressCopied ? <Check size={14} className="text-[#0ECB81]" /> : <Copy size={14} />}
+                    <span className="text-[10px] font-bold">
+                      {addressCopied ? (lang === "ko" ? "복사됨!" : lang === "en" ? "Copied!" : "已复制!") : (lang === "ko" ? "복사" : lang === "en" ? "Copy" : "复制")}
+                    </span>
+                  </button>
+                </div>
+              </div>
             </div>
 
           </div>
