@@ -75,19 +75,19 @@ export default function RootLayout({
             <div className="p-2.5 bg-[#1C1C21] rounded-lg border border-[#26262B]">
               <div className="flex items-center space-x-2 text-[11px] text-[#8E8E93] mb-1">
                 <Wallet size={12} color="#00D2FF" />
-                <span className="font-medium text-[#F2F2F7]">마스터 콜드 지갑</span>
+                <span className="font-medium text-[#F2F2F7]">오프라인 콜드 금고</span>
               </div>
-              <p className="text-xs font-bold text-white">1,452,000 USDT</p>
-              <p className="text-[10px] text-[#8E8E93] mt-0.5">120.45 BNB</p>
+              <p className="text-xs font-mono font-bold text-white">10,500.00 USDT</p>
+              <p className="text-[10px] text-[#8E8E93] mt-0.5">유저 예치금 통합 보관</p>
             </div>
             {/* Hot Wallet */}
             <div className="p-2.5 bg-[#1C1C21] rounded-lg border border-[#26262B]">
               <div className="flex items-center space-x-2 text-[11px] text-[#8E8E93] mb-1">
                 <ShieldAlert size={12} color="#FF9F0A" />
-                <span className="font-medium text-[#F2F2F7]">자동 출금 핫 지갑</span>
+                <span className="font-medium text-[#F2F2F7]">출금용 핫 지갑 (BSC)</span>
               </div>
-              <p className="text-xs font-bold text-white">25,480 USDT</p>
-              <p className="text-[10px] text-[#FF9F0A] mt-0.5">안전 유지 레벨: 14.50 BNB</p>
+              <p className="text-xs font-mono font-bold text-[#30D5C8]">1,000.00 USDT</p>
+              <p className="text-[10px] text-[#FF9F0A] mt-0.5 font-mono">가스비 잔액: 0.15 BNB</p>
             </div>
           </div>
         </aside>

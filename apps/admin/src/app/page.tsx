@@ -171,9 +171,9 @@ export default function DashboardPage() {
         {/* Stat 1: Total Deposit */}
         <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 flex items-center justify-between shadow-lg">
           <div className="space-y-2">
-            <p className="text-xs font-semibold text-[#8E8E93] uppercase tracking-wider">금일 총 입금액</p>
-            <h3 className="text-2xl font-extrabold text-white">48,250.00 USDT</h3>
-            <p className="text-[11px] text-[#30D5C8] font-medium">전일 대비 +18.5%</p>
+            <p className="text-xs font-semibold text-[#8E8E93] uppercase tracking-wider">전체 회원 예치 총액</p>
+            <h3 className="text-2xl font-extrabold text-white font-mono">10,500.00 USDT</h3>
+            <p className="text-[11px] text-[#30D5C8] font-medium">유저 예치금 실시간 합계</p>
           </div>
           <div className="w-12 h-12 bg-[#30D5C8]/10 rounded-xl flex items-center justify-center text-[#30D5C8]">
             <ArrowDownLeft size={24} />
@@ -183,11 +183,11 @@ export default function DashboardPage() {
         {/* Stat 2: Total Withdrawal */}
         <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 flex items-center justify-between shadow-lg">
           <div className="space-y-2">
-            <p className="text-xs font-semibold text-[#8E8E93] uppercase tracking-wider">금일 총 출금액</p>
-            <h3 className="text-2xl font-extrabold text-white">16,215.50 USDT</h3>
-            <p className="text-[11px] text-[#FF453A] font-medium">전일 대비 -1.2%</p>
+            <p className="text-xs font-semibold text-[#8E8E93] uppercase tracking-wider">출금 대기 요청 수량</p>
+            <h3 className="text-2xl font-extrabold text-[#FF9F0A] font-mono">30.00 USDT</h3>
+            <p className="text-[11px] text-[#FF9F0A] font-medium">1건 승인 대기 중</p>
           </div>
-          <div className="w-12 h-12 bg-[#FF453A]/10 rounded-xl flex items-center justify-center text-[#FF453A]">
+          <div className="w-12 h-12 bg-[#FF9F0A]/10 rounded-xl flex items-center justify-center text-[#FF9F0A]">
             <ArrowUpRight size={24} />
           </div>
         </div>
@@ -195,9 +195,9 @@ export default function DashboardPage() {
         {/* Stat 3: Active Users */}
         <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 flex items-center justify-between shadow-lg">
           <div className="space-y-2">
-            <p className="text-xs font-semibold text-[#8E8E93] uppercase tracking-wider">활성 회원 수 (결제 완료)</p>
-            <h3 className="text-2xl font-extrabold text-white">842 명</h3>
-            <p className="text-[11px] text-[#8E8E93]">128명 대기 중 (미결제)</p>
+            <p className="text-xs font-semibold text-[#8E8E93] uppercase tracking-wider">가입 회원 / 결제 회원</p>
+            <h3 className="text-2xl font-extrabold text-white">3 명</h3>
+            <p className="text-[11px] text-[#8E8E93]">1명 활성 (2명 미구매)</p>
           </div>
           <div className="w-12 h-12 bg-[#00D2FF]/10 rounded-xl flex items-center justify-center text-[#00D2FF]">
             <Users size={24} />
@@ -207,9 +207,9 @@ export default function DashboardPage() {
         {/* Stat 4: platform earnings */}
         <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 flex items-center justify-between shadow-lg">
           <div className="space-y-2">
-            <p className="text-xs font-semibold text-[#8E8E93] uppercase tracking-wider">누적 플랫폼 수수료 수익</p>
-            <h3 className="text-2xl font-extrabold text-white">2,482.90 USD</h3>
-            <p className="text-[11px] text-[#BF5AF2] font-medium">USDT-URC 스왑 수수료: 0.1%</p>
+            <p className="text-xs font-semibold text-[#8E8E93] uppercase tracking-wider">누적 출금 수수료 수익</p>
+            <h3 className="text-2xl font-extrabold text-white font-mono">0.90 USDT</h3>
+            <p className="text-[11px] text-[#BF5AF2] font-medium">출금 수수료율 3% 설정</p>
           </div>
           <div className="w-12 h-12 bg-[#BF5AF2]/10 rounded-xl flex items-center justify-center text-[#BF5AF2]">
             <Percent size={24} />
