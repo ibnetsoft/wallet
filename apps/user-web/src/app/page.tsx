@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import {
   Home, Wallet, Gamepad2, Users, Settings, ArrowDownLeft, ArrowUpRight,
   RefreshCw, Copy, Check, Play, TrendingUp, Bell, ArrowRightLeft, Star,
-  Zap, BarChart3, Info, LogOut, ShoppingBag, FileText
+  Zap, BarChart3, Info, LogOut, ShoppingBag, FileText, ClipboardPaste
 } from "lucide-react";
 
 type TabType = "home" | "wallet" | "products" | "game" | "network" | "settings";
@@ -393,14 +393,16 @@ export default function MobileApp() {
   ]);
   const [userEmail, setUserEmail] = useState("user@urc369.com");
   const [countdown, setCountdown] = useState("");
-  const [urdBalance, setUrdBalance] = useState(1500);
-  const [usdtBalance, setUsdtBalance] = useState(100.00);
-  const [urcBalance, setUrcBalance] = useState(250.00);
+  const [urdBalance, setUrdBalance] = useState(3000);
+  const [usdtBalance, setUsdtBalance] = useState(10500.00);
+  const [urcBalance, setUrcBalance] = useState(4980.00);
   const [fromAmount, setFromAmount] = useState("");
   const [toAmount, setToAmount] = useState("");
   const [isUsdtToUrc, setIsUsdtToUrc] = useState(true);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawAddress, setWithdrawAddress] = useState("");
+  const [withdrawToken, setWithdrawToken] = useState<"USDT" | "URC">("USDT");
+  const [depositToken, setDepositToken] = useState<"USDT" | "URC">("USDT");
   const [loadingNetwork, setLoadingNetwork] = useState(false);
   
   const [userDepositAddress] = useState("0x3a9B8f5C01A29D478b1E4109C2d4317e1D4A8912");
@@ -535,8 +537,9 @@ export default function MobileApp() {
     setToAmount("");
   };
 
-  const withdrawFee = Number(withdrawAmount) ? Number(withdrawAmount) * 0.05 : 0;
-  const withdrawFinal = Number(withdrawAmount) ? Number(withdrawAmount) * 0.95 : 0;
+  const withdrawFee = Number(withdrawAmount) ? Number(withdrawAmount) * 0.03 : 0;
+  const withdrawFinal = Number(withdrawAmount) ? Number(withdrawAmount) * 0.97 : 0;
+  const totalAssetValuation = usdtBalance + urcBalance + urdBalance / 15;
 
   const fetchNetworkData = async () => {
     setLoadingNetwork(true);
@@ -620,9 +623,13 @@ export default function MobileApp() {
             </div>
 
             {/* Balance Card */}
-            <div className="rounded-xl p-5 bg-[#1E2329]">
-              <p className="text-xs text-[#848E9C] font-medium">总资产估值</p>
-              <h2 className="text-3xl font-black text-[#EAECEF] mt-1 tracking-tight">$15,480<span className="text-xl text-[#848E9C]">.00</span></h2>
+            <div className="rounded-xl p-5 bg-[#1E2329] border border-[#2B3139]">
+              <p className="text-xs text-[#848E9C] font-medium">
+                {lang === "ko" ? "총 자산 평가액" : lang === "en" ? "Total Valuation" : "总资产估值"}
+              </p>
+              <h2 className="text-3xl font-black text-[#EAECEF] mt-1 tracking-tight font-mono">
+                ${totalAssetValuation.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </h2>
               <div className="flex items-center space-x-1.5 text-[#0ECB81] text-xs font-bold mt-1.5">
                 <TrendingUp size={12} />
                 <span>+12.4% (24h)</span>
@@ -630,11 +637,15 @@ export default function MobileApp() {
               <div className="grid grid-cols-2 gap-4 mt-5 pt-4 border-t border-[#2B3139]">
                 <div>
                   <p className="text-[10px] text-[#848E9C]">USDT</p>
-                  <p className="text-sm font-bold text-[#EAECEF] mt-0.5">10,500.00</p>
+                  <p className="text-sm font-bold font-mono text-[#EAECEF] mt-0.5">
+                    {usdtBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
                 </div>
                 <div>
                   <p className="text-[10px] text-[#848E9C]">URC</p>
-                  <p className="text-sm font-bold text-[#EAECEF] mt-0.5">4,980.00</p>
+                  <p className="text-sm font-bold font-mono text-[#EAECEF] mt-0.5">
+                    {urcBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
                 </div>
               </div>
             </div>
@@ -791,20 +802,16 @@ export default function MobileApp() {
         {/* ═══════════════ WALLET ═══════════════ */}
         {activeTab === "wallet" && (
           <div className="p-5 space-y-5">
-            {/* Main USDT Overview Card (Attached Image 2 Style) */}
+            {/* Main Asset Overview Card */}
             <div className="bg-[#1E2329] border border-[#2B3139] rounded-2xl p-5 space-y-5 shadow-lg">
               <div className="flex justify-between items-start">
                 <div>
-                  <h2 className="text-3xl font-black text-[#EAECEF] tracking-tight">
-                    ${usdtBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    <span className="text-sm font-bold text-[#848E9C] ml-1.5">USDT</span>
+                  <p className="text-xs text-[#848E9C] font-bold">
+                    {lang === "ko" ? "총 자산 평가액" : lang === "en" ? "Total Asset Valuation" : "总资产估值"}
+                  </p>
+                  <h2 className="text-3xl font-black text-[#EAECEF] tracking-tight font-mono mt-1">
+                    ${totalAssetValuation.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </h2>
-                </div>
-                {/* Green Status Progress Gauge Bar (Top Right) */}
-                <div className="w-28 pt-2">
-                  <div className="w-full bg-[#0B0E11] rounded-full h-1.5 border border-[#2B3139] overflow-hidden">
-                    <div className="bg-[#0ECB81] h-full rounded-full w-4/5" />
-                  </div>
                 </div>
               </div>
 
@@ -891,7 +898,6 @@ export default function MobileApp() {
                     <p className="text-[10px] font-bold text-[#848E9C] mt-0.5">0.00%</p>
                   </div>
                 </div>
-
                 {/* Token 2: URC */}
                 <div className="bg-[#1E2329] border border-[#2B3139] hover:border-[#FCD535]/60 rounded-2xl p-4 flex justify-between items-center transition-all">
                   <div className="flex items-center space-x-3">
@@ -948,8 +954,8 @@ export default function MobileApp() {
 
         {/* Deposit Modal Popup */}
         {showDepositModal && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-[#1E2329] border border-[#FCD535]/40 rounded-2xl p-6 max-w-xs w-full text-center space-y-4 shadow-[0_0_40px_rgba(252,213,53,0.2)] relative">
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-[#1E2329] border border-[#2B3139] rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-2xl relative">
               <button 
                 onClick={() => setShowDepositModal(false)}
                 className="absolute top-3 right-3 text-[#848E9C] hover:text-[#EAECEF] text-sm font-bold p-1 hover:bg-[#2B3139] rounded"
@@ -959,7 +965,31 @@ export default function MobileApp() {
               
               <div className="flex items-center justify-center space-x-2 text-[#FCD535]">
                 <Wallet size={20} />
-                <h3 className="text-sm font-bold text-[#EAECEF]">{t.depositUsdt}</h3>
+                <h3 className="text-sm font-bold text-[#EAECEF]">
+                  {depositToken} {lang === "ko" ? "입금 (BSC)" : lang === "en" ? "Deposit (BSC)" : "充值 (BSC)"}
+                </h3>
+              </div>
+
+              {/* Deposit Token Selector (USDT & URC) */}
+              <div className="grid grid-cols-2 gap-2 bg-[#0B0E11] p-1 rounded-xl border border-[#2B3139]">
+                <button
+                  type="button"
+                  onClick={() => setDepositToken("USDT")}
+                  className={`py-2 text-xs font-bold rounded-lg transition-all ${
+                    depositToken === "USDT" ? "bg-[#26A17B] text-white" : "text-[#848E9C] hover:text-[#EAECEF]"
+                  }`}
+                >
+                  USDT (Tether)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDepositToken("URC")}
+                  className={`py-2 text-xs font-bold rounded-lg transition-all ${
+                    depositToken === "URC" ? "bg-[#FCD535] text-[#0B0E11]" : "text-[#848E9C] hover:text-[#EAECEF]"
+                  }`}
+                >
+                  URC (Token)
+                </button>
               </div>
 
               {/* Dynamic QR Code Image */}
@@ -967,7 +997,7 @@ export default function MobileApp() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${userDepositAddress}`}
-                  alt="USDT BSC Deposit QR Code"
+                  alt={`${depositToken} BSC Deposit QR Code`}
                   className="w-full h-full object-contain"
                 />
               </div>
@@ -975,9 +1005,7 @@ export default function MobileApp() {
               {/* Deposit Address Display */}
               <div className="space-y-2">
                 <p className="text-[10px] text-[#848E9C] text-center">
-                  {lang === "ko" ? "개인 전용 BSC (BEP-20) 입금 주소" : 
-                   lang === "en" ? "Personal BSC (BEP-20) Deposit Address" : 
-                   "个人专属 BSC (BEP-20) 充值地址"}
+                  개인 전용 BSC (BEP-20) {depositToken} 입금 주소
                 </p>
 
                 <div className="bg-[#0B0E11] p-3 rounded-lg border border-[#2B3139] flex justify-between items-center space-x-2">
@@ -1019,60 +1047,109 @@ export default function MobileApp() {
 
               <div className="flex items-center space-x-2 text-[#F6465D] border-b border-[#2B3139] pb-3">
                 <ArrowUpRight size={18} />
-                <h3 className="text-sm font-extrabold text-[#EAECEF]">{t.withdrawUsdt}</h3>
+                <h3 className="text-sm font-extrabold text-[#EAECEF]">
+                  {withdrawToken} {lang === "ko" ? "출금 (BSC)" : lang === "en" ? "Withdrawal (BSC)" : "提现 (BSC)"}
+                </h3>
               </div>
 
               <div className="space-y-3">
+                {/* Select Coin to Withdraw (USDT & URC only, URD excluded) */}
                 <div>
-                  <label className="text-xs text-[#848E9C] font-bold">BSC (BEP-20) {lang === "ko" ? "출금 주소" : lang === "en" ? "Withdrawal Address" : "提现地址"}</label>
-                  <input
-                    type="text"
-                    value={withdrawAddress}
-                    onChange={(e) => setWithdrawAddress(e.target.value)}
-                    placeholder="0x로 시작하는 BSC 지갑 주소 입력"
-                    className="w-full mt-1 bg-[#0B0E11] border border-[#2B3139] rounded-xl px-3 py-2.5 text-xs text-[#EAECEF] focus:outline-none focus:border-[#FCD535] font-mono"
-                  />
+                  <label className="text-xs text-[#848E9C] font-bold">
+                    {lang === "ko" ? "출금 자산 선택" : lang === "en" ? "Select Asset" : "选择提现资产"}
+                  </label>
+                  <select
+                    value={withdrawToken}
+                    onChange={(e) => setWithdrawToken(e.target.value as "USDT" | "URC")}
+                    className="w-full mt-1 bg-[#0B0E11] border border-[#2B3139] rounded-xl px-3 py-2.5 text-xs text-[#FCD535] font-bold focus:outline-none focus:border-[#FCD535]"
+                  >
+                    <option value="USDT">USDT (Tether) - BSC BEP20</option>
+                    <option value="URC">URC (Utility Token) - BSC BEP20</option>
+                  </select>
+                  <p className="text-[10px] text-[#848E9C] mt-1">※ URD 토큰은 출금이 불가능한 게임 전용 토큰입니다.</p>
+                </div>
+
+                {/* BSC Withdrawal Address with Square Paste Icon Button */}
+                <div>
+                  <label className="text-xs text-[#848E9C] font-bold">
+                    BSC (BEP-20) {lang === "ko" ? "출금 주소" : lang === "en" ? "Withdrawal Address" : "提现地址"}
+                  </label>
+                  <div className="flex space-x-2 mt-1">
+                    <input
+                      type="text"
+                      value={withdrawAddress}
+                      onChange={(e) => setWithdrawAddress(e.target.value)}
+                      placeholder="0x로 시작하는 BSC 지갑 주소 입력"
+                      className="w-full bg-[#0B0E11] border border-[#2B3139] rounded-xl px-3 py-2.5 text-xs text-[#EAECEF] focus:outline-none focus:border-[#FCD535] font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const text = await navigator.clipboard.readText();
+                          if (text) setWithdrawAddress(text);
+                        } catch (e) {
+                          alert("클립보드 주소를 읽어올 수 없습니다.");
+                        }
+                      }}
+                      className="p-2.5 bg-[#2B3139] hover:bg-[#FCD535] hover:text-[#0B0E11] text-[#FCD535] rounded-xl border border-[#2B3139] transition-all flex items-center justify-center flex-shrink-0"
+                      title="클립보드 주소 붙여넣기"
+                    >
+                      <ClipboardPaste size={16} />
+                    </button>
+                  </div>
                 </div>
 
                 <div>
                   <div className="flex justify-between items-center text-xs">
-                    <label className="text-[#848E9C] font-bold">{lang === "ko" ? "출금 금액 (USDT)" : lang === "en" ? "Amount (USDT)" : "提现金额 (USDT)"}</label>
-                    <span className="text-[#848E9C] text-[10px]">{lang === "ko" ? "보유" : lang === "en" ? "Bal" : "余额"}: ${usdtBalance.toFixed(2)}</span>
+                    <label className="text-[#848E9C] font-bold">
+                      {lang === "ko" ? `출금 금액 (${withdrawToken})` : `Amount (${withdrawToken})`}
+                    </label>
+                    <span className="text-[#848E9C] text-[10px]">
+                      {lang === "ko" ? "보유" : "Bal"}: {withdrawToken === "USDT" ? `${usdtBalance.toFixed(2)} USDT` : `${urcBalance.toFixed(2)} URC`}
+                    </span>
                   </div>
                   <input
                     type="number"
                     value={withdrawAmount}
                     onChange={(e) => setWithdrawAmount(e.target.value)}
-                    placeholder="최소 10 USDT"
+                    placeholder={`최소 30 ${withdrawToken}`}
                     className="w-full mt-1 bg-[#0B0E11] border border-[#2B3139] rounded-xl px-3 py-2.5 text-xs text-[#EAECEF] focus:outline-none focus:border-[#FCD535] font-mono"
                   />
                 </div>
 
                 <div className="bg-[#0B0E11] rounded-xl p-3 border border-[#2B3139] space-y-1 text-xs">
                   <div className="flex justify-between text-[#848E9C]">
-                    <span>{lang === "ko" ? "출금 수수료 (5%)" : lang === "en" ? "Fee (5%)" : "手续费 (5%)"}</span>
-                    <span>${withdrawFee.toFixed(2)} USDT</span>
+                    <span>{lang === "ko" ? "출금 수수료 (3%)" : lang === "en" ? "Fee (3%)" : "手续费 (3%)"}</span>
+                    <span>{withdrawFee.toFixed(2)} {withdrawToken}</span>
                   </div>
                   <div className="flex justify-between font-bold text-[#EAECEF] pt-1 border-t border-[#2B3139]">
                     <span>{lang === "ko" ? "실제 수령 금액" : lang === "en" ? "You Receive" : "实际到账"}</span>
-                    <span className="text-[#0ECB81]">${withdrawFinal.toFixed(2)} USDT</span>
+                    <span className="text-[#0ECB81]">{withdrawFinal.toFixed(2)} {withdrawToken}</span>
                   </div>
                 </div>
 
                 <button
                   onClick={() => {
-                    if (!withdrawAmount || Number(withdrawAmount) < 10) {
-                      alert(lang === "ko" ? "최소 출금 금액은 10 USDT입니다." : "Minimum withdrawal is 10 USDT.");
+                    const currentBal = withdrawToken === "USDT" ? usdtBalance : urcBalance;
+                    if (!withdrawAmount || Number(withdrawAmount) < 30) {
+                      alert(`최소 출금 금액은 30 ${withdrawToken}입니다.`);
                       return;
                     }
-                    if (Number(withdrawAmount) > usdtBalance) {
-                      alert(lang === "ko" ? "USDT 잔액이 부족합니다." : "Insufficient USDT balance.");
+                    if (Number(withdrawAmount) > currentBal) {
+                      alert(`${withdrawToken} 잔액이 부족합니다.`);
                       return;
                     }
-                    setUsdtBalance((prev) => prev - Number(withdrawAmount));
+
+                    if (withdrawToken === "USDT") {
+                      setUsdtBalance((prev) => prev - Number(withdrawAmount));
+                    } else {
+                      setUrcBalance((prev) => prev - Number(withdrawAmount));
+                    }
+
                     setWithdrawAmount("");
                     setShowWithdrawModal(false);
-                    alert(lang === "ko" ? "✅ 출금 신청이 성공적으로 접수되었습니다. (네트워크 승인 후 지급)" : "✅ Withdrawal request submitted.");
+                    alert(`✅ ${withdrawAmount} ${withdrawToken} 출금 신청이 성공적으로 접수되었습니다. (네트워크 승인 후 지급)`);
                   }}
                   className="w-full py-3 bg-[#FCD535] text-[#0B0E11] font-black rounded-xl text-sm hover:opacity-90 active:scale-95 transition-all"
                 >
