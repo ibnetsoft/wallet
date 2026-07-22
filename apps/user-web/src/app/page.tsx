@@ -1004,9 +1004,6 @@ export default function MobileApp() {
 
               {/* Deposit Address Display */}
               <div className="space-y-2">
-                <p className="text-[10px] text-[#848E9C] text-center">
-                  개인 전용 BSC (BEP-20) {depositToken} 입금 주소
-                </p>
 
                 <div className="bg-[#0B0E11] p-3 rounded-lg border border-[#2B3139] flex justify-between items-center space-x-2">
                   <span className="text-[10px] font-mono text-[#EAECEF] break-all select-all">
