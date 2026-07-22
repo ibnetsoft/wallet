@@ -49,22 +49,44 @@ export default function WalletSweepPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // 1. 유저 지갑 잔액 (wallets 테이블)
-      const { data: wallets } = await supabaseAdmin
-        .from("wallets")
-        .select("user_id, usdt_balance, wallet_address, profiles(email)")
-        .order("usdt_balance", { ascending: false })
-        .limit(50);
+      // 1. 실제 유저 지갑 잔액 조회 (users, user_wallets, user_balances 조인)
+      const { data: usersWithBalances } = await supabaseAdmin
+        .from("users")
+        .select(`
+          id,
+          email,
+          user_wallets (
+            address
+          ),
+          user_balances (
+            available_balance,
+            asset_id
+          )
+        `)
+        .limit(100);
 
-      if (wallets) {
-        setUserWallets(
-          wallets.map((w: Record<string, unknown>) => ({
-            user_id: w.user_id as string,
-            email: ((w.profiles as Record<string, unknown>)?.email as string) ?? "—",
-            wallet_address: (w.wallet_address as string) ?? "—",
-            usdt_balance: (w.usdt_balance as number) ?? 0,
-          }))
-        );
+      if (usersWithBalances) {
+        const mappedWallets = usersWithBalances.map((u: any) => {
+          // USDT (asset_id = 2) 잔고 매핑
+          const usdtBalanceObj = u.user_balances?.find((b: any) => b.asset_id === 2);
+          const usdt_balance = usdtBalanceObj ? parseFloat(usdtBalanceObj.available_balance) : 0;
+          
+          // 지갑 주소 가져오기
+          const wallet_address = u.user_wallets && u.user_wallets.length > 0
+            ? u.user_wallets[0].address
+            : "—";
+
+          return {
+            user_id: u.id,
+            email: u.email ?? "—",
+            wallet_address: wallet_address,
+            usdt_balance: usdt_balance
+          };
+        });
+
+        // 잔고가 많은 순서로 정렬
+        mappedWallets.sort((a, b) => b.usdt_balance - a.usdt_balance);
+        setUserWallets(mappedWallets);
       }
 
       // 2. 시스템 설정 (마스터 핫 지갑 주소, 콜드 금고 주소, 잔액)
