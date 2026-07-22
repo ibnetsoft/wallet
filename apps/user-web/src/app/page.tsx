@@ -1063,7 +1063,6 @@ export default function MobileApp() {
                     <option value="USDT">USDT (Tether) - BSC BEP20</option>
                     <option value="URC">URC (Utility Token) - BSC BEP20</option>
                   </select>
-                  <p className="text-[10px] text-[#848E9C] mt-1">※ URD 토큰은 출금이 불가능한 게임 전용 토큰입니다.</p>
                 </div>
 
                 {/* BSC Withdrawal Address with Square Paste Icon Button */}
@@ -1076,7 +1075,13 @@ export default function MobileApp() {
                       type="text"
                       value={withdrawAddress}
                       onChange={(e) => setWithdrawAddress(e.target.value)}
-                      placeholder="0x로 시작하는 BSC 지갑 주소 입력"
+                      placeholder={
+                        lang === "ko" 
+                          ? "0x로 시작하는 BSC 지갑 주소 입력" 
+                          : lang === "en" 
+                          ? "Enter BSC address starting with 0x" 
+                          : "请输入以 0x 开头的 BSC 钱包地址"
+                      }
                       className="w-full bg-[#0B0E11] border border-[#2B3139] rounded-xl px-3 py-2.5 text-xs text-[#EAECEF] focus:outline-none focus:border-[#FCD535] font-mono"
                     />
                     <button
@@ -1086,11 +1091,11 @@ export default function MobileApp() {
                           const text = await navigator.clipboard.readText();
                           if (text) setWithdrawAddress(text);
                         } catch (e) {
-                          alert("클립보드 주소를 읽어올 수 없습니다.");
+                          alert(lang === "ko" ? "클립보드 주소를 읽어올 수 없습니다." : "Unable to read clipboard address.");
                         }
                       }}
                       className="p-2.5 bg-[#2B3139] hover:bg-[#FCD535] hover:text-[#0B0E11] text-[#FCD535] rounded-xl border border-[#2B3139] transition-all flex items-center justify-center flex-shrink-0"
-                      title="클립보드 주소 붙여넣기"
+                      title={lang === "ko" ? "클립보드 주소 붙여넣기" : lang === "en" ? "Paste address" : "粘贴地址"}
                     >
                       <ClipboardPaste size={16} />
                     </button>
@@ -1110,7 +1115,13 @@ export default function MobileApp() {
                     type="number"
                     value={withdrawAmount}
                     onChange={(e) => setWithdrawAmount(e.target.value)}
-                    placeholder={`최소 30 ${withdrawToken}`}
+                    placeholder={
+                      lang === "ko" 
+                        ? `최소 30 ${withdrawToken}` 
+                        : lang === "en" 
+                        ? `Min 30 ${withdrawToken}` 
+                        : `最少 30 ${withdrawToken}`
+                    }
                     className="w-full mt-1 bg-[#0B0E11] border border-[#2B3139] rounded-xl px-3 py-2.5 text-xs text-[#EAECEF] focus:outline-none focus:border-[#FCD535] font-mono"
                   />
                 </div>
