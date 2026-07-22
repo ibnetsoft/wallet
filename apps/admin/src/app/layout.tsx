@@ -5,6 +5,7 @@ import {
   LayoutDashboard, 
   Users, 
   ArrowDownUp, 
+  ArrowUpRight,
   TrendingUp, 
   Settings, 
   Wallet, 
@@ -42,13 +43,17 @@ export default function RootLayout({
               <LayoutDashboard size={18} />
               <span>대시보드</span>
             </Link>
+            <Link href="/withdrawals" className="flex items-center space-x-3 px-4 py-3 rounded-xl text-[#FF9F0A] bg-[#FF9F0A]/10 border border-[#FF9F0A]/20 font-bold hover:bg-[#FF9F0A]/20 transition-all">
+              <ArrowUpRight size={18} />
+              <span>출금 승인 관리</span>
+            </Link>
             <Link href="/users" className="flex items-center space-x-3 px-4 py-3 rounded-xl text-[#8E8E93] hover:bg-[#1C1C21] hover:text-[#FFFFFF] transition-all">
               <Users size={18} />
               <span>회원 관리</span>
             </Link>
             <Link href="/wallet" className="flex items-center space-x-3 px-4 py-3 rounded-xl text-[#8E8E93] hover:bg-[#1C1C21] hover:text-[#FFFFFF] transition-all">
               <Wallet size={18} />
-              <span>지갑 & 출금 관리</span>
+              <span>지갑 & 모으기 관리</span>
             </Link>
             <Link href="/settings" className="flex items-center space-x-3 px-4 py-3 rounded-xl text-[#8E8E93] hover:bg-[#1C1C21] hover:text-[#FFFFFF] transition-all">
               <Settings size={18} />
