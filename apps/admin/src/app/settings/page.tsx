@@ -5,17 +5,17 @@ import { Settings, Shield, UserPlus, Trash2, Key } from "lucide-react";
 
 export default function SettingsPage() {
   const [subAdmins, setSubAdmins] = useState([
-    { id: 1, email: "manager_kim@urc369.com", role: "SUB_ADMIN", permissions: ["WITHDRAWAL_APPROVE", "USER_VIEW"], createdAt: "2024-03-01" },
-    { id: 2, email: "cs_team@urc369.com", role: "SUB_ADMIN", permissions: ["USER_VIEW"], createdAt: "2024-05-15" },
+    { id: 1, email: "manager_kim@urc369.com", role: "서브 관리자", permissions: ["출금 승인", "회원 조회"], createdAt: "2026-07-01" },
+    { id: 2, email: "cs_team@urc369.com", role: "서브 관리자", permissions: ["회원 조회"], createdAt: "2026-07-15" },
   ]);
 
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [perms, setPerms] = useState({ withdraw: false, wallet: false, users: true });
 
-  // Global Fee Settings
+  // Global Fee Settings (Withdrawal Fee Default 3%)
   const [swapFee, setSwapFee] = useState("0.1");
-  const [withdrawalFee, setWithdrawalFee] = useState("5.0");
+  const [withdrawalFee, setWithdrawalFee] = useState("3.0");
   const [savingFees, setSavingFees] = useState(false);
 
   const handleSaveFees = (e: React.FormEvent) => {
@@ -23,7 +23,7 @@ export default function SettingsPage() {
     setSavingFees(true);
     setTimeout(() => {
       setSavingFees(false);
-      alert("플랫폼 수수료율이 성공적으로 업데이트되었습니다.");
+      alert(`플랫폼 수수료율(출금 수수료 ${withdrawalFee}%)이 성공적으로 업데이트되었습니다.`);
     }, 1000);
   };
 
@@ -31,14 +31,14 @@ export default function SettingsPage() {
     e.preventDefault();
     if (!newEmail || !newPassword) return;
 
-    const newPerms = ["USER_VIEW"];
-    if (perms.withdraw) newPerms.push("WITHDRAWAL_APPROVE");
-    if (perms.wallet) newPerms.push("WALLET_SWEEP");
+    const newPerms = ["회원 조회"];
+    if (perms.withdraw) newPerms.push("출금 승인");
+    if (perms.wallet) newPerms.push("지갑 모으기");
 
     setSubAdmins([...subAdmins, {
       id: Date.now(),
       email: newEmail,
-      role: "SUB_ADMIN",
+      role: "서브 관리자",
       permissions: newPerms,
       createdAt: new Date().toISOString().split('T')[0]
     }]);
@@ -57,8 +57,8 @@ export default function SettingsPage() {
   return (
     <div className="space-y-8 font-sans">
       <div>
-        <h2 className="text-2xl font-bold text-white tracking-tight">시스템 설정 (System Settings)</h2>
-        <p className="text-sm text-[#8E8E93] mt-1">마스터 관리자 전용 설정 페이지입니다. 서브 관리자 계정을 생성하고 권한을 부여할 수 있습니다.</p>
+        <h2 className="text-2xl font-bold text-white tracking-tight">시스템 환경 설정</h2>
+        <p className="text-sm text-[#8E8E93] mt-1">369어드민 마스터 전용 설정 페이지입니다. 수수료율과 서브 관리자 계정 권한을 제어합니다.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -83,14 +83,14 @@ export default function SettingsPage() {
                     required
                     value={swapFee}
                     onChange={e => setSwapFee(e.target.value)}
-                    className="w-full bg-[#1C1C21] border border-[#26262B] focus:border-[#FCD535] pl-3 pr-8 py-2.5 rounded-lg text-sm text-white outline-none"
+                    className="w-full bg-[#1C1C21] border border-[#26262B] focus:border-[#FCD535] pl-3 pr-8 py-2.5 rounded-lg text-sm text-white outline-none font-mono"
                   />
                   <span className="absolute right-3 top-2.5 text-[#8E8E93] text-sm">%</span>
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] text-[#8E8E93] uppercase font-bold">출금 수수료율 (Withdrawal)</label>
+                <label className="text-[10px] text-[#8E8E93] uppercase font-bold">출금 수수료율 (기본값 3%)</label>
                 <div className="relative">
                   <input 
                     type="number" 
@@ -100,14 +100,14 @@ export default function SettingsPage() {
                     required
                     value={withdrawalFee}
                     onChange={e => setWithdrawalFee(e.target.value)}
-                    className="w-full bg-[#1C1C21] border border-[#26262B] focus:border-[#FCD535] pl-3 pr-8 py-2.5 rounded-lg text-sm text-white outline-none"
+                    className="w-full bg-[#1C1C21] border border-[#26262B] focus:border-[#FCD535] pl-3 pr-8 py-2.5 rounded-lg text-sm text-white outline-none font-mono"
                   />
                   <span className="absolute right-3 top-2.5 text-[#8E8E93] text-sm">%</span>
                 </div>
               </div>
 
               <button type="submit" disabled={savingFees} className="w-full py-3 mt-2 bg-[#FCD535] hover:bg-[#F3BA2F] text-[#0B0E11] font-bold rounded-lg transition-colors text-sm disabled:opacity-50">
-                {savingFees ? "저장 중..." : "수수료율 적용하기"}
+                {savingFees ? "저장 중..." : "수수료율 설정 저장하기"}
               </button>
             </form>
           </div>

@@ -28,16 +28,30 @@ interface PendingWithdrawal {
   time: string;
 }
 
+interface RecentTx {
+  id: string;
+  email: string;
+  asset: string;
+  amount: string;
+  type: string;
+  hash: string;
+  status: string;
+  date: string;
+  details?: string;
+}
+
 export default function DashboardPage() {
   const [timeLeft, setTimeLeft] = useState("");
   const [loadingWithdrawals, setLoadingWithdrawals] = useState(false);
-  const [pendingWithdrawals, setPendingWithdrawals] = useState<PendingWithdrawal[]>([
-    { id: "wd-883", userId: "u1", email: "active_whale@example.com", asset: "USDT", amount: 1545.50, fee: 77.28, txHash: "0xec65...5a8c", status: "PENDING", time: "5분 전" },
-    { id: "wd-882", userId: "u2", email: "trader_vip@example.com", asset: "USDT", amount: 73.00, fee: 3.65, txHash: "0x91ad...8e00", status: "PENDING", time: "15분 전" },
-    { id: "wd-881", userId: "u3", email: "crypto_guy@example.com", asset: "USDT", amount: 50.00, fee: 2.50, txHash: "0x88c2...fa90", status: "PENDING", time: "42분 전" },
+  const [pendingWithdrawals, setPendingWithdrawals] = useState<PendingWithdrawal[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<RecentTx[]>([
+    { id: "tx-1001", email: "user@urc369.com", asset: "USDT", amount: "+10,500.00", type: "입금 완료", hash: "0x5320...3a17", status: "완료", date: "15:24" },
+    { id: "tx-1002", email: "user@urc369.com", asset: "URC", amount: "+4,980.00", type: "실시간 스왑", hash: "내부 스왑", status: "완료", date: "15:10", details: "수수료: 0.1% 반영" },
+    { id: "tx-1003", email: "user@urc369.com", asset: "URD", amount: "+3,000", type: "게임기 구매 보너스", hash: "내부 증정", status: "완료", date: "14:20", details: "1500 URD * 2회" },
+    { id: "tx-1004", email: "b_kim@urc369.com", asset: "USDT", amount: "-30.00", type: "출금 신청", hash: "0x91ad...8e00", status: "대기 중", date: "12:30", details: "수수료: 0.90 USDT (3%)" },
   ]);
 
-  // Fetch KST Countdown
+  // Fetch KST/CST Countdown
   useEffect(() => {
     const calculateTimeLeft = () => {
       const now = new Date();
@@ -68,13 +82,13 @@ export default function DashboardPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch Pending Withdrawals from DB
+  // Fetch Real Pending Withdrawals from API / DB
   const fetchPendingWithdrawals = async () => {
     setLoadingWithdrawals(true);
     try {
       const res = await fetch("/api/withdrawals");
       const result = await res.json();
-      if (result.success && result.withdrawals && result.withdrawals.length > 0) {
+      if (result.success && result.withdrawals) {
         setPendingWithdrawals(result.withdrawals);
       }
     } catch (err) {
@@ -99,7 +113,7 @@ export default function DashboardPage() {
       });
       const result = await res.json();
       if (result.success) {
-        alert("성공적으로 승인되었습니다.");
+        alert("성공적으로 출금 승인되었습니다.");
         fetchPendingWithdrawals();
       } else {
         alert(`승인 실패: ${result.error}`);
@@ -121,7 +135,7 @@ export default function DashboardPage() {
       });
       const result = await res.json();
       if (result.success) {
-        alert("성공적으로 반려 및 반환 처리되었습니다.");
+        alert("성공적으로 반려 및 사용자 자산 반환 처리되었습니다.");
         fetchPendingWithdrawals();
       } else {
         alert(`반려 실패: ${result.error}`);
@@ -131,21 +145,13 @@ export default function DashboardPage() {
     }
   };
 
-  const recentTransactions = [
-    { id: "tx-1005", email: "investor@example.com", asset: "USDT", amount: "+250.00", type: "입금 (DEPOSIT)", hash: "0x5320...3a17", status: "완료", date: "15:24" },
-    { id: "tx-1004", email: "active_whale@example.com", asset: "URC", amount: "-100.00", type: "스왑 아웃", hash: "내부 처리", status: "완료", date: "15:10", details: "수수료: 0.1 URC (0.1%)" },
-    { id: "tx-1003", email: "active_whale@example.com", asset: "USDT", amount: "+99.90", type: "스왑 인", hash: "내부 처리", status: "완료", date: "15:10", details: "수수료: 0.1 USDT (0.1%)" },
-    { id: "tx-1002", email: "trader_vip@example.com", asset: "USDT", amount: "-73.00", type: "출금 (WITHDRAW)", hash: "0x91ad...8e00", status: "대기 중", date: "15:02", details: "수수료: 3.65 USDT (5%)" },
-    { id: "tx-1001", email: "min_user@example.com", asset: "USDT", amount: "-50.00", type: "출금 (WITHDRAW)", hash: "0x88c2...fa90", status: "대기 중", date: "14:42", details: "수수료: 2.50 USDT (5%)" },
-  ];
-
   return (
     <div className="space-y-8 font-sans">
       {/* Welcome Title */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
         <div>
-          <h2 className="text-2xl font-bold text-white tracking-tight">시스템 대시보드 <span className="text-xs text-[#8E8E93] font-normal">v1.1</span></h2>
-          <p className="text-sm text-[#8E8E93] mt-1">실시간 자산 모니터링, 369 게임 보너스 플랜 로그 및 자동 정산 크론 상태</p>
+          <h2 className="text-2xl font-bold text-white tracking-tight">통합 대시보드 <span className="text-xs text-[#8E8E93] font-normal">v1.1</span></h2>
+          <p className="text-sm text-[#8E8E93] mt-1">실시간 자산 현황 모니터링, 출금 승인 관리 및 정산 마감 시스템</p>
         </div>
         
         {/* Countdown Timer Widget (v1.1 Daily Settlement) */}

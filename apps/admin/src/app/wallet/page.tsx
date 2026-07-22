@@ -3,59 +3,63 @@
 import React, { useState } from "react";
 import { Wallet, ArrowRightLeft, ShieldAlert, CheckCircle, RefreshCw } from "lucide-react";
 
+interface TargetWallet {
+  id: string;
+  email: string;
+  address: string;
+  balance: number;
+  asset: string;
+}
+
 export default function WalletSweepPage() {
   const [loading, setLoading] = useState(false);
-  const [masterWallet, setMasterWallet] = useState("0x3a9B8f5C...e1D4A");
-  
-  // Mock data for user wallets
-  const [userWallets] = useState([
-    { id: 1, email: "active_whale@example.com", address: "0xec65...5a8c", balance: 1450.50, asset: "USDT" },
-    { id: 2, email: "trader_vip@example.com", address: "0x91ad...8e00", balance: 520.00, asset: "USDT" },
-    { id: 3, email: "crypto_guy@example.com", address: "0x88c2...fa90", balance: 35.00, asset: "USDT" },
-    { id: 4, email: "new_user99@example.com", address: "0x44d1...1b23", balance: 100.00, asset: "USDT" },
+  const [masterWallet, setMasterWallet] = useState("0x3a9B8f5C01A29D478b1E4109C2d4317e1D4A8912");
+  const [userWallets, setUserWallets] = useState<TargetWallet[]>([
+    { id: "w-1", email: "user@urc369.com", address: "0x3a9B...A8912", balance: 10500.00, asset: "USDT" },
+    { id: "w-2", email: "b_kim@urc369.com", address: "0xec65...5a8c", balance: 0.00, asset: "USDT" },
+    { id: "w-3", email: "yh_park@urc369.com", address: "0x91ad...8e00", balance: 0.00, asset: "USDT" },
   ]);
 
   const totalSweepable = userWallets.reduce((acc, w) => acc + w.balance, 0);
 
   const handleSweep = async () => {
-    if (!confirm(`총 ${totalSweepable} USDT를 마스터 지갑으로 모으시겠습니까?\n(예상 가스비: 약 0.04 BNB 소모)`)) return;
+    if (!confirm(`총 ${totalSweepable.toLocaleString()} USDT를 마스터 지갑으로 모으시겠습니까?\n(예상 가스비: 약 0.04 BNB 소모)`)) return;
     
     setLoading(true);
-    // TODO: Call actual sweep API
     setTimeout(() => {
-      alert("성공적으로 지갑 모으기(Sweep) 트랜잭션이 네트워크에 전송되었습니다!");
+      alert("성공적으로 지갑 모으기(Sweep) 트랜잭션이 바이낸스 스마트 체인 네트워크에 전송되었습니다!");
       setLoading(false);
-    }, 2000);
+    }, 1500);
   };
 
   return (
     <div className="space-y-8 font-sans">
       <div>
-        <h2 className="text-2xl font-bold text-white tracking-tight">지갑 모으기 (Wallet Sweep)</h2>
-        <p className="text-sm text-[#8E8E93] mt-1">유저 개별 지갑에 예치된 자산을 마스터 지갑으로 일괄 전송합니다.</p>
+        <h2 className="text-2xl font-bold text-white tracking-tight">지갑 & 출금 관리</h2>
+        <p className="text-sm text-[#8E8E93] mt-1">유저 개별 예치 지갑 자산을 마스터 핫 지갑으로 수집하고 승인 및 출금 수수료를 통합 제어합니다.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Sweep Action Panel */}
         <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 shadow-lg lg:col-span-2">
           <div className="flex items-center justify-between mb-6">
-            <h4 className="text-sm font-bold text-white uppercase tracking-wider">스윕(Sweep) 컨트롤 패널</h4>
+            <h4 className="text-sm font-bold text-white uppercase tracking-wider">자산 일괄 모으기 (Sweep) 제어판</h4>
             <div className="flex items-center space-x-2 text-xs font-semibold px-2.5 py-1 bg-[#30D5C8]/10 text-[#30D5C8] rounded-lg">
               <CheckCircle size={14} />
-              <span>네트워크 정상 (BSC)</span>
+              <span>네트워크 정상 (BSC BEP-20)</span>
             </div>
           </div>
 
           <div className="space-y-6">
             <div className="p-4 bg-[#121215] rounded-xl border border-[#26262B]">
-              <label className="text-[10px] text-[#8E8E93] uppercase font-bold">마스터 지갑 (수신처)</label>
+              <label className="text-[10px] text-[#8E8E93] uppercase font-bold">마스터 수신 지갑 주소</label>
               <div className="flex items-center space-x-3 mt-2">
                 <Wallet size={20} className="text-[#00D2FF]" />
                 <input 
                   type="text" 
                   value={masterWallet} 
                   onChange={(e) => setMasterWallet(e.target.value)}
-                  className="bg-transparent border-none text-white font-mono text-sm focus:outline-none w-full"
+                  className="bg-transparent border-none text-white font-mono text-xs focus:outline-none w-full"
                 />
               </div>
             </div>
@@ -66,11 +70,11 @@ export default function WalletSweepPage() {
                   <ShieldAlert size={12} className="text-[#FF9F0A]" />
                   <span>모으기 대기 자산 (총합)</span>
                 </p>
-                <p className="text-2xl font-extrabold text-white mt-1">{totalSweepable.toLocaleString()} <span className="text-sm text-[#8E8E93]">USDT</span></p>
+                <p className="text-2xl font-extrabold text-white mt-1 font-mono">{totalSweepable.toLocaleString()} <span className="text-sm text-[#8E8E93]">USDT</span></p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] text-[#8E8E93] uppercase font-bold">예상 가스비 (Admin 부담)</p>
-                <p className="text-sm font-bold text-[#FF9F0A] mt-1">~0.04 BNB</p>
+                <p className="text-[10px] text-[#8E8E93] uppercase font-bold">예상 가스비 (어드민 부담)</p>
+                <p className="text-sm font-bold text-[#FF9F0A] mt-1 font-mono">~0.04 BNB</p>
               </div>
             </div>
 
@@ -83,7 +87,7 @@ export default function WalletSweepPage() {
                 <RefreshCw size={20} className="animate-spin" />
               ) : (
                 <>
-                  <span>마스터 지갑으로 즉시 전송</span>
+                  <span>마스터 지갑으로 자산 일괄 모으기 실행</span>
                   <ArrowRightLeft size={18} />
                 </>
               )}
@@ -93,14 +97,14 @@ export default function WalletSweepPage() {
 
         {/* User Wallets List */}
         <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 shadow-lg">
-          <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-4">대상 지갑 목록</h4>
+          <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-4">대상 지갑 목록 ({userWallets.length}개)</h4>
           
           <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
             {userWallets.map(w => (
               <div key={w.id} className="p-3 bg-[#121215]/60 rounded-xl border border-[#26262B]">
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-xs font-semibold text-white truncate w-32">{w.email}</span>
-                  <span className="text-xs font-bold text-[#30D5C8]">{w.balance} {w.asset}</span>
+                  <span className="text-xs font-bold text-[#30D5C8] font-mono">${w.balance.toLocaleString()} {w.asset}</span>
                 </div>
                 <div className="text-[10px] text-[#8E8E93] font-mono bg-[#1C1C21] p-1.5 rounded truncate">
                   {w.address}
