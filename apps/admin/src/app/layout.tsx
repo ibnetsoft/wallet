@@ -10,12 +10,13 @@ import {
   Settings, 
   Wallet, 
   ShieldAlert,
-  Bell
+  Bell,
+  PlusCircle
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Wallet Admin Backoffice",
-  description: "Centralized multi-token wallet control dashboard",
+  title: "369어드민 관리자 시스템",
+  description: "URC369 바이낸스 스마트 체인 모노레포 관리자 콘솔",
 };
 
 export default function RootLayout({
@@ -46,6 +47,10 @@ export default function RootLayout({
             <Link href="/withdrawals" className="flex items-center space-x-3 px-4 py-3 rounded-xl text-[#FF9F0A] bg-[#FF9F0A]/10 border border-[#FF9F0A]/20 font-bold hover:bg-[#FF9F0A]/20 transition-all">
               <ArrowUpRight size={18} />
               <span>출금 승인 관리</span>
+            </Link>
+            <Link href="/recharge" className="flex items-center space-x-3 px-4 py-3 rounded-xl text-[#30D5C8] bg-[#30D5C8]/10 border border-[#30D5C8]/20 font-bold hover:bg-[#30D5C8]/20 transition-all">
+              <PlusCircle size={18} />
+              <span>USDT 임시 충전 (테스트)</span>
             </Link>
             <Link href="/users" className="flex items-center space-x-3 px-4 py-3 rounded-xl text-[#8E8E93] hover:bg-[#1C1C21] hover:text-[#FFFFFF] transition-all">
               <Users size={18} />
