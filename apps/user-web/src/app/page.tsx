@@ -75,94 +75,94 @@ type Language = "ko" | "en" | "zh";
 
 const I18N = {
   ko: {
-    home: "홈", wallet: "지갑", products: "상품", game: "게임구역", network: "조직도", settings: "설정",
-    miningStatus: "게임기 구동 현황", dailyYield: "일일 수익률", gaugeTitle: "수당 한도 달성률 (200% ~ 300%)",
+    home: "홈", wallet: "지갑", products: "상품몰", game: "경기장", network: "조직도", settings: "설정",
+    miningStatus: "게임기 구동 현황", dailyYield: "일일 수익률", gaugeTitle: "보너스 한도 달성률 (200% ~ 300%)",
     usdtBalance: "USDT 잔액", urcBalance: "URC 잔액", urdBalance: "URD 토큰 잔액",
     instantSwap: "실시간 스왑 (수수료 0.1%)", pay: "지불", receive: "수령 (예상)", confirmSwap: "실시간 스왑 실행",
     withdrawUsdt: "USDT 출금 (BSC)", applyWithdraw: "출금 신청", depositUsdt: "USDT 입금 (BSC)",
-    gameNodes: "게임 노드 기기 (구매 시 URD 증정)", startGame: "게임 실행 (10 URD 소모)",
-    node100: "$100 노드 (1,500 URD 증정)", node500: "$500 노드 (8,000 URD 증정)", node1000: "$1,000 노드 (17,000 URD 증정)",
+    gameNodes: "게임기 장비 (구매 시 URD 증정)", startGame: "게임 실행 (10 URD 소모)",
+    node100: "$100 게임기 (1,500 URD 증정)", node500: "$500 게임기 (8,000 URD 증정)", node1000: "$1,000 게임기 (17,000 URD 증정)",
     directRef: "추천 계보", sponsorArch: "후원 계보",
     langSetting: "언어 설정 (Language)", shareRefLink: "내 추천 링크 공유", logout: "로그아웃",
     active: "활성", inactive: "미활성",
-    shopTitle: "게임기 노드 상품몰", buyProduct: "노드 구매하기",
-    myActiveNodes: "보유 게임기 노드 현황",
+    shopTitle: "게임기 상품몰", buyProduct: "게임기 구매하기",
+    myActiveNodes: "보유 게임기 현황",
     runningCount: "개 구동 중", runningStatus: "구동 중", cap: "한도", purchaseDate: "구매일", achievement: "달성율",
-    node100Name: "$100 노드", node500Name: "$500 노드", node1000Name: "$1,000 노드",
-    confirmPurchaseTitle: "노드 상품 구매 확인", confirmPurchaseMsg: "USDT로 선택하신 노드 상품을 구매하시겠습니까?",
+    node100Name: "$100 게임기", node500Name: "$500 게임기", node1000Name: "$1,000 게임기",
+    confirmPurchaseTitle: "게임기 상품 구매 확인", confirmPurchaseMsg: "USDT로 선택하신 게임기 상품을 구매하시겠습니까?",
     confirm: "확인 구매", cancel: "취소",
-    unpaidMembersTitle: "상품 미구매 추천 회원", unpaidMembersSub: "X버튼 클릭 시 숨김",
+    unpaidMembersTitle: "상품 미구매 추천 회원", unpaidMembersSub: "",
     directTreeSub: "직추천 조직", sponsorTreeSub: "후원 계보 조직",
-    bet1minLimit: "마감 1분 전 배팅 마감", round: "회차", round1: "1회차", round2: "2회차", round3: "3회차",
+    bet1minLimit: "마감 1분 전 게임 마감", round: "회차", round1: "1회차", round2: "2회차", round3: "3회차",
     betTime: "참여 가능 시간", aiDraw: "AI 당첨 발표", drawTime: "발표 시각", selectRound: "참여 회차 선택",
-    selectBetCount: "배팅 횟수 선택 (회당 10 URD)", totalCost: "총 소모", manualBetBtn: "배팅 참여하기",
+    selectBetCount: "게임 횟수 선택 (회당 10 URD)", totalCost: "총 소모", manualBetBtn: "게임 참여하기",
     autoBetRounds: "자동 참여 회차 (다중 선택)", dailyRepeat: "매일 반복 자동 참여",
-    dailyRepeatSub: "매일 지정 시각에 자동으로 URD 배팅 참여",
-    saveAutoSettings: "⚡ 자동 배팅 세팅 저장 및 시작", stopAutoSettings: "✓ 자동 배팅 구동 중 (클릭 시 중지)",
-    recentBets: "내 최근 참여 내역", waitingAnnouncement: "대기 중 (발표 예정)",
+    dailyRepeatSub: "매일 지정 시각에 자동으로 URD 게임 참여",
+    saveAutoSettings: "⚡ 자동 게임 세팅 저장 및 시작", stopAutoSettings: "✓ 자동 게임 구동 중 (클릭 시 중지)",
+    recentBets: "내 최근 게임 참여 내역", waitingAnnouncement: "대기 중 (발표 예정)",
     holdings: "보유 자산", initialBalance: "최초잔고", totalProfit: "총 수익", yieldRate: "수익률",
     deposit: "입금", withdraw: "출금", swap: "스왑", history: "내역", coinsCount: "3 종목",
-    txHistoryTitle: "입출금 및 수당 내역",
+    txHistoryTitle: "입출금 및 보너스 내역",
   },
   en: {
-    home: "Home", wallet: "Wallet", products: "Products", game: "Game Zone", network: "Network", settings: "Settings",
-    miningStatus: "Game Node Machine Status", dailyYield: "Daily Yield Rate", gaugeTitle: "Payout Cap Limit Progress (200% ~ 300%)",
+    home: "Home", wallet: "Wallet", products: "Shop", game: "Game Zone", network: "Network", settings: "Settings",
+    miningStatus: "Game Machine Status", dailyYield: "Daily Yield Rate", gaugeTitle: "Bonus Cap Limit Progress (200% ~ 300%)",
     usdtBalance: "USDT Balance", urcBalance: "URC Balance", urdBalance: "URD Token Balance",
     instantSwap: "Instant Swap (0.1% Fee)", pay: "Pay", receive: "Receive (Est.)", confirmSwap: "Execute Swap",
     withdrawUsdt: "Withdraw USDT (BSC)", applyWithdraw: "Request Withdrawal", depositUsdt: "Deposit USDT (BSC)",
-    gameNodes: "Game Node Equipment (Bonus URD on Purchase)", startGame: "Start Game (Cost 10 URD)",
-    node100: "$100 Node (1,500 URD Bonus)", node500: "$500 Node (8,000 URD Bonus)", node1000: "$1,000 Node (17,000 URD Bonus)",
+    gameNodes: "Game Equipment (Bonus URD on Purchase)", startGame: "Start Game (Cost 10 URD)",
+    node100: "$100 Machine (1,500 URD Bonus)", node500: "$500 Machine (8,000 URD Bonus)", node1000: "$1,000 Machine (17,000 URD Bonus)",
     directRef: "Direct Referral Tree", sponsorArch: "Sponsor Tree",
     langSetting: "Language Settings", shareRefLink: "Share Referral Link", logout: "Log Out",
     active: "Active", inactive: "Inactive",
-    shopTitle: "Game Node Equipment Shop", buyProduct: "Buy Node Equipment",
-    myActiveNodes: "My Active Game Nodes",
-    runningCount: "Nodes Running", runningStatus: "Running", cap: "Cap", purchaseDate: "Purchased", achievement: "Progress",
-    node100Name: "$100 Node", node500Name: "$500 Node", node1000Name: "$1,000 Node",
-    confirmPurchaseTitle: "Confirm Node Purchase", confirmPurchaseMsg: "Do you want to purchase the selected node equipment with USDT?",
+    shopTitle: "Game Machine Shop", buyProduct: "Buy Game Machine",
+    myActiveNodes: "My Active Game Machines",
+    runningCount: "Machines Running", runningStatus: "Running", cap: "Cap", purchaseDate: "Purchased", achievement: "Progress",
+    node100Name: "$100 Machine", node500Name: "$500 Machine", node1000Name: "$1,000 Machine",
+    confirmPurchaseTitle: "Confirm Game Machine Purchase", confirmPurchaseMsg: "Do you want to purchase the selected game machine with USDT?",
     confirm: "Confirm Purchase", cancel: "Cancel",
-    unpaidMembersTitle: "Unpurchased Referral Members", unpaidMembersSub: "Click X to dismiss",
+    unpaidMembersTitle: "Unpurchased Referral Members", unpaidMembersSub: "",
     directTreeSub: "Direct Referral Tree", sponsorTreeSub: "Sponsor Tree",
-    bet1minLimit: "Betting closes 1 min before deadline", round: "Round", round1: "Round 1", round2: "Round 2", round3: "Round 3",
-    betTime: "Betting Time", aiDraw: "AI Draw Announcement", drawTime: "Draw Time", selectRound: "Select Round",
-    selectBetCount: "Select Bets (10 URD each)", totalCost: "Total Cost", manualBetBtn: "Submit Bet",
+    bet1minLimit: "Game closes 1 min before deadline", round: "Round", round1: "Round 1", round2: "Round 2", round3: "Round 3",
+    betTime: "Playable Time", aiDraw: "AI Draw Announcement", drawTime: "Draw Time", selectRound: "Select Round",
+    selectBetCount: "Select Game Play Count (10 URD each)", totalCost: "Total Cost", manualBetBtn: "Join Game",
     autoBetRounds: "Auto Rounds (Multi-select)", dailyRepeat: "Daily Auto Repeat",
-    dailyRepeatSub: "Automatically bet URD at scheduled times daily",
-    saveAutoSettings: "⚡ Save & Start Auto Betting", stopAutoSettings: "✓ Auto Betting Running (Click to stop)",
-    recentBets: "My Recent Bet Records", waitingAnnouncement: "Waiting for Draw",
+    dailyRepeatSub: "Automatically play URD game at scheduled times daily",
+    saveAutoSettings: "⚡ Save & Start Auto Game", stopAutoSettings: "✓ Auto Game Running (Click to stop)",
+    recentBets: "My Recent Game Records", waitingAnnouncement: "Waiting for Draw",
     holdings: "Holdings", initialBalance: "Initial Balance", totalProfit: "Total Profit", yieldRate: "Yield Rate",
     deposit: "Deposit", withdraw: "Withdraw", swap: "Swap", history: "History", coinsCount: "3 Assets",
-    txHistoryTitle: "Transactions & Reward History",
+    txHistoryTitle: "Transactions & Bonus History",
   },
   zh: {
     home: "首页", wallet: "钱包", products: "商城", game: "竞技场", network: "团队", settings: "设置",
-    miningStatus: "设备运行状态", dailyYield: "日收益率", gaugeTitle: "封顶额度进度 (200% ~ 300%)",
+    miningStatus: "游戏设备运行状态", dailyYield: "日收益率", gaugeTitle: "奖金封顶额度进度 (200% ~ 300%)",
     usdtBalance: "USDT 余额", urcBalance: "URC 余额", urdBalance: "URD 代币余额",
     instantSwap: "闪兑 (手续费 0.1%)", pay: "支付", receive: "获得 (预计)", confirmSwap: "确认兑换",
     withdrawUsdt: "提现 USDT (BSC)", applyWithdraw: "申请提现", depositUsdt: "充值 USDT (BSC)",
-    gameNodes: "游戏节点设备 (购买赠送URD)", startGame: "启动游戏 (消耗 10 URD)",
-    node100: "$100 节点 (赠 1,500 URD)", node500: "$500 节点 (赠 8,000 URD)", node1000: "$1,000 节点 (赠 17,000 URD)",
+    gameNodes: "游戏设备 (购买赠送URD)", startGame: "启动游戏 (消耗 10 URD)",
+    node100: "$100 游戏机 (赠 1,500 URD)", node500: "$500 游戏机 (赠 8,000 URD)", node1000: "$1,000 游戏机 (赠 17,000 URD)",
     directRef: "直推谱系", sponsorArch: "安置架构",
     langSetting: "语言设置 (Language)", shareRefLink: "分享推荐链接", logout: "退出登录",
     active: "活跃", inactive: "未激活",
-    shopTitle: "游戏节点设备商城", buyProduct: "购买节点设备",
-    myActiveNodes: "我的运行节点设备",
-    runningCount: "个运行中", runningStatus: "运行中", cap: "额度", purchaseDate: "购买日", achievement: "达成率",
-    node100Name: "$100 节点", node500Name: "$500 节点", node1000Name: "$1,000 节点",
-    confirmPurchaseTitle: "确认购买节点设备", confirmPurchaseMsg: "确定使用 USDT 购买所选节点设备吗？",
+    shopTitle: "游戏机商城", buyProduct: "购买游戏机",
+    myActiveNodes: "我的运行游戏机",
+    runningCount: "台运行中", runningStatus: "运行中", cap: "额度", purchaseDate: "购买日", achievement: "达成率",
+    node100Name: "$100 游戏机", node500Name: "$500 游戏机", node1000Name: "$1,000 游戏机",
+    confirmPurchaseTitle: "确认购买游戏机", confirmPurchaseMsg: "确定使用 USDT 购买所选游戏机吗？",
     confirm: "确认购买", cancel: "取消",
-    unpaidMembersTitle: "未购设备推荐会员", unpaidMembersSub: "点击X隐藏",
+    unpaidMembersTitle: "未购设备推荐会员", unpaidMembersSub: "",
     directTreeSub: "直推谱系团队", sponsorTreeSub: "安置架构团队",
-    bet1minLimit: "截止前1分钟停止下注", round: "轮次", round1: "第1轮", round2: "第2轮", round3: "第3轮",
-    betTime: "可下注时间", aiDraw: "AI 抽奖公布", drawTime: "公布时间", selectRound: "选择下注轮次",
-    selectBetCount: "选择下注次数 (每轮10 URD)", totalCost: "总消耗", manualBetBtn: "参与下注",
-    autoBetRounds: "自动参与轮次 (多选)", dailyRepeat: "每日重复自动下注",
-    dailyRepeatSub: "每日在指定时间自动参与URD下注",
-    saveAutoSettings: "⚡ 保存并启动自动下注设置", stopAutoSettings: "✓ 自动下注运行中 (点击停止)",
-    recentBets: "我的近期下注记录", waitingAnnouncement: "等待公布",
+    bet1minLimit: "截止前1分钟停止游戏", round: "轮次", round1: "第1轮", round2: "第2轮", round3: "第3轮",
+    betTime: "可游戏时间", aiDraw: "AI 抽奖公布", drawTime: "公布时间", selectRound: "选择游戏轮次",
+    selectBetCount: "选择游戏次数 (每轮10 URD)", totalCost: "总消耗", manualBetBtn: "参与游戏",
+    autoBetRounds: "自动参与轮次 (多选)", dailyRepeat: "每日重复自动游戏",
+    dailyRepeatSub: "每日在指定时间自动参与URD游戏",
+    saveAutoSettings: "⚡ 保存并启动自动游戏设置", stopAutoSettings: "✓ 自动游戏运行中 (点击停止)",
+    recentBets: "我的近期游戏记录", waitingAnnouncement: "等待公布",
     holdings: "持有资产", initialBalance: "初始余额", totalProfit: "总收益", yieldRate: "收益率",
     deposit: "充值", withdraw: "提现", swap: "闪兑", history: "记录", coinsCount: "3 种资产",
-    txHistoryTitle: "充提及奖励记录",
+    txHistoryTitle: "充提及奖金记录",
   }
 };
 
@@ -261,8 +261,10 @@ export default function MobileApp() {
     enabled: false,
     dailyRepeat: true,
     rounds: [1, 2, 3],
-    betsPerRound: 1,
+    betsCount: 10, // Default 10 times = 100 URD
   });
+
+  const [historyPage, setHistoryPage] = useState(1);
 
   const handleManualBet = () => {
     const cost = manualBetsCount * 10;
@@ -282,7 +284,36 @@ export default function MobileApp() {
     };
 
     setMyBets((prev) => [newBet, ...prev]);
-    alert(`🎉 ${manualRound}회차 배팅 완료! (${manualBetsCount}회 / ${cost} URD 소모)\nAI 당첨 발표 시각에 결과가 발표됩니다.`);
+    alert(`🎉 ${manualRound}회차 게임 참여 완료! (${manualBetsCount}회 / ${cost} URD 소모)\nAI 당첨 발표 시각에 결과가 발표됩니다.`);
+  };
+
+  const handleToggleAutoSettings = () => {
+    const autoCost = autoSettings.betsCount * 10;
+    if (!autoSettings.enabled) {
+      if (urdBalance < autoCost) {
+        alert(`⚡ URD 토큰이 부족하여 자동 게임을 시작할 수 없습니다! (필요: ${autoCost} URD, 보유: ${urdBalance} URD)`);
+        // Add URD Depletion Notification to Bell
+        const notif: GameNotification = {
+          id: `n-${Date.now()}`,
+          round: "자동 게임",
+          time: new Date().toLocaleTimeString("ko-KR", { hour12: false, hour: "2-digit", minute: "2-digit" }),
+          title: "⚠️ URD 토큰 소진으로 자동 게임 중단",
+          resultType: "COIN_WIN",
+          rewardText: `URD 토큰이 소진되어 자동 게임 참여가 중단되었습니다. (필요: ${autoCost} URD)`,
+          createdAt: new Date().toLocaleTimeString("ko-KR", { hour12: false, hour: "2-digit", minute: "2-digit" }),
+          read: false,
+        };
+        setNotifications((prev) => [notif, ...prev]);
+        return;
+      }
+
+      setAutoSettings((prev) => ({ ...prev, enabled: true }));
+      setUrdBalance((prev) => prev - autoCost);
+      alert(`⚡ 자동 게임 세팅이 활성화되었습니다!\n회당 ${autoSettings.betsCount}회 (${autoCost} URD 소모)로 매일 지정 회차에 자동으로 실행됩니다.`);
+    } else {
+      setAutoSettings((prev) => ({ ...prev, enabled: false }));
+      alert("자동 게임 비활성화 완료");
+    }
   };
 
   const toggleAutoRound = (roundNum: number) => {
@@ -732,14 +763,15 @@ export default function MobileApp() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Zap size={14} className="text-[#FCD535]" />
-                  <span className="text-xs font-bold text-[#EAECEF]">{lang === "ko" ? "오늘의 수당" : lang === "en" ? "Today's Bonus" : "今日奖励"}</span>
+                  <span className="text-xs font-bold text-[#EAECEF]">{lang === "ko" ? "오늘의 보너스" : lang === "en" ? "Today's Bonus" : "今日奖金"}</span>
                 </div>
               </div>
               <div className="space-y-2">
                 {[
-                  { label: lang === "ko" ? "직추천 수당 (20%)" : lang === "en" ? "Direct Bonus (20%)" : "直推奖 (20%)", value: "+$200.00" },
-                  { label: lang === "ko" ? "후원/멘토 수당 (10%)" : lang === "en" ? "Matching Bonus (10%)" : "辅导奖 (10%)", value: "+$50.00" },
-                  { label: lang === "ko" ? "직급 수당 (100%)" : lang === "en" ? "Rank Bonus (100%)" : "平级奖 (100%)", value: "+$50.00" },
+                  { label: lang === "ko" ? "직추천 보너스 (20%)" : lang === "en" ? "Direct Bonus (20%)" : "直推奖 (20%)", value: "+$200.00" },
+                  { label: lang === "ko" ? "육성 보너스 (10%)" : lang === "en" ? "Mentoring Bonus (10%)" : "育人奖 (10%)", value: "+$50.00" },
+                  { label: lang === "ko" ? "엄마 보너스 (10%)" : lang === "en" ? "Mother Bonus (10%)" : "母体奖 (10%)", value: "+$50.00" },
+                  { label: lang === "ko" ? "직급 보너스 (15%)" : lang === "en" ? "Rank Bonus (15%)" : "平级奖 (15%)", value: "+$50.00" },
                 ].map((b) => (
                   <div key={b.label} className="flex justify-between text-xs">
                     <span className="text-[#848E9C]">{b.label}</span>
@@ -747,8 +779,8 @@ export default function MobileApp() {
                   </div>
                 ))}
                 <div className="border-t border-[#2B3139] pt-2 flex justify-between text-xs font-bold">
-                  <span>{lang === "ko" ? "오늘 총 수당" : lang === "en" ? "Today's Total" : "今日总计"}</span>
-                  <span className="text-[#FCD535]">+$300.00</span>
+                  <span>{lang === "ko" ? "오늘 총 보너스" : lang === "en" ? "Today's Total" : "今日总计"}</span>
+                  <span className="text-[#FCD535]">+$350.00</span>
                 </div>
               </div>
             </div>
@@ -902,7 +934,7 @@ export default function MobileApp() {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-extrabold font-mono text-[#EAECEF]">
-                      ${(urdBalance * 0.1).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                      ${(urdBalance / 15).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                     <p className="text-[10px] font-bold text-[#848E9C] mt-0.5">0.00%</p>
                   </div>
@@ -1138,7 +1170,7 @@ export default function MobileApp() {
         {/* History Modal Popup */}
         {showHistoryModal && (
           <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-[#1E2329] border border-[#2B3139] rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-2xl relative">
+            <div className="bg-[#1E2329] border border-[#2B3139] rounded-2xl w-full max-w-md p-5 space-y-4 shadow-2xl relative">
               <button 
                 onClick={() => setShowHistoryModal(false)}
                 className="absolute top-3 right-3 text-[#848E9C] hover:text-[#EAECEF] text-sm font-bold p-1 hover:bg-[#2B3139] rounded"
@@ -1146,32 +1178,87 @@ export default function MobileApp() {
                 ✕
               </button>
 
-              <div className="flex items-center space-x-2 text-[#848E9C] border-b border-[#2B3139] pb-3">
-                <FileText size={18} />
-                <h3 className="text-sm font-extrabold text-[#EAECEF]">{t.txHistoryTitle}</h3>
+              <div className="flex items-center justify-between border-b border-[#2B3139] pb-3">
+                <div className="flex items-center space-x-2 text-[#848E9C]">
+                  <FileText size={18} />
+                  <h3 className="text-sm font-extrabold text-[#EAECEF]">{t.txHistoryTitle}</h3>
+                </div>
+                <span className="text-[10px] text-[#848E9C] font-mono">총 12건</span>
               </div>
 
-              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                {[
-                  { id: "h1", type: lang === "ko" ? "입금 완료" : lang === "en" ? "Deposit Completed" : "充值成功", amount: "+500.00 USDT", time: "2026-07-21 14:20", status: lang === "ko" ? "성공" : "Success", isPlus: true },
-                  { id: "h2", type: lang === "ko" ? "직추천 수당" : lang === "en" ? "Direct Bonus" : "直推奖励", amount: "+200.00 USDT", time: "2026-07-21 12:30", status: lang === "ko" ? "지급완료" : "Completed", isPlus: true },
-                  { id: "h3", type: lang === "ko" ? "노드 상품 구매" : lang === "en" ? "Node Purchased" : "购买节点设备", amount: "-500.00 USDT", time: "2026-07-20 18:10", status: lang === "ko" ? "완료" : "Done", isPlus: false },
-                  { id: "h4", type: lang === "ko" ? "USDT ➔ URC 스왑" : lang === "en" ? "USDT ➔ URC Swap" : "USDT ➔ URC 闪兑", amount: "-100.00 USDT", time: "2026-07-19 11:05", status: lang === "ko" ? "성공" : "Success", isPlus: false },
-                ].map((tx) => (
-                  <div key={tx.id} className="bg-[#0B0E11] p-3 rounded-xl border border-[#2B3139] flex justify-between items-center">
-                    <div>
-                      <p className="text-xs font-bold text-[#EAECEF]">{tx.type}</p>
-                      <p className="text-[10px] text-[#848E9C] mt-0.5">{tx.time}</p>
+              {/* Paginated History Item List */}
+              {(() => {
+                const historyList = [
+                  { id: "h1", type: lang === "ko" ? "입금 완료" : "Deposit Completed", amount: "+500.00 USDT", time: "2026-07-21 14:20", status: "성공", isPlus: true },
+                  { id: "h2", type: lang === "ko" ? "직추천 보너스" : "Direct Bonus", amount: "+200.00 USDT", time: "2026-07-21 12:30", status: "지급완료", isPlus: true },
+                  { id: "h3", type: lang === "ko" ? "육성 보너스" : "Mentoring Bonus", amount: "+50.00 USDT", time: "2026-07-21 12:30", status: "지급완료", isPlus: true },
+                  { id: "h4", type: lang === "ko" ? "엄마 보너스" : "Mother Bonus", amount: "+50.00 USDT", time: "2026-07-21 12:30", status: "지급완료", isPlus: true },
+                  { id: "h5", type: lang === "ko" ? "직급 보너스 (15%)" : "Rank Bonus", amount: "+50.00 USDT", time: "2026-07-21 12:30", status: "지급완료", isPlus: true },
+                  { id: "h6", type: lang === "ko" ? "게임기 장비 구매" : "Machine Purchased", amount: "-500.00 USDT", time: "2026-07-20 18:10", status: "완료", isPlus: false },
+                  { id: "h7", type: lang === "ko" ? "USDT ➔ URC 스왑" : "USDT ➔ URC Swap", amount: "-100.00 USDT", time: "2026-07-19 11:05", status: "성공", isPlus: false },
+                  { id: "h8", type: lang === "ko" ? "1회차 게임 당첨" : "Round 1 Game Win", amount: "+102.00 USDT", time: "2026-07-18 12:30", status: "지급완료", isPlus: true },
+                  { id: "h9", type: lang === "ko" ? "게임기 장비 구매" : "Machine Purchased", amount: "-100.00 USDT", time: "2026-07-17 09:15", status: "완료", isPlus: false },
+                  { id: "h10", type: lang === "ko" ? "입금 완료" : "Deposit Completed", amount: "+1,000.00 USDT", time: "2026-07-16 16:40", status: "성공", isPlus: true },
+                  { id: "h11", type: lang === "ko" ? "직추천 보너스" : "Direct Bonus", amount: "+100.00 USDT", time: "2026-07-15 11:20", status: "지급완료", isPlus: true },
+                  { id: "h12", type: lang === "ko" ? "3회차 게임 당첨" : "Round 3 Game Win", amount: "+50.00 USDT", time: "2026-07-14 18:30", status: "지급완료", isPlus: true },
+                ];
+
+                const itemsPerPage = 10;
+                const totalPages = Math.ceil(historyList.length / itemsPerPage);
+                const currentItems = historyList.slice((historyPage - 1) * itemsPerPage, historyPage * itemsPerPage);
+
+                return (
+                  <div className="space-y-3">
+                    <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                      {currentItems.map((tx) => (
+                        <div key={tx.id} className="bg-[#0B0E11] p-3 rounded-xl border border-[#2B3139] flex justify-between items-center hover:border-[#2B3139]/80 transition-colors">
+                          <div>
+                            <p className="text-xs font-bold text-[#EAECEF]">{tx.type}</p>
+                            <p className="text-[10px] text-[#848E9C] mt-0.5 font-mono">{tx.time}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className={`text-xs font-mono font-bold ${tx.isPlus ? "text-[#0ECB81]" : "text-[#EAECEF]"}`}>
+                              {tx.amount}
+                            </p>
+                            <span className="text-[9px] text-[#848E9C] font-bold">{tx.status}</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <div className="text-right">
-                      <p className={`text-xs font-mono font-bold ${tx.isPlus ? "text-[#0ECB81]" : "text-[#EAECEF]"}`}>
-                        {tx.amount}
-                      </p>
-                      <span className="text-[9px] text-[#848E9C] font-bold">{tx.status}</span>
+
+                    {/* Pagination Controls (10 items per page) */}
+                    <div className="flex justify-between items-center pt-2 border-t border-[#2B3139] text-xs">
+                      <button
+                        disabled={historyPage === 1}
+                        onClick={() => setHistoryPage((prev) => Math.max(1, prev - 1))}
+                        className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition-all ${
+                          historyPage === 1
+                            ? "bg-[#0B0E11] border-[#2B3139] text-[#848E9C] opacity-50 cursor-not-allowed"
+                            : "bg-[#2B3139] border-[#2B3139] text-[#EAECEF] hover:bg-[#FCD535] hover:text-[#0B0E11]"
+                        }`}
+                      >
+                        ◀ 이전 10개
+                      </button>
+
+                      <span className="text-[11px] font-mono text-[#848E9C]">
+                        <strong className="text-[#FCD535]">{historyPage}</strong> / {totalPages} 페이지
+                      </span>
+
+                      <button
+                        disabled={historyPage === totalPages}
+                        onClick={() => setHistoryPage((prev) => Math.min(totalPages, prev + 1))}
+                        className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition-all ${
+                          historyPage === totalPages
+                            ? "bg-[#0B0E11] border-[#2B3139] text-[#848E9C] opacity-50 cursor-not-allowed"
+                            : "bg-[#2B3139] border-[#2B3139] text-[#EAECEF] hover:bg-[#FCD535] hover:text-[#0B0E11]"
+                        }`}
+                      >
+                        다음 10개 ▶
+                      </button>
                     </div>
                   </div>
-                ))}
-              </div>
+                );
+              })()}
             </div>
           </div>
         )}
@@ -1494,7 +1581,7 @@ export default function MobileApp() {
                   </button>
                 </div>
               ) : (
-                /* Auto Betting Tab */
+                /* Auto Game Tab */
                 <div className="space-y-4 pt-1">
                   <div className="space-y-2">
                     <label className="text-xs text-[#848E9C] font-bold">{t.autoBetRounds}</label>
@@ -1519,6 +1606,33 @@ export default function MobileApp() {
                     </div>
                   </div>
 
+                  {/* Auto Bets Count Selection (Requirement 5) */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-[#848E9C] font-bold">
+                        {lang === "ko" ? "회당 자동 참여 횟수 설정 (1회당 10 URD)" : lang === "en" ? "Auto Play Count (10 URD each)" : "每轮自动游戏次数 (每轮10 URD)"}
+                      </span>
+                      <span className="text-[#FCD535] font-bold">
+                        {lang === "ko" ? "회당 소모" : lang === "en" ? "Cost / Round" : "每轮消耗"}: {autoSettings.betsCount * 10} URD
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[1, 5, 10, 20].map((cnt) => (
+                        <button
+                          key={cnt}
+                          onClick={() => setAutoSettings((prev) => ({ ...prev, betsCount: cnt }))}
+                          className={`py-2 rounded-lg text-xs font-bold border transition-all ${
+                            autoSettings.betsCount === cnt
+                              ? "bg-[#FCD535] text-[#0B0E11] border-[#FCD535]"
+                              : "bg-[#0B0E11] border-[#2B3139] text-[#848E9C]"
+                          }`}
+                        >
+                          {cnt}{lang === "ko" ? "회" : lang === "en" ? " Times" : "次"} ({cnt * 10} URD)
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* Daily Auto Repeat Checkbox Toggle */}
                   <div className="bg-[#0B0E11] p-3.5 rounded-xl border border-[#2B3139] flex items-center justify-between">
                     <div>
@@ -1537,14 +1651,7 @@ export default function MobileApp() {
                   </div>
 
                   <button
-                    onClick={() => {
-                      setAutoSettings((prev) => ({ ...prev, enabled: !prev.enabled }));
-                      alert(
-                        !autoSettings.enabled
-                          ? "⚡ 자동 배팅 세팅이 활성화되었습니다! 매일 지정 회차에 자동으로 실행됩니다."
-                          : "자동 배팅 비활성화 완료"
-                      );
-                    }}
+                    onClick={handleToggleAutoSettings}
                     className={`w-full py-3.5 font-black rounded-xl text-sm transition-all flex items-center justify-center space-x-2 ${
                       autoSettings.enabled
                         ? "bg-[#0ECB81] text-[#0B0E11]"
