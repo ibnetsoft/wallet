@@ -1813,58 +1813,99 @@ export default function MobileApp() {
                   </div>
 
                   {/* Level 1 Horizontal Branch Bar */}
-                  <div className="relative w-full flex justify-center">
-                    <div className="absolute top-0 w-3/4 h-0.5 bg-[#2B3139]" />
-                    
-                    <div className="w-full flex justify-between pt-4">
-                      {/* Left Leg: User A */}
-                      <div className="flex flex-col items-center w-1/2">
-                        <div className="w-0.5 h-4 bg-[#2B3139] -mt-4 mb-1" />
-                        <div className="bg-[#1E2329] border border-[#0ECB81] rounded-xl p-3 text-center min-w-[135px] shadow-md">
-                          <p className="text-xs font-bold text-[#EAECEF]">User A</p>
-                          <div className="flex items-center justify-center space-x-1 mt-1">
-                            <span className="text-[9px] font-bold text-[#0ECB81] bg-[#0ECB81]/10 px-1.5 py-0.5 rounded">● {t.active}</span>
-                            <span className="text-[9px] text-[#848E9C]">$500</span>
+                  {networkTab === "referral" ? (
+                    /* ── 1. 추천 계보 (Direct Referral Tree): 내(Root) 직추천회원 User A, User B, User E 3명이 1대 가지에 나란히 배치 ── */
+                    <div className="relative w-full flex justify-center">
+                      <div className="absolute top-0 w-5/6 h-0.5 bg-[#2B3139]" />
+                      
+                      <div className="w-full grid grid-cols-3 gap-2 pt-4">
+                        {/* 1대 직추천 1: User A */}
+                        <div className="flex flex-col items-center">
+                          <div className="w-0.5 h-4 bg-[#2B3139] -mt-4 mb-1" />
+                          <div className="bg-[#1E2329] border border-[#0ECB81] rounded-xl p-3 text-center w-full max-w-[130px] shadow-md">
+                            <p className="text-xs font-bold text-[#EAECEF]">User A</p>
+                            <span className="text-[10px] font-mono text-[#0ECB81] font-bold mt-0.5 block">$500</span>
+                          </div>
+
+                          {/* User A가 추천한 2대 회원들 (User C, User D) */}
+                          <div className="w-0.5 h-4 bg-[#2B3139] my-1" />
+                          <div className="flex space-x-1.5">
+                            <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[75px]">
+                              <p className="text-[10px] font-bold text-[#EAECEF]">User C</p>
+                              <span className="text-[9px] font-mono text-[#0ECB81]">$100</span>
+                            </div>
+                            <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[75px]">
+                              <p className="text-[10px] font-bold text-[#EAECEF]">User D</p>
+                              <span className="text-[9px] font-mono text-[#0ECB81]">$1,000</span>
+                            </div>
                           </div>
                         </div>
 
-                        {/* Level 2 Sub-Legs */}
-                        <div className="w-0.5 h-5 bg-[#2B3139] my-1" />
-                        <div className="flex space-x-2">
-                          <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[90px]">
-                            <p className="text-[10px] font-bold text-[#EAECEF]">User C</p>
-                            <span className="text-[8px] text-[#0ECB81]">● {t.active} ($100)</span>
-                          </div>
-                          <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[90px]">
-                            <p className="text-[10px] font-bold text-[#EAECEF]">User D</p>
-                            <span className="text-[8px] text-[#0ECB81]">● {t.active} ($1,000)</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Right Leg: User B */}
-                      <div className="flex flex-col items-center w-1/2">
-                        <div className="w-0.5 h-4 bg-[#2B3139] -mt-4 mb-1" />
-                        <div className="bg-[#1E2329] border border-[#F6465D]/60 rounded-xl p-3 text-center min-w-[135px] shadow-md">
-                          <p className="text-xs font-bold text-[#EAECEF]">User B</p>
-                          <div className="flex items-center justify-center space-x-1 mt-1">
-                            <span className="text-[9px] font-bold text-[#F6465D] bg-[#F6465D]/10 px-1.5 py-0.5 rounded">○ {t.inactive}</span>
-                            <span className="text-[9px] text-[#848E9C]">
-                              {lang === "ko" ? "미구매" : lang === "en" ? "Unpurchased" : "未购设备"}
-                            </span>
+                        {/* 1대 직추천 2: User B */}
+                        <div className="flex flex-col items-center">
+                          <div className="w-0.5 h-4 bg-[#2B3139] -mt-4 mb-1" />
+                          <div className="bg-[#1E2329] border border-[#2B3139] rounded-xl p-3 text-center w-full max-w-[130px] shadow-md">
+                            <p className="text-xs font-bold text-[#EAECEF]">User B</p>
+                            <span className="text-[10px] text-[#848E9C] mt-0.5 block">b_kim@urc369.com</span>
                           </div>
                         </div>
 
-                        {/* Level 2 Sub-Leg */}
-                        <div className="w-0.5 h-5 bg-[#2B3139] my-1" />
-                        <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[100px]">
-                          <p className="text-[10px] font-bold text-[#EAECEF]">User E</p>
-                          <span className="text-[8px] text-[#848E9C]">○ {t.inactive}</span>
+                        {/* 1대 직추천 3: User E */}
+                        <div className="flex flex-col items-center">
+                          <div className="w-0.5 h-4 bg-[#2B3139] -mt-4 mb-1" />
+                          <div className="bg-[#1E2329] border border-[#2B3139] rounded-xl p-3 text-center w-full max-w-[130px] shadow-md">
+                            <p className="text-xs font-bold text-[#EAECEF]">User E</p>
+                            <span className="text-[10px] text-[#848E9C] mt-0.5 block">yh_park@urc369.com</span>
+                          </div>
                         </div>
                       </div>
                     </div>
+                  ) : (
+                    /* ── 2. 후원 계보 (Sponsor Placement Tree): 지정된 후원 배치 위치로 표시 ── */
+                    <div className="relative w-full flex justify-center">
+                      <div className="absolute top-0 w-3/4 h-0.5 bg-[#2B3139]" />
+                      
+                      <div className="w-full flex justify-between pt-4">
+                        {/* Left Leg: User A */}
+                        <div className="flex flex-col items-center w-1/2">
+                          <div className="w-0.5 h-4 bg-[#2B3139] -mt-4 mb-1" />
+                          <div className="bg-[#1E2329] border border-[#0ECB81] rounded-xl p-3 text-center min-w-[135px] shadow-md">
+                            <p className="text-xs font-bold text-[#EAECEF]">User A</p>
+                            <span className="text-[10px] font-mono text-[#0ECB81] font-bold mt-0.5 block">$500</span>
+                          </div>
 
-                  </div>
+                          {/* Level 2 Sub-Legs */}
+                          <div className="w-0.5 h-5 bg-[#2B3139] my-1" />
+                          <div className="flex space-x-2">
+                            <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[85px]">
+                              <p className="text-[10px] font-bold text-[#EAECEF]">User C</p>
+                              <span className="text-[9px] font-mono text-[#0ECB81]">$100</span>
+                            </div>
+                            <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[85px]">
+                              <p className="text-[10px] font-bold text-[#EAECEF]">User D</p>
+                              <span className="text-[9px] font-mono text-[#0ECB81]">$1,000</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right Leg: User B */}
+                        <div className="flex flex-col items-center w-1/2">
+                          <div className="w-0.5 h-4 bg-[#2B3139] -mt-4 mb-1" />
+                          <div className="bg-[#1E2329] border border-[#2B3139] rounded-xl p-3 text-center min-w-[135px] shadow-md">
+                            <p className="text-xs font-bold text-[#EAECEF]">User B</p>
+                            <span className="text-[10px] text-[#848E9C] mt-0.5 block">b_kim@urc369.com</span>
+                          </div>
+
+                          {/* Level 2 Sub-Leg: User E (Placement under User B) */}
+                          <div className="w-0.5 h-5 bg-[#2B3139] my-1" />
+                          <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[100px]">
+                            <p className="text-[10px] font-bold text-[#EAECEF]">User E</p>
+                            <span className="text-[9px] text-[#848E9C] block">yh_park@urc369.com</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                 </div>
               </div>
