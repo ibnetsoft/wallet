@@ -1,52 +1,50 @@
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { Pool } from "pg";
 
 export const dynamic = "force-dynamic";
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
 
 // 1. GET: Fetch pending withdrawals for administrative audit
 export async function GET() {
   try {
-    const { data: withdrawals, error } = await supabaseAdmin
-      .from("ledger_entries")
-      .select(`
-        id,
-        user_id,
-        asset_id,
-        amount,
-        fee,
-        type,
-        status,
-        tx_hash,
-        created_at,
-        users:user_id ( email )
-      `)
-      .eq("type", "WITHDRAW")
-      .eq("status", "PENDING")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      return NextResponse.json(
-        { success: false, error: `Failed to fetch pending withdrawals: ${error.message}` },
-        { status: 500 }
-      );
-    }
+    const query = `
+      SELECT 
+        l.id,
+        l.user_id,
+        l.asset_id,
+        l.amount,
+        l.status,
+        l.tx_hash,
+        l.created_at,
+        u.email
+      FROM public.ledger_entries l
+      JOIN public.users u ON l.user_id = u.id
+      WHERE l.tx_type = 'WITHDRAW' AND l.status = 'PENDING'
+      ORDER BY l.created_at DESC
+    `;
+    const res = await pool.query(query);
 
     return NextResponse.json({
       success: true,
-      withdrawals: withdrawals.map((w: any) => ({
+      withdrawals: res.rows.map((w: any) => ({
         id: w.id,
         userId: w.user_id,
-        email: w.users?.email || "unknown@user.com",
+        email: w.email || "unknown@user.com",
         amount: Math.abs(Number(w.amount)), // Withdraw amount is negative in double-entry ledger
-        fee: Number(w.fee),
-        asset: "USDT", // Mapping from asset_id dynamically in real prod
-        txHash: w.tx_hash,
+        fee: Math.abs(Number(w.amount)) * 0.03, // Calculate 3% default fee
+        asset: "USDT",
+        txHash: w.tx_hash || "—",
         status: w.status,
         time: new Date(w.created_at).toLocaleTimeString()
       }))
     });
 
   } catch (err: any) {
+    console.error("GET api/withdrawals error:", err);
     return NextResponse.json(
       { success: false, error: err?.message || "Internal server error" },
       { status: 500 }
@@ -56,6 +54,7 @@ export async function GET() {
 
 // 2. POST: Approve or Reject a specific withdrawal
 export async function POST(request: Request) {
+  const client = await pool.connect();
   try {
     const { withdrawalId, action, reason } = await request.json();
 
@@ -66,14 +65,16 @@ export async function POST(request: Request) {
       );
     }
 
-    // Fetch the target ledger entry to audit
-    const { data: entry, error: fetchError } = await supabaseAdmin
-      .from("ledger_entries")
-      .select("*")
-      .eq("id", withdrawalId)
-      .single();
+    await client.query("BEGIN");
 
-    if (fetchError || !entry) {
+    // Fetch the target ledger entry to audit
+    const entryRes = await client.query(`
+      SELECT * FROM public.ledger_entries WHERE id = $1
+    `, [withdrawalId]);
+    const entry = entryRes.rows[0];
+
+    if (!entry) {
+      await client.query("ROLLBACK");
       return NextResponse.json(
         { success: false, error: "Withdrawal ledger entry not found" },
         { status: 404 }
@@ -81,6 +82,7 @@ export async function POST(request: Request) {
     }
 
     if (entry.status !== "PENDING") {
+      await client.query("ROLLBACK");
       return NextResponse.json(
         { success: false, error: `Withdrawal is already in ${entry.status} status` },
         { status: 400 }
@@ -89,93 +91,66 @@ export async function POST(request: Request) {
 
     if (action === "APPROVE") {
       // Approve withdrawal: update status to COMPLETED
-      // (In production, this would trigger hot wallet keys to broadcast to BSC node)
-      const { error: updateError } = await supabaseAdmin
-        .from("ledger_entries")
-        .update({ status: "COMPLETED" })
-        .eq("id", withdrawalId);
+      await client.query(`
+        UPDATE public.ledger_entries SET status = 'COMPLETED' WHERE id = $1
+      `, [withdrawalId]);
 
-      if (updateError) {
-        return NextResponse.json(
-          { success: false, error: `Failed to approve: ${updateError.message}` },
-          { status: 500 }
-        );
-      }
-
+      await client.query("COMMIT");
       return NextResponse.json({
         success: true,
         message: "Withdrawal approved successfully. Hot wallet queued."
       });
 
     } else if (action === "REJECT") {
-      // Reject withdrawal:
-      // Refund the locked amount to user's balance and mark ledger entry as FAILED.
-      // Since it's double-entry bookkeeping, we do this in a single atomic transaction.
+      // Reject withdrawal: refund the locked amount to user's balance and mark ledger entry as FAILED.
       const amountToRefund = Math.abs(Number(entry.amount));
-      
-      // Update entry status to FAILED
-      const { error: updateFailError } = await supabaseAdmin
-        .from("ledger_entries")
-        .update({ status: "FAILED" })
-        .eq("id", withdrawalId);
 
-      if (updateFailError) {
-        return NextResponse.json(
-          { success: false, error: `Failed to reject: ${updateFailError.message}` },
-          { status: 500 }
-        );
-      }
+      // Update entry status to FAILED
+      await client.query(`
+        UPDATE public.ledger_entries SET status = 'FAILED' WHERE id = $1
+      `, [withdrawalId]);
 
       // Add a refund entry in ledger
-      const { error: refundLedgerError } = await supabaseAdmin
-        .from("ledger_entries")
-        .insert({
-          user_id: entry.user_id,
-          asset_id: entry.asset_id,
-          amount: amountToRefund,
-          fee: 0,
-          type: "REFUND",
-          status: "COMPLETED",
-          tx_hash: "Internal Reject",
-          description: reason || "Withdrawal rejected by Admin"
-        });
-
-      if (refundLedgerError) {
-        console.error("Critical: Failed to insert refund ledger entry:", refundLedgerError);
-      }
+      await client.query(`
+        INSERT INTO public.ledger_entries (user_id, asset_id, amount, tx_type, status, tx_hash, details)
+        VALUES ($1, $2, $3, 'REFERRAL_BONUS', 'COMPLETED', $4, $5)
+      `, [
+        entry.user_id, 
+        entry.asset_id, 
+        amountToRefund, 
+        `Refund-${withdrawalId.substring(0, 8)}`, 
+        JSON.stringify({ description: reason || "Withdrawal rejected by Admin" })
+      ]);
 
       // Restore user balance
-      const { data: currentBal, error: balanceFetchError } = await supabaseAdmin
-        .from("user_balances")
-        .select("balance")
-        .eq("user_id", entry.user_id)
-        .eq("asset_id", entry.asset_id)
-        .single();
+      await client.query(`
+        INSERT INTO public.user_balances (user_id, asset_id, available_balance)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (user_id, asset_id) 
+        DO UPDATE SET available_balance = public.user_balances.available_balance + EXCLUDED.available_balance
+      `, [entry.user_id, entry.asset_id, amountToRefund]);
 
-      if (!balanceFetchError && currentBal) {
-        const newBalance = Number(currentBal.balance) + amountToRefund;
-        await supabaseAdmin
-          .from("user_balances")
-          .update({ balance: newBalance })
-          .eq("user_id", entry.user_id)
-          .eq("asset_id", entry.asset_id);
-      }
-
+      await client.query("COMMIT");
       return NextResponse.json({
         success: true,
         message: "Withdrawal rejected. locked funds refunded to user."
       });
     }
 
+    await client.query("ROLLBACK");
     return NextResponse.json(
       { success: false, error: "Invalid action type" },
       { status: 400 }
     );
 
   } catch (err: any) {
+    await client.query("ROLLBACK");
+    console.error("POST api/withdrawals error:", err);
     return NextResponse.json(
       { success: false, error: err?.message || "Internal server error" },
       { status: 500 }
     );
+  } finally {
+    client.release();
   }
 }

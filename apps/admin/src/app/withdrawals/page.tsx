@@ -28,24 +28,11 @@ export default function WithdrawalAuditPage() {
       if (result.success && result.withdrawals) {
         setWithdrawals(result.withdrawals);
       } else {
-        // Fallback sample pending request if DB is empty
-        setWithdrawals([
-          {
-            id: "wd-301",
-            userId: "u-2",
-            email: "b_kim@urc369.com",
-            amount: 30.00,
-            fee: 0.90,
-            asset: "USDT",
-            txHash: "0xec659f81a...5a8c",
-            status: "PENDING",
-            time: "10분 전",
-            address: "0xec659f81a02931294819481928491295a8c"
-          }
-        ]);
+        setWithdrawals([]);
       }
     } catch (err) {
       console.error("API에서 대기 중인 출금 내역을 불러오지 못했습니다.", err);
+      setWithdrawals([]);
     } finally {
       setLoading(false);
     }

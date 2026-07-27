@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { PlusCircle, Wallet, CheckCircle, AlertTriangle, RefreshCw, UserCheck } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 
 interface RechargeLog {
   id: string;
@@ -12,14 +11,42 @@ interface RechargeLog {
   status: string;
 }
 
+interface UserDropdownItem {
+  id: string;
+  email: string;
+  nickname: string;
+}
+
 export default function RechargePage() {
-  const [selectedEmail, setSelectedEmail] = useState("user@urc369.com");
+  const [selectedEmail, setSelectedEmail] = useState("");
   const [customEmail, setCustomEmail] = useState("");
   const [amount, setAmount] = useState<string>("1000");
   const [loading, setLoading] = useState(false);
-  const [logs, setLogs] = useState<RechargeLog[]>([
-    { id: "rcg-101", email: "user@urc369.com", amount: 10500, time: "오늘 10:15", status: "충전 완료" }
-  ]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [usersList, setUsersList] = useState<UserDropdownItem[]>([]);
+  const [logs, setLogs] = useState<RechargeLog[]>([]);
+
+  // Fetch real users from DB to populate dropdown list
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setLoadingUsers(true);
+      try {
+        const res = await fetch("/api/users");
+        const data = await res.json();
+        if (data.success && data.users) {
+          setUsersList(data.users);
+          if (data.users.length > 0) {
+            setSelectedEmail(data.users[0].email);
+          }
+        }
+      } catch (err) {
+        console.error("dropdown users fetch error:", err);
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   const targetEmail = customEmail.trim() ? customEmail.trim() : selectedEmail;
 
@@ -27,6 +54,11 @@ export default function RechargePage() {
     e.preventDefault();
     const rechargeValue = parseFloat(amount);
     
+    if (!targetEmail) {
+      alert("충전 대상 회원을 선택하거나 이메일을 직접 입력해주세요.");
+      return;
+    }
+
     if (isNaN(rechargeValue) || rechargeValue <= 0) {
       alert("올바른 충전 수량을 입력해주세요.");
       return;
@@ -38,19 +70,15 @@ export default function RechargePage() {
 
     setLoading(true);
     try {
-      // 1. DB Profiles table balance update if exists
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("id, usdt_balance")
-        .eq("email", targetEmail)
-        .single();
+      const res = await fetch("/api/recharge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: targetEmail, amount: rechargeValue })
+      });
+      const data = await res.json();
 
-      if (profile) {
-        const newBalance = (Number(profile.usdt_balance) || 0) + rechargeValue;
-        await supabase
-          .from("profiles")
-          .update({ usdt_balance: newBalance })
-          .eq("id", profile.id);
+      if (!data.success) {
+        throw new Error(data.error || "충전 처리 중 에러가 발생했습니다.");
       }
 
       // Add to local history log
@@ -62,11 +90,11 @@ export default function RechargePage() {
         status: "충전 완료"
       };
 
-      setLogs([newLog, ...logs]);
-      alert(`🎉 [${targetEmail}] 회원에게 +${rechargeValue.toLocaleString()} USDT 임시 충전이 완료되었습니다!`);
+      setLogs(prev => [newLog, ...prev]);
+      alert(`🎉 [${targetEmail}] 회원에게 +${rechargeValue.toLocaleString()} USDT 충전이 완료되었습니다!\n(Tx 해시: ${data.txHash})`);
       setAmount("1000");
     } catch (err: any) {
-      alert(`🎉 [${targetEmail}] 회원에게 +${rechargeValue.toLocaleString()} USDT 충전이 완료 처리되었습니다.`);
+      alert(`❌ 충전 실패: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -91,7 +119,7 @@ export default function RechargePage() {
         <div className="text-xs text-[#FF9F0A] space-y-1">
           <p className="font-bold">⚠️ 거래 테스트 전용 임시 도구 안내</p>
           <p className="text-[#EAECEF]">
-            본 메뉴는 개발 및 거래 테스트 검증을 위해 마련된 임시 관리자 충전 기능입니다. 테스트 완료 후 삭제될 예정입니다.
+            본 메뉴는 개발 및 거래 테스트 검증을 위해 마련된 임시 관리자 충전 기능입니다.
           </p>
         </div>
       </div>
@@ -108,18 +136,28 @@ export default function RechargePage() {
             {/* User Select / Custom Input */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-[#8E8E93]">충전 대상 회원 선택</label>
-              <select
-                value={selectedEmail}
-                onChange={(e) => {
-                  setSelectedEmail(e.target.value);
-                  setCustomEmail("");
-                }}
-                className="w-full bg-[#1C1C21] border border-[#26262B] focus:border-[#30D5C8] rounded-xl px-4 py-3 text-xs text-white outline-none font-semibold"
-              >
-                <option value="user@urc369.com">user@urc369.com (기본 유저 계정)</option>
-                <option value="b_kim@urc369.com">b_kim@urc369.com (User B)</option>
-                <option value="yh_park@urc369.com">yh_park@urc369.com (User E)</option>
-              </select>
+              {loadingUsers ? (
+                <div className="text-xs text-[#8E8E93] animate-pulse py-2">회원 목록 불러오는 중...</div>
+              ) : (
+                <select
+                  value={selectedEmail}
+                  onChange={(e) => {
+                    setSelectedEmail(e.target.value);
+                    setCustomEmail("");
+                  }}
+                  className="w-full bg-[#1C1C21] border border-[#26262B] focus:border-[#30D5C8] rounded-xl px-4 py-3 text-xs text-white outline-none font-semibold cursor-pointer"
+                >
+                  {usersList.length === 0 ? (
+                    <option value="">(등록된 회원이 없습니다)</option>
+                  ) : (
+                    usersList.map((u) => (
+                      <option key={u.id} value={u.email}>
+                        {u.email} ({u.nickname || "이름없음"})
+                      </option>
+                    ))
+                  )}
+                </select>
+              )}
 
               <div className="pt-1">
                 <input
@@ -127,7 +165,7 @@ export default function RechargePage() {
                   placeholder="또는 직접 유저 이메일 입력..."
                   value={customEmail}
                   onChange={(e) => setCustomEmail(e.target.value)}
-                  className="w-full bg-[#1C1C21] border border-[#26262B] focus:border-[#30D5C8] rounded-xl px-4 py-2.5 text-xs text-white outline-none font-mono"
+                  className="w-full bg-[#1C1C21] border border-[#26262B] focus:border-[#30D5C8] rounded-xl px-4 py-2.5 text-xs text-white outline-none font-mono placeholder:text-[#555]"
                 />
               </div>
             </div>
@@ -155,7 +193,7 @@ export default function RechargePage() {
                     key={preset}
                     type="button"
                     onClick={() => setAmount(preset)}
-                    className="flex-1 py-1.5 bg-[#1C1C21] hover:bg-[#30D5C8]/20 hover:text-[#30D5C8] text-[#8E8E93] border border-[#26262B] text-xs font-bold rounded-lg transition-all"
+                    className="flex-1 py-1.5 bg-[#1C1C21] hover:bg-[#30D5C8]/20 hover:text-[#30D5C8] text-[#8E8E93] border border-[#26262B] text-xs font-bold rounded-lg transition-all cursor-pointer"
                   >
                     +{preset}
                   </button>
@@ -167,7 +205,7 @@ export default function RechargePage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4 bg-gradient-to-r from-[#30D5C8] to-[#00D2FF] hover:opacity-90 text-[#0B0E11] font-black text-sm rounded-xl transition-all shadow-[0_0_20px_rgba(48,213,200,0.3)] flex items-center justify-center space-x-2 disabled:opacity-50"
+              className="w-full py-4 bg-gradient-to-r from-[#30D5C8] to-[#00D2FF] hover:opacity-90 text-[#0B0E11] font-black text-sm rounded-xl transition-all shadow-[0_0_20px_rgba(48,213,200,0.3)] flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
             >
               {loading ? (
                 <RefreshCw size={18} className="animate-spin" />
@@ -190,18 +228,22 @@ export default function RechargePage() {
             </h4>
 
             <div className="space-y-3">
-              {logs.map((log) => (
-                <div key={log.id} className="p-3 bg-[#121215] rounded-xl border border-[#26262B] space-y-1">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="font-semibold text-white truncate max-w-[140px]">{log.email}</span>
-                    <span className="font-mono font-extrabold text-[#30D5C8]">+{log.amount.toLocaleString()} USDT</span>
+              {logs.length === 0 ? (
+                <div className="py-8 text-center text-xs text-[#8E8E93]">이 세션에서의 충전 이력이 없습니다.</div>
+              ) : (
+                logs.map((log) => (
+                  <div key={log.id} className="p-3 bg-[#121215] rounded-xl border border-[#26262B] space-y-1">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="font-semibold text-white truncate max-w-[140px]">{log.email}</span>
+                      <span className="font-mono font-extrabold text-[#30D5C8]">+{log.amount.toLocaleString()} USDT</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[10px] text-[#8E8E93]">
+                      <span>{log.time}</span>
+                      <span className="text-[#30D5C8] font-bold">{log.status}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center text-[10px] text-[#8E8E93]">
-                    <span>{log.time}</span>
-                    <span className="text-[#30D5C8] font-bold">{log.status}</span>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>

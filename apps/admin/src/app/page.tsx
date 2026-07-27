@@ -2,18 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { 
-  ArrowDownLeft, 
-  ArrowUpRight, 
-  Users, 
-  Percent, 
-  ExternalLink,
-  CheckCircle,
-  Clock,
-  XCircle,
-  ChevronRight,
-  TrendingUp,
-  RefreshCw,
-  AlertCircle
+  Users, Clock, ArrowDownLeft, ArrowUpRight, 
+  CheckCircle, XCircle, RefreshCw, ChevronRight, Percent, ExternalLink
 } from "lucide-react";
 
 interface PendingWithdrawal {
@@ -44,12 +34,15 @@ export default function DashboardPage() {
   const [timeLeft, setTimeLeft] = useState("");
   const [loadingWithdrawals, setLoadingWithdrawals] = useState(false);
   const [pendingWithdrawals, setPendingWithdrawals] = useState<PendingWithdrawal[]>([]);
-  const [recentTransactions, setRecentTransactions] = useState<RecentTx[]>([
-    { id: "tx-1001", email: "user@urc369.com", asset: "USDT", amount: "+10,500.00", type: "입금 완료", hash: "0x5320...3a17", status: "완료", date: "15:24" },
-    { id: "tx-1002", email: "user@urc369.com", asset: "URC", amount: "+4,980.00", type: "실시간 스왑", hash: "내부 스왑", status: "완료", date: "15:10", details: "수수료: 0.1% 반영" },
-    { id: "tx-1003", email: "user@urc369.com", asset: "URD", amount: "+3,000", type: "게임기 구매 보너스", hash: "내부 증정", status: "완료", date: "14:20", details: "1500 URD * 2회" },
-    { id: "tx-1004", email: "b_kim@urc369.com", asset: "USDT", amount: "-30.00", type: "출금 신청", hash: "0x91ad...8e00", status: "대기 중", date: "12:30", details: "수수료: 0.90 USDT (3%)" },
-  ]);
+  const [recentTransactions, setRecentTransactions] = useState<RecentTx[]>([]);
+  const [stats, setStats] = useState({
+    totalDeposit: 0,
+    pendingWithdrawalAmount: 0,
+    pendingWithdrawalCount: 0,
+    totalUsers: 0,
+    activeUsers: 0,
+    totalFees: 0
+  });
 
   // Fetch KST/CST Countdown
   useEffect(() => {
@@ -82,6 +75,19 @@ export default function DashboardPage() {
     return () => clearInterval(timer);
   }, []);
 
+  const fetchStats = async () => {
+    try {
+      const res = await fetch("/api/dashboard/stats");
+      const result = await res.json();
+      if (result.success) {
+        if (result.stats) setStats(result.stats);
+        if (result.recentTransactions) setRecentTransactions(result.recentTransactions);
+      }
+    } catch (err) {
+      console.error("Dashboard stats fetch error:", err);
+    }
+  };
+
   // Fetch Real Pending Withdrawals from API / DB
   const fetchPendingWithdrawals = async () => {
     setLoadingWithdrawals(true);
@@ -100,6 +106,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchPendingWithdrawals();
+    fetchStats();
   }, []);
 
   const handleApprove = async (id: string) => {
@@ -115,6 +122,7 @@ export default function DashboardPage() {
       if (result.success) {
         alert("성공적으로 출금 승인되었습니다.");
         fetchPendingWithdrawals();
+        fetchStats();
       } else {
         alert(`승인 실패: ${result.error}`);
       }
@@ -137,6 +145,7 @@ export default function DashboardPage() {
       if (result.success) {
         alert("성공적으로 반려 및 사용자 자산 반환 처리되었습니다.");
         fetchPendingWithdrawals();
+        fetchStats();
       } else {
         alert(`반려 실패: ${result.error}`);
       }
@@ -172,7 +181,9 @@ export default function DashboardPage() {
         <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 flex items-center justify-between shadow-lg">
           <div className="space-y-2">
             <p className="text-xs font-semibold text-[#8E8E93] uppercase tracking-wider">전체 회원 예치 총액</p>
-            <h3 className="text-2xl font-extrabold text-white font-mono">10,500.00 USDT</h3>
+            <h3 className="text-2xl font-extrabold text-white font-mono">
+              {stats.totalDeposit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+            </h3>
             <p className="text-[11px] text-[#30D5C8] font-medium">유저 예치금 실시간 합계</p>
           </div>
           <div className="w-12 h-12 bg-[#30D5C8]/10 rounded-xl flex items-center justify-center text-[#30D5C8]">
@@ -184,8 +195,10 @@ export default function DashboardPage() {
         <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 flex items-center justify-between shadow-lg">
           <div className="space-y-2">
             <p className="text-xs font-semibold text-[#8E8E93] uppercase tracking-wider">출금 대기 요청 수량</p>
-            <h3 className="text-2xl font-extrabold text-[#FF9F0A] font-mono">30.00 USDT</h3>
-            <p className="text-[11px] text-[#FF9F0A] font-medium">1건 승인 대기 중</p>
+            <h3 className="text-2xl font-extrabold text-[#FF9F0A] font-mono">
+              {stats.pendingWithdrawalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+            </h3>
+            <p className="text-[11px] text-[#FF9F0A] font-medium">{stats.pendingWithdrawalCount}건 승인 대기 중</p>
           </div>
           <div className="w-12 h-12 bg-[#FF9F0A]/10 rounded-xl flex items-center justify-center text-[#FF9F0A]">
             <ArrowUpRight size={24} />
@@ -196,8 +209,8 @@ export default function DashboardPage() {
         <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 flex items-center justify-between shadow-lg">
           <div className="space-y-2">
             <p className="text-xs font-semibold text-[#8E8E93] uppercase tracking-wider">가입 회원 / 결제 회원</p>
-            <h3 className="text-2xl font-extrabold text-white">3 명</h3>
-            <p className="text-[11px] text-[#8E8E93]">1명 활성 (2명 미구매)</p>
+            <h3 className="text-2xl font-extrabold text-white">{stats.totalUsers} 명</h3>
+            <p className="text-[11px] text-[#8E8E93]">{stats.activeUsers}명 활성 ({stats.totalUsers - stats.activeUsers}명 미구매)</p>
           </div>
           <div className="w-12 h-12 bg-[#00D2FF]/10 rounded-xl flex items-center justify-center text-[#00D2FF]">
             <Users size={24} />
@@ -208,7 +221,9 @@ export default function DashboardPage() {
         <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 flex items-center justify-between shadow-lg">
           <div className="space-y-2">
             <p className="text-xs font-semibold text-[#8E8E93] uppercase tracking-wider">누적 출금 수수료 수익</p>
-            <h3 className="text-2xl font-extrabold text-white font-mono">0.90 USDT</h3>
+            <h3 className="text-2xl font-extrabold text-white font-mono">
+              {stats.totalFees.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+            </h3>
             <p className="text-[11px] text-[#BF5AF2] font-medium">출금 수수료율 3% 설정</p>
           </div>
           <div className="w-12 h-12 bg-[#BF5AF2]/10 rounded-xl flex items-center justify-center text-[#BF5AF2]">
@@ -284,13 +299,13 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex justify-between text-[10px] text-[#8E8E93] font-medium mt-3 px-2">
-            <span>07/14</span>
-            <span>07/15</span>
-            <span>07/16</span>
-            <span>07/17</span>
-            <span>07/18</span>
-            <span>07/19</span>
-            <span>07/20</span>
+            <span>07/21</span>
+            <span>07/22</span>
+            <span>07/23</span>
+            <span>07/24</span>
+            <span>07/25</span>
+            <span>07/26</span>
+            <span>07/27</span>
           </div>
         </div>
 
@@ -302,12 +317,12 @@ export default function DashboardPage() {
               <button 
                 onClick={fetchPendingWithdrawals}
                 disabled={loadingWithdrawals}
-                className="text-[#00D2FF] hover:opacity-85"
+                className="text-[#00D2FF] hover:opacity-85 cursor-pointer"
               >
                 <RefreshCw size={14} className={loadingWithdrawals ? "animate-spin" : ""} />
               </button>
             </div>
-            <p className="text-[11px] text-[#8E8E93]">관리자 승인이 필요합니다. (최소 출금액: $50)</p>
+            <p className="text-[11px] text-[#8E8E93]">관리자 승인이 필요합니다. (기본 수수료 3%)</p>
             
             <div className="mt-4 space-y-3 max-h-72 overflow-y-auto pr-1">
               {pendingWithdrawals.length === 0 ? (
@@ -331,7 +346,7 @@ export default function DashboardPage() {
                           <p className="text-xs font-bold text-white">${wd.amount.toFixed(2)}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-[9px] text-[#FF9F0A] uppercase font-semibold">수수료 (5%)</p>
+                          <p className="text-[9px] text-[#FF9F0A] uppercase font-semibold">수수료</p>
                           <p className="text-[10px] font-semibold text-[#FF9F0A]">${wd.fee.toFixed(2)}</p>
                         </div>
                         <div className="text-right">
@@ -347,13 +362,13 @@ export default function DashboardPage() {
                       <div className="flex space-x-2 pt-1 border-t border-[#26262B]/50">
                         <button 
                           onClick={() => handleApprove(wd.id)}
-                          className="flex-1 py-1.5 bg-[#30D5C8]/10 text-[#30D5C8] hover:bg-[#30D5C8]/20 text-[10px] font-bold rounded-lg transition-all"
+                          className="flex-1 py-1.5 bg-[#30D5C8]/10 text-[#30D5C8] hover:bg-[#30D5C8]/20 text-[10px] font-bold rounded-lg transition-all cursor-pointer"
                         >
                           승인
                         </button>
                         <button 
                           onClick={() => handleReject(wd.id)}
-                          className="flex-1 py-1.5 bg-[#FF453A]/10 text-[#FF453A] hover:bg-[#FF453A]/20 text-[10px] font-bold rounded-lg transition-all"
+                          className="flex-1 py-1.5 bg-[#FF453A]/10 text-[#FF453A] hover:bg-[#FF453A]/20 text-[10px] font-bold rounded-lg transition-all cursor-pointer"
                         >
                           반려
                         </button>
@@ -365,7 +380,7 @@ export default function DashboardPage() {
             </div>
           </div>
           
-          <button className="w-full py-2.5 bg-[#1C1C21] hover:bg-[#26262B] text-xs font-semibold rounded-xl mt-4 flex items-center justify-center space-x-1 text-[#00D2FF] transition-all">
+          <button className="w-full py-2.5 bg-[#1C1C21] hover:bg-[#26262B] text-xs font-semibold rounded-xl mt-4 flex items-center justify-center space-x-1 text-[#00D2FF] transition-all cursor-pointer">
             <span>대기 중인 모든 거래 보기</span>
             <ChevronRight size={14} />
           </button>
@@ -379,79 +394,79 @@ export default function DashboardPage() {
             <h4 className="text-sm font-bold text-white uppercase tracking-wider">최근 원장(Ledger) 내역</h4>
             <p className="text-[11px] text-[#8E8E93] mt-0.5">실시간 시스템 트랜잭션 기록 (URC 스왑 및 수수료 포함)</p>
           </div>
-          <button className="px-3.5 py-1.5 bg-[#1C1C21] border border-[#26262B] hover:bg-[#26262B] text-[11px] font-semibold rounded-lg text-[#00D2FF] transition-all">
-            원장 감사(Audit)
-          </button>
         </div>
 
         {/* Ledger Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b border-[#26262B] text-[#8E8E93] font-semibold uppercase tracking-wider pb-3">
-                <th className="py-3 px-4">Tx ID</th>
-                <th className="py-3 px-4">사용자 이메일</th>
-                <th className="py-3 px-4">자산</th>
-                <th className="py-3 px-4">금액</th>
-                <th className="py-3 px-4">유형</th>
-                <th className="py-3 px-4">상세 내역 / 수수료</th>
-                <th className="py-3 px-4">Tx 해시</th>
-                <th className="py-3 px-4">상태</th>
-                <th className="py-3 px-4 text-right">시간</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentTransactions.map((tx) => (
-                <tr key={tx.id} className="border-b border-[#26262B]/40 hover:bg-[#1C1C21]/30 transition-all">
-                  <td className="py-4 px-4 font-semibold text-white">{tx.id}</td>
-                  <td className="py-4 px-4 text-white font-medium">{tx.email}</td>
-                  <td className="py-4 px-4">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                      tx.asset === 'USDT' ? 'bg-[#26A17B]/10 text-[#26A17B]' : 
-                      tx.asset === 'URC' ? 'bg-[#BF5AF2]/10 text-[#BF5AF2]' : 
-                      'bg-[#F0B90B]/10 text-[#F0B90B]'
-                    }`}>
-                      {tx.asset}
-                    </span>
-                  </td>
-                  <td className={`py-4 px-4 font-bold ${tx.amount.startsWith('+') ? 'text-[#30D5C8]' : 'text-[#FF9F0A]'}`}>{tx.amount}</td>
-                  <td className="py-4 px-4 text-[#8E8E93] font-medium">{tx.type}</td>
-                  <td className="py-4 px-4 text-[#8E8E93]">{tx.details || "-"}</td>
-                  <td className="py-4 px-4">
-                    {tx.hash === "내부 처리" ? (
-                      <span className="text-[#8E8E93] italic text-[10px]">내부 처리</span>
-                    ) : (
-                      <a href="#" className="text-[#00D2FF] hover:underline flex items-center space-x-1">
-                        <span>{tx.hash}</span>
-                        <ExternalLink size={10} />
-                      </a>
-                    )}
-                  </td>
-                  <td className="py-4 px-4">
-                    {tx.status === "완료" && (
-                      <span className="flex items-center space-x-1 text-[#30D5C8] font-semibold">
-                        <CheckCircle size={12} />
-                        <span>완료</span>
-                      </span>
-                    )}
-                    {tx.status === "대기 중" && (
-                      <span className="flex items-center space-x-1 text-[#FF9F0A] font-semibold">
-                        <Clock size={12} />
-                        <span>대기 중</span>
-                      </span>
-                    )}
-                    {tx.status === "실패" && (
-                      <span className="flex items-center space-x-1 text-[#FF453A] font-semibold">
-                        <XCircle size={12} />
-                        <span>실패</span>
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-4 px-4 text-[#8E8E93] text-right">{tx.date}</td>
+          {recentTransactions.length === 0 ? (
+            <div className="py-10 text-center text-[#8E8E93] text-xs">
+              최근 트랜잭션 기록이 없습니다.
+            </div>
+          ) : (
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-[#26262B] text-[#8E8E93] font-semibold uppercase tracking-wider pb-3">
+                  <th className="py-3 px-4">Tx ID</th>
+                  <th className="py-3 px-4">사용자 이메일</th>
+                  <th className="py-3 px-4">자산</th>
+                  <th className="py-3 px-4">금액</th>
+                  <th className="py-3 px-4">유형</th>
+                  <th className="py-3 px-4">상세 내역</th>
+                  <th className="py-3 px-4">Tx 해시</th>
+                  <th className="py-3 px-4">상태</th>
+                  <th className="py-3 px-4 text-right">시간</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {recentTransactions.map((tx) => (
+                  <tr key={tx.id} className="border-b border-[#26262B]/40 hover:bg-[#1C1C21]/30 transition-all">
+                    <td className="py-4 px-4 font-semibold text-white">{tx.id}</td>
+                    <td className="py-4 px-4 text-white font-medium">{tx.email}</td>
+                    <td className="py-4 px-4">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        tx.asset === 'USDT' ? 'bg-[#26A17B]/10 text-[#26A17B]' : 
+                        tx.asset === 'URC' ? 'bg-[#BF5AF2]/10 text-[#BF5AF2]' : 
+                        'bg-[#F0B90B]/10 text-[#F0B90B]'
+                      }`}>
+                        {tx.asset}
+                      </span>
+                    </td>
+                    <td className={`py-4 px-4 font-bold ${tx.amount.startsWith('+') ? 'text-[#30D5C8]' : 'text-[#FF9F0A]'}`}>{tx.amount}</td>
+                    <td className="py-4 px-4 text-[#8E8E93] font-medium">{tx.type}</td>
+                    <td className="py-4 px-4 text-[#8E8E93]">{tx.details || "-"}</td>
+                    <td className="py-4 px-4">
+                      {tx.hash === "내부 처리" ? (
+                        <span className="text-[#8E8E93] italic text-[10px]">내부 처리</span>
+                      ) : (
+                        <span className="text-[#8E8E93] font-mono text-[10px]">{tx.hash}</span>
+                      )}
+                    </td>
+                    <td className="py-4 px-4">
+                      {tx.status === "완료" && (
+                        <span className="flex items-center space-x-1 text-[#30D5C8] font-semibold">
+                          <CheckCircle size={12} />
+                          <span>완료</span>
+                        </span>
+                      )}
+                      {tx.status === "대기 중" && (
+                        <span className="flex items-center space-x-1 text-[#FF9F0A] font-semibold">
+                          <Clock size={12} />
+                          <span>대기 중</span>
+                        </span>
+                      )}
+                      {tx.status === "실패" && (
+                        <span className="flex items-center space-x-1 text-[#FF453A] font-semibold">
+                          <XCircle size={12} />
+                          <span>실패</span>
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-4 px-4 text-[#8E8E93] text-right">{tx.date}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>

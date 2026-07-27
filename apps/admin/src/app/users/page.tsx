@@ -23,32 +23,17 @@ export default function UsersPage() {
     const fetchUsers = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("*")
-          .order("created_at", { ascending: false });
+        const res = await fetch("/api/users");
+        const data = await res.json();
 
-        if (data && !error) {
-          const formatted: UserProfile[] = data.map((u: any) => ({
-            id: u.id,
-            email: u.email || "user@urc369.com",
-            nickname: u.nickname || u.username || "유저",
-            code: u.referral_code || u.code || "URC883920",
-            joinedAt: u.created_at ? u.created_at.split("T")[0] : "2026-07-21",
-            assets: u.usdt_balance || 10500,
-            active: u.status === "ACTIVE" || true,
-          }));
-          setUsers(formatted);
+        if (data.success && data.users) {
+          setUsers(data.users);
         } else {
-          // Default real fallback user profile if table empty
-          setUsers([
-            { id: "u-1", email: "user@urc369.com", nickname: "User (나)", code: "URC883920", joinedAt: "2026-07-21", assets: 10500.00, active: true },
-            { id: "u-2", email: "b_kim@urc369.com", nickname: "User B", code: "URC110293", joinedAt: "2026-07-21", assets: 0.00, active: false },
-            { id: "u-3", email: "yh_park@urc369.com", nickname: "User E", code: "URC992011", joinedAt: "2026-07-20", assets: 0.00, active: false },
-          ]);
+          setUsers([]);
         }
       } catch (e) {
         console.error("유저 목록 조회 실패", e);
+        setUsers([]);
       } finally {
         setLoading(false);
       }
