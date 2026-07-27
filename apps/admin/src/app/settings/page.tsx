@@ -41,7 +41,7 @@ export default function SettingsPage() {
   const [addingAdmin, setAddingAdmin] = useState(false);
   const [adminMsg, setAdminMsg] = useState<MsgState | null>(null);
 
-  // ── 설정값 Supabase 로드 ──
+  // ── 설정값 DB 로드 ──
   const loadSettings = useCallback(async () => {
     setSettingsLoading(true);
     try {
@@ -130,7 +130,7 @@ export default function SettingsPage() {
         .from("system_settings")
         .upsert(rows, { onConflict: "key" });
       if (error) throw error;
-      setWalletMsg({ type: "ok", text: "지갑 주소, 개인키 및 잔액 설정이 Supabase에 저장되었습니다." });
+      setWalletMsg({ type: "ok", text: "지갑 주소, 개인키 및 잔액 설정이 DB에 저장되었습니다." });
     } catch (err: unknown) {
       setWalletMsg({ type: "err", text: err instanceof Error ? err.message : "저장 실패" });
     } finally {
@@ -206,7 +206,7 @@ export default function SettingsPage() {
       {settingsLoading ? (
         <div className="flex items-center justify-center h-32 text-[#8E8E93] text-sm">
           <RefreshCw className="animate-spin mr-2" size={18} />
-          Supabase에서 설정값 로드 중...
+          DB에서 설정값 로드 중...
         </div>
       ) : (
         <>
@@ -400,7 +400,7 @@ export default function SettingsPage() {
               >
                 {savingWallets
                   ? <><RefreshCw size={15} className="animate-spin" /><span>저장 중...</span></>
-                  : <><Save size={15} /><span>지갑 주소 설정 저장 (Supabase)</span></>
+                  : <><Save size={15} /><span>지갑 주소 설정 저장 (DB)</span></>
                 }
               </button>
             </form>
@@ -448,7 +448,7 @@ export default function SettingsPage() {
                   >
                     {savingFees
                       ? <><RefreshCw size={14} className="animate-spin" /><span>저장 중...</span></>
-                      : "수수료율 저장 (Supabase)"
+                      : "수수료율 저장 (DB)"
                     }
                   </button>
                 </form>

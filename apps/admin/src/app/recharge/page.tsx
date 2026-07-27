@@ -38,7 +38,7 @@ export default function RechargePage() {
 
     setLoading(true);
     try {
-      // 1. Supabase Profiles table balance update if exists
+      // 1. DB Profiles table balance update if exists
       const { data: profile } = await supabase
         .from("profiles")
         .select("id, usdt_balance")

@@ -6,6 +6,7 @@ import {
   Lock, ArrowDownRight, ArrowUpRight, ShieldCheck, AlertTriangle, Info
 } from "lucide-react";
 import { supabaseAdmin } from "../../lib/supabase";
+import { ethers } from "ethers";
 
 interface UserWallet {
   user_id: string;
@@ -28,11 +29,11 @@ interface VaultTransferLog {
 export default function WalletSweepPage() {
   const [loading, setLoading] = useState(true);
 
-  // ── 실제 Supabase 데이터 ──
+  // ── 실제 DB 데이터 ──
   const [userWallets, setUserWallets] = useState<UserWallet[]>([]);
   const [vaultLogs, setVaultLogs] = useState<VaultTransferLog[]>([]);
 
-  // ── 설정값 (Supabase system_settings 또는 vault_settings에서 로드) ──
+  // ── 설정값 (DB system_settings 또는 vault_settings에서 로드) ──
   const [masterHotWallet, setMasterHotWallet] = useState("");
   const [coldVaultAddress, setColdVaultAddress] = useState("");
   const [hotBalanceUSDT, setHotBalanceUSDT] = useState<number | null>(null);
@@ -45,6 +46,9 @@ export default function WalletSweepPage() {
   const [loadingVault, setLoadingVault] = useState(false);
   const [sweepMsg, setSweepMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [vaultMsg, setVaultMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  // ── 자체 지갑 생성 상태 ──
+  const [generatedWallet, setGeneratedWallet] = useState<{ address: string; privateKey: string } | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -122,25 +126,61 @@ export default function WalletSweepPage() {
 
   const totalSweepable = userWallets.reduce((acc, w) => acc + (w.usdt_balance ?? 0), 0);
 
-  // ── 스윕: 실제 블록체인 TX 없음 → Supabase에 sweep_requests 기록만 ──
+  // ── 자체 지갑 주소 생성 ──
+  const handleGenerateWallet = async () => {
+    if (!confirm("새로운 마스터 핫 지갑 주소를 자체 생성하시겠습니까?\n기존에 설정된 마스터 지갑 주소가 대체됩니다.")) return;
+    try {
+      const wallet = ethers.Wallet.createRandom();
+      setGeneratedWallet({
+        address: wallet.address,
+        privateKey: wallet.privateKey
+      });
+      
+      const res = await fetch("/api/wallet/setup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: wallet.address })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMasterHotWallet(wallet.address);
+        setHotBalanceUSDT(0);
+      } else {
+        alert("지갑 주소를 DB에 저장하는데 실패했습니다: " + data.error);
+      }
+    } catch (e: any) {
+      alert("지갑 생성 오류: " + e.message);
+    }
+  };
+
+  // ── 스윕: API를 통해 DB 트랜잭션 수행 ──
   const handleSweep = async () => {
     if (totalSweepable <= 0) {
       setSweepMsg({ type: "err", text: "모으기 가능한 유저 잔액이 없습니다." });
       return;
     }
-    if (!confirm(`유저 개별 지갑 총 ${totalSweepable.toLocaleString()} USDT를 마스터 핫 지갑으로 모으기 요청을 기록하시겠습니까?\n\n⚠️ 실제 블록체인 트랜잭션은 서버 측 스케줄러가 별도로 처리합니다.`)) return;
+    if (!masterHotWallet) {
+      setSweepMsg({ type: "err", text: "마스터 핫 지갑 주소가 생성되지 않았습니다." });
+      return;
+    }
+    if (!confirm(`유저 개별 지갑 총 ${totalSweepable.toLocaleString()} USDT를 자체발행한 회사지갑(${masterHotWallet})으로 즉시 모으기(Sweep)하시겠습니까?\n\n⚠️ 이 작업은 즉시 유저 잔액을 차감하고 회사 지갑 잔액으로 병합합니다.`)) return;
 
     setLoadingSweep(true);
     setSweepMsg(null);
     try {
-      const { error } = await supabaseAdmin.from("sweep_requests").insert({
-        total_amount: totalSweepable,
-        target_wallet: masterHotWallet,
-        status: "pending",
-        requested_by: "admin",
+      const res = await fetch("/api/wallet/sweep", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ target_wallet: masterHotWallet })
       });
-      if (error) throw error;
-      setSweepMsg({ type: "ok", text: `✅ 스윕 요청(${totalSweepable.toLocaleString()} USDT)이 Supabase에 기록되었습니다. 서버 처리 후 반영됩니다.` });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+
+      setSweepMsg({ 
+        type: "ok", 
+        text: `✅ 지갑 모으기(${totalSweepable.toLocaleString()} USDT)가 성공적으로 완료되어 회사 지갑 잔고에 반영되었습니다!` 
+      });
+      fetchData();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       setSweepMsg({ type: "err", text: `오류: ${msg}` });
@@ -167,7 +207,7 @@ export default function WalletSweepPage() {
     }
 
     if (!confirm(
-      `[마스터 핫 지갑 ➔ 오프라인 콜드 금고 이체 기록]\n\n이체 수량: ${val.toLocaleString()} ${vaultAsset}\n수신 지갑: ${coldVaultAddress}\n\n⚠️ 이 버튼은 Supabase에 이체 기록만 저장합니다.\n실제 블록체인 송금은 해당 지갑 앱에서 직접 실행하세요.\n\n계속하시겠습니까?`
+      `[마스터 핫 지갑 ➔ 오프라인 콜드 금고 이체 기록]\n\n이체 수량: ${val.toLocaleString()} ${vaultAsset}\n수신 지갑: ${coldVaultAddress}\n\n⚠️ 이 버튼은 DB에 이체 기록만 저장합니다.\n실제 블록체인 송금은 해당 지갑 앱에서 직접 실행하세요.\n\n계속하시겠습니까?`
     )) return;
 
     setLoadingVault(true);
@@ -207,13 +247,13 @@ export default function WalletSweepPage() {
     return (
       <div className="flex items-center justify-center h-64 text-[#8E8E93] text-sm">
         <RefreshCw className="animate-spin mr-2" size={18} />
-        Supabase에서 실제 데이터를 불러오는 중...
+        DB에서 실제 데이터를 불러오는 중...
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 font-sans">
+    <div className="space-y-8 font-sans relative">
       {/* Page Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -227,7 +267,7 @@ export default function WalletSweepPage() {
         </div>
         <button
           onClick={fetchData}
-          className="flex items-center space-x-1.5 px-3 py-2 bg-[#26262B] hover:bg-[#3A3A40] text-[#8E8E93] rounded-lg text-xs transition-colors"
+          className="flex items-center space-x-1.5 px-3 py-2 bg-[#26262B] hover:bg-[#3A3A40] text-[#8E8E93] rounded-lg text-xs transition-colors cursor-pointer"
         >
           <RefreshCw size={13} />
           <span>새로고침</span>
@@ -239,9 +279,9 @@ export default function WalletSweepPage() {
         <Info size={16} className="text-[#FF9F0A] flex-shrink-0 mt-0.5" />
         <div className="text-xs text-[#EAECEF] leading-relaxed">
           <span className="font-bold text-[#FF9F0A]">[중요] </span>
-          이 페이지의 모든 잔액과 지갑 주소는 <strong>Supabase의 실제 데이터</strong>입니다.
+          이 페이지의 모든 잔액과 지갑 주소는 <strong>DB의 실제 데이터</strong>입니다.
           &quot;스윕 실행&quot; 및 &quot;콜드 금고 이체&quot; 버튼은 <strong>블록체인에 직접 트랜잭션을 전송하지 않습니다.</strong>
-          &nbsp;Supabase에 요청/기록을 저장하며, 실제 온체인 실행은 별도 지갑 앱(MetaMask, Trust Wallet 등)에서 직접 수행하세요.
+          &nbsp;DB에 요청/기록을 저장하며, 실제 온체인 실행은 별도 지갑 앱(MetaMask, Trust Wallet 등)에서 직접 수행하세요.
         </div>
       </div>
 
@@ -259,14 +299,23 @@ export default function WalletSweepPage() {
           </div>
 
           {/* 마스터 핫 지갑 주소 */}
-          <div className="p-3 bg-[#121215] rounded-xl border border-[#26262B]">
-            <label className="text-[10px] text-[#8E8E93] uppercase font-bold">마스터 핫 지갑 주소 (수신처)</label>
+          <div className="p-3 bg-[#121215] rounded-xl border border-[#26262B] space-y-2">
+            <div className="flex justify-between items-center">
+              <label className="text-[10px] text-[#8E8E93] uppercase font-bold">마스터 핫 지갑 주소 (수신처)</label>
+              <button
+                type="button"
+                onClick={handleGenerateWallet}
+                className="px-2.5 py-1 bg-[#BF5AF2]/10 hover:bg-[#BF5AF2]/20 border border-[#BF5AF2]/30 text-[#BF5AF2] text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+              >
+                지갑 자체 생성
+              </button>
+            </div>
             <div className="flex items-center space-x-2 mt-2">
               <Wallet size={16} className="text-[#00D2FF] flex-shrink-0" />
               {masterHotWallet ? (
                 <span className="text-white font-mono text-xs break-all">{masterHotWallet}</span>
               ) : (
-                <span className="text-[#FF453A] text-xs">⚠️ 설정되지 않음 (system_settings 테이블에 master_hot_wallet 키 추가 필요)</span>
+                <span className="text-[#FF453A] text-xs">⚠️ 설정되지 않음 (지갑 자체 생성 버튼을 클릭해 지갑을 생성하세요)</span>
               )}
             </div>
           </div>
@@ -276,7 +325,7 @@ export default function WalletSweepPage() {
             <div>
               <p className="text-[10px] text-[#8E8E93] uppercase font-bold flex items-center space-x-1">
                 <ShieldAlert size={12} className="text-[#FF9F0A]" />
-                <span>유저 지갑 총 잔액 (Supabase 실제값)</span>
+                <span>유저 지갑 총 잔액 (DB 실제값)</span>
               </p>
               <p className="text-xl font-extrabold text-white mt-1 font-mono">
                 {totalSweepable.toLocaleString()} <span className="text-xs text-[#8E8E93]">USDT</span>
@@ -324,11 +373,11 @@ export default function WalletSweepPage() {
           <button
             onClick={handleSweep}
             disabled={loadingSweep || totalSweepable <= 0}
-            className="w-full py-3.5 bg-gradient-to-r from-[#00D2FF] to-[#BF5AF2] hover:opacity-90 text-white font-bold rounded-xl transition-all flex items-center justify-center space-x-2 shadow-[0_0_15px_rgba(0,210,255,0.2)] disabled:opacity-40 text-xs"
+            className="w-full py-3.5 bg-gradient-to-r from-[#00D2FF] to-[#BF5AF2] hover:opacity-90 text-white font-bold rounded-xl transition-all flex items-center justify-center space-x-2 shadow-[0_0_15px_rgba(0,210,255,0.2)] disabled:opacity-40 text-xs cursor-pointer"
           >
             {loadingSweep ? <RefreshCw size={16} className="animate-spin" /> : (
               <>
-                <span>스윕 요청 기록하기 (Supabase 저장)</span>
+                <span>스윕 실행하기 (DB 즉시 반영)</span>
                 <ArrowRightLeft size={16} />
               </>
             )}
@@ -396,7 +445,7 @@ export default function WalletSweepPage() {
                   <button
                     type="button"
                     onClick={() => setVaultAmount(hotBalanceUSDT.toString())}
-                    className="text-[#00D2FF] font-bold hover:underline"
+                    className="text-[#00D2FF] font-bold hover:underline cursor-pointer"
                   >
                     [전액 선택: {hotBalanceUSDT.toLocaleString()} USDT]
                   </button>
@@ -434,7 +483,7 @@ export default function WalletSweepPage() {
             <button
               type="submit"
               disabled={loadingVault || !coldVaultAddress}
-              className="w-full py-3.5 bg-gradient-to-r from-[#30D5C8] to-[#BF5AF2] hover:opacity-90 text-white font-black rounded-xl transition-all flex items-center justify-center space-x-2 shadow-[0_0_15px_rgba(48,213,200,0.2)] disabled:opacity-40 text-xs"
+              className="w-full py-3.5 bg-gradient-to-r from-[#30D5C8] to-[#BF5AF2] hover:opacity-90 text-white font-black rounded-xl transition-all flex items-center justify-center space-x-2 shadow-[0_0_15px_rgba(48,213,200,0.2)] disabled:opacity-40 text-xs cursor-pointer"
             >
               {loadingVault ? <RefreshCw size={16} className="animate-spin" /> : (
                 <>
@@ -451,7 +500,7 @@ export default function WalletSweepPage() {
       <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 shadow-lg space-y-4">
         <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center space-x-2">
           <CheckCircle size={16} className="text-[#30D5C8]" />
-          <span>콜드 금고 이체 기록 로그 (Supabase vault_transfers)</span>
+          <span>콜드 금고 이체 기록 로그 (DB vault_transfers)</span>
         </h4>
 
         {vaultLogs.length === 0 ? (
@@ -494,6 +543,41 @@ export default function WalletSweepPage() {
           </div>
         )}
       </div>
+
+      {/* ━━━━ 자체 지갑 생성 확인 팝업/모달 ━━━━ */}
+      {generatedWallet && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#16161A] border border-[#26262B] rounded-2xl max-w-md w-full shadow-2xl p-6 relative">
+            <h3 className="text-base font-bold text-white mb-4 flex items-center space-x-2 text-[#0ECB81]">
+              <CheckCircle size={18} />
+              <span>신규 마스터 핫 지갑 자체 생성 완료</span>
+            </h3>
+            <p className="text-xs text-[#8E8E93] mb-4 leading-relaxed">
+              새로운 EVM(이더리움/바이낸스 체인) 지갑이 무작위로 자체 생성되었습니다. 
+              <strong>개인키는 서버나 DB에 보관되지 않으므로 반드시 안전한 곳에 즉시 복사하여 보관하세요!</strong>
+            </p>
+
+            <div className="space-y-4 font-sans">
+              <div className="p-3 bg-[#121215] rounded-xl border border-[#26262B]">
+                <label className="text-[10px] text-[#8E8E93] uppercase font-bold">생성된 지갑 주소</label>
+                <p className="text-xs font-mono font-bold text-white mt-1 break-all select-all">{generatedWallet.address}</p>
+              </div>
+
+              <div className="p-3 bg-[#121215] rounded-xl border border-[#FF453A]/20">
+                <label className="text-[10px] text-[#FF453A] uppercase font-bold">개인키 (Private Key) - 노출 주의!</label>
+                <p className="text-xs font-mono font-bold text-[#FF453A] mt-1 break-all select-all">{generatedWallet.privateKey}</p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setGeneratedWallet(null)}
+              className="w-full py-3.5 mt-6 bg-[#0ECB81] hover:bg-[#0ECB81]/90 text-black font-black rounded-xl text-xs active:scale-95 transition-transform cursor-pointer"
+            >
+              확인하고 닫기
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -23,7 +23,27 @@ function createSafeClient(url: string, key: string, options?: any) {
         { id: "w-1001", user_id: "u-2", users: { email: "b_kim@urc369.com" }, amount: 30.00, fee: 0.90, asset: "USDT", tx_hash: "", status: "PENDING", created_at: "2026-07-27T12:30:00Z" }
       ],
       users: [
-        { id: "u-1", email: "user@urc369.com", nickname: "User (나)", status: "ACTIVE" }
+        { 
+          id: "u-1", 
+          email: "user@urc369.com", 
+          nickname: "User (나)", 
+          status: "ACTIVE",
+          user_wallets: [{ address: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F" }],
+          user_balances: [
+            { asset_id: 1, available_balance: "100.00" },
+            { asset_id: 2, available_balance: "10500.00" }
+          ]
+        },
+        {
+          id: "u-2",
+          email: "b_kim@urc369.com",
+          nickname: "User B",
+          status: "PENDING",
+          user_wallets: [{ address: "0x2546BcD3c84621e9b3d7d1225015b6024f2b23a9" }],
+          user_balances: [
+            { asset_id: 2, available_balance: "3500.00" }
+          ]
+        }
       ],
       vault_transfers: [],
       sweep_requests: []
@@ -34,10 +54,8 @@ function createSafeClient(url: string, key: string, options?: any) {
         const data = mockData[table] || [];
         return {
           select: (columns: string = "*") => {
-            return {
-              order: (col: string, opt: any) => {
-                return Promise.resolve({ data, error: null });
-              },
+            const chain = {
+              order: (col: string, opt: any) => chain,
               eq: (col: string, val: any) => {
                 const filtered = data.filter(item => item[col] === val);
                 return {
@@ -45,8 +63,11 @@ function createSafeClient(url: string, key: string, options?: any) {
                   then: (resolve: any) => resolve({ data: filtered, error: null })
                 };
               },
+              limit: (num: number) => chain,
+              single: () => Promise.resolve({ data: data[0] || null, error: null }),
               then: (resolve: any) => resolve({ data, error: null })
             };
+            return chain;
           },
           insert: (newData: any) => {
             const arr = Array.isArray(newData) ? newData : [newData];
