@@ -64,6 +64,10 @@ export default function RootLayout({
               <Settings size={18} />
               <span>시스템 환경 설정</span>
             </Link>
+            <Link href="/settings/rounds" className="flex items-center space-x-3 px-4 py-3 rounded-xl text-[#BF5AF2] bg-[#BF5AF2]/10 border border-[#BF5AF2]/20 font-bold hover:bg-[#BF5AF2]/20 transition-all">
+              <LayoutDashboard size={18} />
+              <span>게임 회차 설정</span>
+            </Link>
           </nav>
 
           {/* Sidebar Footer (Wallet Monitors) */}

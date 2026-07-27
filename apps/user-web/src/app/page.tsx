@@ -251,6 +251,39 @@ export default function MobileApp() {
   // Scheduled Game Engine States
   const [gameBetMode, setGameBetMode] = useState<"manual" | "auto">("manual");
   const [manualRound, setManualRound] = useState<number>(1);
+  const [dbRounds, setDbRounds] = useState<any[]>([]);
+  
+  // Organization tree zoom/pinch states
+  const [zoomScale, setZoomScale] = useState<number>(1.0);
+  const touchStartDist = React.useRef<number | null>(null);
+  const startScale = React.useRef<number>(1.0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      touchStartDist.current = dist;
+      startScale.current = zoomScale;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2 && touchStartDist.current !== null) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const factor = dist / touchStartDist.current;
+      const newScale = Math.min(Math.max(startScale.current * factor, 0.5), 1.5);
+      setZoomScale(Number(newScale.toFixed(2)));
+    }
+  };
+
+  const handleTouchEnd = () => {
+    touchStartDist.current = null;
+  };
   const [manualBetsCount, setManualBetsCount] = useState<number>(1);
   const [myBets, setMyBets] = useState<GameBetRecord[]>([
     { id: "b-1", round: 1, betsCount: 2, urdSpent: 20, status: "WAITING", betAt: "11:45" },
@@ -471,7 +504,23 @@ export default function MobileApp() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) setUserEmail(session.user.email || "Unknown");
     };
+    const fetchGameRounds = async () => {
+      try {
+        const res = await fetch("/api/game-rounds");
+        const data = await res.json();
+        if (data.success && data.rounds) {
+          setDbRounds(data.rounds);
+          if (data.rounds.length > 0) {
+            setManualRound(data.rounds[0].round_number);
+            setAutoSettings(prev => ({ ...prev, rounds: data.rounds.map((r: any) => r.round_number) }));
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load game rounds", e);
+      }
+    };
     fetchUser();
+    fetchGameRounds();
   }, []);
 
   const handleLogout = async () => {
@@ -1573,16 +1622,21 @@ export default function MobileApp() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#2B3139] text-[11px]">
-                    {[
-                      { r: t.round1, time: "11:00 ~ 12:00", label: t.aiDraw, draw: "12:30" },
-                      { r: t.round2, time: "14:00 ~ 15:00", label: t.aiDraw, draw: "15:30" },
-                      { r: t.round3, time: "17:00 ~ 18:00", label: t.aiDraw, draw: "18:30" },
-                    ].map((item, idx) => (
+                    {(dbRounds.length > 0 ? dbRounds : [
+                      { round_number: 1, start_time: "11:00:00", end_time: "12:00:00", draw_time: "12:30:00" },
+                      { round_number: 2, start_time: "14:00:00", end_time: "15:00:00", draw_time: "15:30:00" },
+                      { round_number: 3, start_time: "17:00:00", end_time: "18:00:00", draw_time: "18:30:00" }
+                    ]).map((item, idx) => (
                       <tr key={idx} className="hover:bg-[#2B3139]/40 transition-colors">
-                        <td className="py-2.5 font-bold text-[#FCD535]">{item.r}</td>
-                        <td className="py-2.5 text-[#EAECEF] font-mono">{item.time}</td>
-                        <td className="py-2.5 text-[#0ECB81] font-semibold">{item.label}</td>
-                        <td className="py-2.5 font-mono text-[#FCD535] font-bold">{item.draw}</td>
+                        <td className="py-2.5 font-bold text-[#FCD535]">
+                          {item.round_number}
+                          {lang === "ko" ? "회차" : lang === "en" ? " Round" : "轮"}
+                        </td>
+                        <td className="py-2.5 text-[#EAECEF] font-mono">
+                          {item.start_time.substring(0, 5)} ~ {item.end_time.substring(0, 5)}
+                        </td>
+                        <td className="py-2.5 text-[#0ECB81] font-semibold">{t.aiDraw}</td>
+                        <td className="py-2.5 font-mono text-[#FCD535] font-bold">{item.draw_time.substring(0, 5)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1617,7 +1671,7 @@ export default function MobileApp() {
                   <div className="space-y-2">
                     <label className="text-xs text-[#848E9C] font-bold">{t.selectRound}</label>
                     <div className="grid grid-cols-3 gap-2">
-                      {[1, 2, 3].map((rNum) => (
+                      {(dbRounds.length > 0 ? dbRounds.map(r => r.round_number) : [1, 2, 3]).map((rNum) => (
                         <button
                           key={rNum}
                           onClick={() => setManualRound(rNum)}
@@ -1627,7 +1681,8 @@ export default function MobileApp() {
                               : "bg-[#0B0E11] border-[#2B3139] text-[#848E9C]"
                           }`}
                         >
-                          {rNum === 1 ? t.round1 : rNum === 2 ? t.round2 : t.round3}
+                          {rNum}
+                          {lang === "ko" ? "회차" : lang === "en" ? " Round" : "轮"}
                         </button>
                       ))}
                     </div>
@@ -1635,7 +1690,7 @@ export default function MobileApp() {
 
                   <div className="space-y-2">
                     <div className="flex justify-between items-center text-xs">
-                      <span className="text-[#848E9C] font-bold">{t.selectBetCount}</span>
+                      <span className="text-[#848E9C] font-bold">{t.selectRound}</span>
                       <span className="text-[#FCD535] font-bold">{t.totalCost}: {manualBetsCount * 10} URD</span>
                     </div>
                     <div className="grid grid-cols-4 gap-2">
@@ -1661,7 +1716,8 @@ export default function MobileApp() {
                   >
                     <Play size={16} />
                     <span>
-                      {manualRound === 1 ? t.round1 : manualRound === 2 ? t.round2 : t.round3} {t.manualBetBtn} ({manualBetsCount * 10} URD {lang === "ko" ? "소모" : lang === "en" ? "Cost" : "消耗"})
+                      {manualRound}
+                      {lang === "ko" ? "회차" : lang === "en" ? " Round" : "轮"} {t.manualBetBtn} ({manualBetsCount * 10} URD {lang === "ko" ? "소모" : lang === "en" ? "Cost" : "消耗"})
                     </span>
                   </button>
                 </div>
@@ -1671,7 +1727,7 @@ export default function MobileApp() {
                   <div className="space-y-2">
                     <label className="text-xs text-[#848E9C] font-bold">{t.autoBetRounds}</label>
                     <div className="grid grid-cols-3 gap-2">
-                      {[1, 2, 3].map((rNum) => {
+                      {(dbRounds.length > 0 ? dbRounds.map(r => r.round_number) : [1, 2, 3]).map((rNum) => {
                         const checked = autoSettings.rounds.includes(rNum);
                         return (
                           <button
@@ -1684,7 +1740,10 @@ export default function MobileApp() {
                             }`}
                           >
                             <span>{checked ? "✓" : "○"}</span>
-                            <span>{rNum === 1 ? t.round1 : rNum === 2 ? t.round2 : t.round3}</span>
+                            <span>
+                              {rNum}
+                              {lang === "ko" ? "회차" : lang === "en" ? " Round" : "轮"}
+                            </span>
                           </button>
                         );
                       })}
@@ -1780,7 +1839,7 @@ export default function MobileApp() {
         {/* ═══════════════ NETWORK ═══════════════ */}
         {activeTab === "network" && (
           <div className="p-5 flex flex-col justify-between min-h-[calc(100vh-140px)]">
-            <div className="space-y-4 flex-1 flex flex-col">
+            <div className="space-y-4 flex-1 flex flex-col relative">
               {/* Tree Type Tabs: Direct Tree vs Sponsor Tree */}
               <div className="flex bg-[#1E2329] p-1 rounded-xl">
                 <button 
@@ -1801,9 +1860,51 @@ export default function MobileApp() {
                 </button>
               </div>
 
+              {/* Floating Zoom Controls */}
+              <div className="absolute bottom-4 right-4 bg-[#1E2329]/85 backdrop-blur-md border border-[#2B3139] rounded-xl p-1.5 flex items-center space-x-1 shadow-lg z-10">
+                <button
+                  type="button"
+                  onClick={() => setZoomScale(prev => Math.max(prev - 0.1, 0.5))}
+                  className="w-8 h-8 rounded-lg bg-[#0B0E11] hover:bg-[#2B3139] text-[#848E9C] hover:text-[#EAECEF] font-bold text-sm flex items-center justify-center transition-colors cursor-pointer"
+                  title="Zoom Out"
+                >
+                  -
+                </button>
+                <span className="text-[10px] text-[#EAECEF] font-mono font-bold w-12 text-center select-none">
+                  {Math.round(zoomScale * 100)}%
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setZoomScale(prev => Math.min(prev + 0.1, 1.5))}
+                  className="w-8 h-8 rounded-lg bg-[#0B0E11] hover:bg-[#2B3139] text-[#848E9C] hover:text-[#EAECEF] font-bold text-sm flex items-center justify-center transition-colors cursor-pointer"
+                  title="Zoom In"
+                >
+                  +
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setZoomScale(1.0)}
+                  className="w-8 h-8 rounded-lg bg-[#0B0E11] hover:bg-[#2B3139] text-[#848E9C] hover:text-[#EAECEF] font-bold text-xs flex items-center justify-center transition-colors cursor-pointer"
+                  title="Reset"
+                >
+                  ↺
+                </button>
+              </div>
+
               {/* Frameless Expanded Tree Canvas (No outer borders, no scrollbars visible) */}
-              <div className="w-full flex-1 overflow-x-auto overflow-y-auto py-6 flex justify-center items-start [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                <div className="min-w-[440px] px-2 flex flex-col items-center space-y-6">
+              <div 
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                className="w-full flex-1 overflow-x-auto overflow-y-auto py-6 flex justify-center items-start [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+              >
+                <div 
+                  className="min-w-[440px] px-2 flex flex-col items-center space-y-6 transition-transform duration-200 ease-out"
+                  style={{
+                    transform: `scale(${zoomScale})`,
+                    transformOrigin: "top center"
+                  }}
+                >
                   
                   {/* Root Node: Me (User) */}
                   <div className="relative flex flex-col items-center">

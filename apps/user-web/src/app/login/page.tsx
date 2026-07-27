@@ -14,8 +14,9 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    console.log("handleLogin triggered on client side for:", email);
     setError("");
     setLoading(true);
 
@@ -25,13 +26,17 @@ export default function LoginPage() {
         password,
       });
 
+      console.log("signInWithPassword result:", data, error);
+
       if (error) {
         setError(error.message);
       } else {
+        console.log("Redirecting to dashboard...");
         router.push("/");
         router.refresh();
       }
     } catch (err: any) {
+      console.error("Login catch error:", err);
       setError(err.message || "An unexpected error occurred");
     } finally {
       setLoading(false);
@@ -50,7 +55,7 @@ export default function LoginPage() {
         <p className="text-sm text-[#8E8E93] mt-2">Log in to manage your assets & 369 games</p>
       </div>
 
-      <form onSubmit={handleLogin} className="space-y-4 relative z-10">
+      <div className="space-y-4 relative z-10">
         {error && (
           <div className="p-3 bg-[#FF453A]/10 border border-[#FF453A]/30 rounded-xl flex items-start space-x-2 text-[#FF453A]">
             <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
@@ -93,7 +98,8 @@ export default function LoginPage() {
         </div>
 
         <button 
-          type="submit" 
+          type="button" 
+          onClick={() => handleLogin()}
           disabled={loading}
           className="w-full py-3.5 mt-4 bg-gradient-to-r from-[#00D2FF] to-[#0099CC] text-black font-black rounded-xl text-sm flex items-center justify-center space-x-2 active:scale-95 transition-transform shadow-[0_0_20px_rgba(0,210,255,0.4)] disabled:opacity-50 disabled:active:scale-100"
         >
@@ -106,7 +112,7 @@ export default function LoginPage() {
             </>
           )}
         </button>
-      </form>
+      </div>
 
       <div className="mt-8 text-center text-xs text-[#8E8E93] relative z-10">
         Don't have an account?{" "}
