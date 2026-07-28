@@ -59,15 +59,9 @@ const TetherLogo = () => (
   </svg>
 );
 
-const UrcLogo = () => (
-  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#FCD535] to-[#F39C12] flex items-center justify-center font-black text-[#0B0E11] text-xs shadow-md border border-[#FCD535]/40 flex-shrink-0">
-    URC
-  </div>
-);
-
-const UrdLogo = () => (
-  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#3498DB] to-[#2980B9] flex items-center justify-center font-black text-white text-xs shadow-md border border-[#3498DB]/40 flex-shrink-0">
-    URD
+const JadeLogo = () => (
+  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#2ECC71] to-[#27AE60] flex items-center justify-center font-black text-white text-[10px] shadow-md border border-[#2ECC71]/40 flex-shrink-0">
+    JADE
   </div>
 );
 
@@ -77,91 +71,91 @@ const I18N = {
   ko: {
     home: "홈", wallet: "지갑", products: "상품몰", game: "경기장", network: "조직도", settings: "설정",
     miningStatus: "게임기 구동 현황", dailyYield: "일일 수익률", gaugeTitle: "보너스 한도 달성률 (200% ~ 300%)",
-    usdtBalance: "USDT 잔액", urcBalance: "URC 잔액", urdBalance: "URD 토큰 잔액",
-    instantSwap: "실시간 스왑 (수수료 0.1%)", pay: "지불", receive: "수령 (예상)", confirmSwap: "실시간 스왑 실행",
+    usdtBalance: "USDT 잔액", urcBalance: "URC 잔액", urdBalance: "옥구슬 잔액",
+    instantSwap: "실시간 스왑", pay: "지불", receive: "수령 (예상)", confirmSwap: "실시간 스왑 실행",
     withdrawUsdt: "USDT 출금 (BSC)", applyWithdraw: "출금 신청", depositUsdt: "USDT 입금 (BSC)",
-    gameNodes: "게임기 장비 (구매 시 URD 증정)", startGame: "게임 실행 (10 URD 소모)",
-    node100: "$100 게임기 (1,500 URD 증정)", node500: "$500 게임기 (8,000 URD 증정)", node1000: "$1,000 게임기 (17,000 URD 증정)",
+    gameNodes: "게임기 장비 (구매 시 옥구슬 증정)", startGame: "게임 실행 (1 옥구슬 소모)",
+    node100: "상운 ($100 게임기 • 옥구슬 100개)", node500: "자광 ($500 게임기 • 옥구슬 550개, 홍바오 1개)", node1000: "홍운 ($1,000 게임기 • 옥구슬 1,200개, 홍바오 3개)",
     directRef: "추천 계보", sponsorArch: "후원 계보",
     langSetting: "언어 설정 (Language)", shareRefLink: "내 추천 링크 공유", logout: "로그아웃",
     active: "활성", inactive: "미활성",
     shopTitle: "게임기 상품몰", buyProduct: "게임기 구매하기",
     myActiveNodes: "보유 게임기 현황",
     runningCount: "개 구동 중", runningStatus: "구동 중", cap: "한도", purchaseDate: "구매일", achievement: "달성율",
-    node100Name: "$100 게임기", node500Name: "$500 게임기", node1000Name: "$1,000 게임기",
+    node100Name: "상운 게임기", node500Name: "자광 게임기", node1000Name: "홍운 게임기",
     confirmPurchaseTitle: "게임기 상품 구매 확인", confirmPurchaseMsg: "USDT로 선택하신 게임기 상품을 구매하시겠습니까?",
     confirm: "확인 구매", cancel: "취소",
     unpaidMembersTitle: "상품 미구매 추천 회원", unpaidMembersSub: "",
     directTreeSub: "직추천 조직", sponsorTreeSub: "후원 계보 조직",
     bet1minLimit: "마감 1분 전 게임 마감", round: "회차", round1: "1회차", round2: "2회차", round3: "3회차",
     betTime: "참여 가능 시간", aiDraw: "AI 당첨 발표", drawTime: "발표 시각", selectRound: "참여 회차 선택",
-    selectBetCount: "게임 횟수 선택 (회당 10 URD)", totalCost: "총 소모", manualBetBtn: "게임 참여하기",
+    selectBetCount: "게임 횟수 선택 (회당 옥구슬 1개)", totalCost: "총 소모", manualBetBtn: "게임 참여하기",
     autoBetRounds: "자동 참여 회차 (다중 선택)", dailyRepeat: "매일 반복 자동 참여",
-    dailyRepeatSub: "매일 지정 시각에 자동으로 URD 게임 참여",
+    dailyRepeatSub: "매일 지정 시각에 자동으로 게임 참여",
     saveAutoSettings: "⚡ 자동 게임 세팅 저장 및 시작", stopAutoSettings: "✓ 자동 게임 구동 중 (클릭 시 중지)",
     recentBets: "내 최근 게임 참여 내역", waitingAnnouncement: "대기 중 (발표 예정)",
     holdings: "보유 자산", initialBalance: "최초잔고", totalProfit: "총 수익", yieldRate: "수익률",
-    deposit: "입금", withdraw: "출금", swap: "스왑", history: "내역", coinsCount: "3 종목",
+    deposit: "입금", withdraw: "출금", swap: "스왑", history: "내역", coinsCount: "2 종목",
     txHistoryTitle: "입출금 및 보너스 내역",
   },
   en: {
     home: "Home", wallet: "Wallet", products: "Shop", game: "Game Zone", network: "Network", settings: "Settings",
     miningStatus: "Game Machine Status", dailyYield: "Daily Yield Rate", gaugeTitle: "Bonus Cap Limit Progress (200% ~ 300%)",
-    usdtBalance: "USDT Balance", urcBalance: "URC Balance", urdBalance: "URD Token Balance",
-    instantSwap: "Instant Swap (0.1% Fee)", pay: "Pay", receive: "Receive (Est.)", confirmSwap: "Execute Swap",
+    usdtBalance: "USDT Balance", urcBalance: "URC Balance", urdBalance: "Jade Bead Balance",
+    instantSwap: "Instant Swap", pay: "Pay", receive: "Receive (Est.)", confirmSwap: "Execute Swap",
     withdrawUsdt: "Withdraw USDT (BSC)", applyWithdraw: "Request Withdrawal", depositUsdt: "Deposit USDT (BSC)",
-    gameNodes: "Game Equipment (Bonus URD on Purchase)", startGame: "Start Game (Cost 10 URD)",
-    node100: "$100 Machine (1,500 URD Bonus)", node500: "$500 Machine (8,000 URD Bonus)", node1000: "$1,000 Machine (17,000 URD Bonus)",
+    gameNodes: "Game Equipment (Bonus Jade Beads on Purchase)", startGame: "Start Game (Cost 1 Jade Bead)",
+    node100: "Shangyun ($100 Machine • 100 Beads)", node500: "Ziguang ($500 Machine • 550 Beads, 1 Hongbao)", node1000: "Hongyun ($1,000 Machine • 1,200 Beads, 3 Hongbao)",
     directRef: "Direct Referral Tree", sponsorArch: "Sponsor Tree",
     langSetting: "Language Settings", shareRefLink: "Share Referral Link", logout: "Log Out",
     active: "Active", inactive: "Inactive",
     shopTitle: "Game Machine Shop", buyProduct: "Buy Game Machine",
     myActiveNodes: "My Active Game Machines",
     runningCount: "Machines Running", runningStatus: "Running", cap: "Cap", purchaseDate: "Purchased", achievement: "Progress",
-    node100Name: "$100 Machine", node500Name: "$500 Machine", node1000Name: "$1,000 Machine",
+    node100Name: "Shangyun Machine", node500Name: "Ziguang Machine", node1000Name: "Hongyun Machine",
     confirmPurchaseTitle: "Confirm Game Machine Purchase", confirmPurchaseMsg: "Do you want to purchase the selected game machine with USDT?",
     confirm: "Confirm Purchase", cancel: "Cancel",
     unpaidMembersTitle: "Unpurchased Referral Members", unpaidMembersSub: "",
     directTreeSub: "Direct Referral Tree", sponsorTreeSub: "Sponsor Tree",
     bet1minLimit: "Game closes 1 min before deadline", round: "Round", round1: "Round 1", round2: "Round 2", round3: "Round 3",
     betTime: "Playable Time", aiDraw: "AI Draw Announcement", drawTime: "Draw Time", selectRound: "Select Round",
-    selectBetCount: "Select Game Play Count (10 URD each)", totalCost: "Total Cost", manualBetBtn: "Join Game",
+    selectBetCount: "Select Game Play Count (1 Jade Bead each)", totalCost: "Total Cost", manualBetBtn: "Join Game",
     autoBetRounds: "Auto Rounds (Multi-select)", dailyRepeat: "Daily Auto Repeat",
-    dailyRepeatSub: "Automatically play URD game at scheduled times daily",
+    dailyRepeatSub: "Automatically play game at scheduled times daily",
     saveAutoSettings: "⚡ Save & Start Auto Game", stopAutoSettings: "✓ Auto Game Running (Click to stop)",
     recentBets: "My Recent Game Records", waitingAnnouncement: "Waiting for Draw",
     holdings: "Holdings", initialBalance: "Initial Balance", totalProfit: "Total Profit", yieldRate: "Yield Rate",
-    deposit: "Deposit", withdraw: "Withdraw", swap: "Swap", history: "History", coinsCount: "3 Assets",
+    deposit: "Deposit", withdraw: "Withdraw", swap: "Swap", history: "History", coinsCount: "2 Assets",
     txHistoryTitle: "Transactions & Bonus History",
   },
   zh: {
     home: "首页", wallet: "钱包", products: "商城", game: "竞技场", network: "团队", settings: "设置",
     miningStatus: "游戏设备运行状态", dailyYield: "日收益率", gaugeTitle: "奖金封顶额度进度 (200% ~ 300%)",
-    usdtBalance: "USDT 余额", urcBalance: "URC 余额", urdBalance: "URD 代币余额",
-    instantSwap: "闪兑 (手续费 0.1%)", pay: "支付", receive: "获得 (预计)", confirmSwap: "确认兑换",
+    usdtBalance: "USDT 余额", urcBalance: "URC 余额", urdBalance: "玉珠余额",
+    instantSwap: "闪兑", pay: "支付", receive: "获得 (预计)", confirmSwap: "确认兑换",
     withdrawUsdt: "提现 USDT (BSC)", applyWithdraw: "申请提现", depositUsdt: "充值 USDT (BSC)",
-    gameNodes: "游戏设备 (购买赠送URD)", startGame: "启动游戏 (消耗 10 URD)",
-    node100: "$100 游戏机 (赠 1,500 URD)", node500: "$500 游戏机 (赠 8,000 URD)", node1000: "$1,000 游戏机 (赠 17,000 URD)",
+    gameNodes: "游戏设备 (购买赠送玉珠)", startGame: "启动游戏 (消耗 1 个玉珠)",
+    node100: "祥云 ($100 游戏机 • 100 玉珠)", node500: "紫光 ($500 游戏机 • 550 玉珠, 1 红包)", node1000: "鸿运 ($1,000 游戏机 • 1,200 玉珠, 3 红包)",
     directRef: "直推谱系", sponsorArch: "安置架构",
     langSetting: "语言设置 (Language)", shareRefLink: "分享推荐链接", logout: "退出登录",
     active: "活跃", inactive: "未激活",
     shopTitle: "游戏机商城", buyProduct: "购买游戏机",
     myActiveNodes: "我的运行游戏机",
     runningCount: "台运行中", runningStatus: "运行中", cap: "额度", purchaseDate: "购买日", achievement: "达成率",
-    node100Name: "$100 游戏机", node500Name: "$500 游戏机", node1000Name: "$1,000 游戏机",
+    node100Name: "祥云游戏机", node500Name: "紫光游戏机", node1000Name: "鸿运游戏机",
     confirmPurchaseTitle: "确认购买游戏机", confirmPurchaseMsg: "确定使用 USDT 购买所选游戏机吗？",
     confirm: "确认购买", cancel: "取消",
     unpaidMembersTitle: "未购设备推荐会员", unpaidMembersSub: "",
     directTreeSub: "直推谱系团队", sponsorTreeSub: "安置架构团队",
     bet1minLimit: "截止前1分钟停止游戏", round: "轮次", round1: "第1轮", round2: "第2轮", round3: "第3轮",
     betTime: "可游戏时间", aiDraw: "AI 抽奖公布", drawTime: "公布时间", selectRound: "选择游戏轮次",
-    selectBetCount: "选择游戏次数 (每轮10 URD)", totalCost: "总消耗", manualBetBtn: "参与游戏",
+    selectBetCount: "选择游戏次数 (每轮 1 个玉珠)", totalCost: "总消耗", manualBetBtn: "参与游戏",
     autoBetRounds: "自动参与轮次 (多选)", dailyRepeat: "每日重复自动游戏",
-    dailyRepeatSub: "每日在指定时间自动参与URD游戏",
+    dailyRepeatSub: "每日在指定时间自动参与游戏",
     saveAutoSettings: "⚡ 保存并启动自动游戏设置", stopAutoSettings: "✓ 自动游戏运行中 (点击停止)",
     recentBets: "我的近期游戏记录", waitingAnnouncement: "等待公布",
     holdings: "持有资产", initialBalance: "初始余额", totalProfit: "总收益", yieldRate: "收益率",
-    deposit: "充值", withdraw: "提现", swap: "闪兑", history: "记录", coinsCount: "3 种资产",
+    deposit: "充值", withdraw: "提现", swap: "闪兑", history: "记录", coinsCount: "2 种资产",
     txHistoryTitle: "充提及奖金记录",
   }
 };
@@ -232,7 +226,7 @@ export default function MobileApp() {
       time: "12:30",
       title: "🎉 1회차 AI 당첨 결과 발표",
       resultType: "USDT_WIN",
-      rewardText: "USDT 102% 당첨! (+102.00 USDT 지불 완료)",
+      rewardText: "금전 당첨! (+102.00 USDT 지불 완료)",
       createdAt: "12:30:05",
       read: false,
     },
@@ -242,7 +236,7 @@ export default function MobileApp() {
       time: "15:30",
       title: "🪙 2회차 AI 당첨 결과 발표",
       resultType: "COIN_WIN",
-      rewardText: "코인 페이백 당첨! (+80.00 URC, +40.00 URD 지급 완료)",
+      rewardText: "옥보 당첨! (+80.00 USDT, +40 옥구슬 지급 완료)",
       createdAt: "15:30:02",
       read: false,
     },
@@ -286,7 +280,7 @@ export default function MobileApp() {
   };
   const [manualBetsCount, setManualBetsCount] = useState<number>(1);
   const [myBets, setMyBets] = useState<GameBetRecord[]>([
-    { id: "b-1", round: 1, betsCount: 2, urdSpent: 20, status: "WAITING", betAt: "11:45" },
+    { id: "b-1", round: 1, betsCount: 2, urdSpent: 2, status: "WAITING", betAt: "11:45" },
   ]);
 
   // Auto Betting Settings State
@@ -294,15 +288,15 @@ export default function MobileApp() {
     enabled: false,
     dailyRepeat: true,
     rounds: [1, 2, 3],
-    betsCount: 10, // Default 10 times = 100 URD
+    betsCount: 10, // Default 10 times = 10 Jade Beads
   });
 
   const [historyPage, setHistoryPage] = useState(1);
 
   const handleManualBet = () => {
-    const cost = manualBetsCount * 10;
+    const cost = manualBetsCount * 1;
     if (urdBalance < cost) {
-      alert(`URD 토큰이 부족합니다! (필요: ${cost} URD, 보유: ${urdBalance} URD)`);
+      alert(`옥구슬이 부족합니다! (필요: ${cost}개, 보유: ${urdBalance}개)`);
       return;
     }
 
@@ -317,22 +311,22 @@ export default function MobileApp() {
     };
 
     setMyBets((prev) => [newBet, ...prev]);
-    alert(`🎉 ${manualRound}회차 게임 참여 완료! (${manualBetsCount}회 / ${cost} URD 소모)\nAI 당첨 발표 시각에 결과가 발표됩니다.`);
+    alert(`🎉 ${manualRound}회차 게임 참여 완료! (${manualBetsCount}회 / 옥구슬 ${cost}개 소모)\nAI 당첨 발표 시각에 결과가 발표됩니다.`);
   };
 
   const handleToggleAutoSettings = () => {
-    const autoCost = autoSettings.betsCount * 10;
+    const autoCost = autoSettings.betsCount * 1;
     if (!autoSettings.enabled) {
       if (urdBalance < autoCost) {
-        alert(`⚡ URD 토큰이 부족하여 자동 게임을 시작할 수 없습니다! (필요: ${autoCost} URD, 보유: ${urdBalance} URD)`);
-        // Add URD Depletion Notification to Bell
+        alert(`⚡ 옥구슬이 부족하여 자동 게임을 시작할 수 없습니다! (필요: ${autoCost}개, 보유: ${urdBalance}개)`);
+        // Add Bead Depletion Notification to Bell
         const notif: GameNotification = {
           id: `n-${Date.now()}`,
           round: "자동 게임",
           time: new Date().toLocaleTimeString("ko-KR", { hour12: false, hour: "2-digit", minute: "2-digit" }),
-          title: "⚠️ URD 토큰 소진으로 자동 게임 중단",
+          title: "⚠️ 옥구슬 소진으로 자동 게임 중단",
           resultType: "COIN_WIN",
-          rewardText: `URD 토큰이 소진되어 자동 게임 참여가 중단되었습니다. (필요: ${autoCost} URD)`,
+          rewardText: `옥구슬이 소진되어 자동 게임 참여가 중단되었습니다. (필요: ${autoCost}개)`,
           createdAt: new Date().toLocaleTimeString("ko-KR", { hour12: false, hour: "2-digit", minute: "2-digit" }),
           read: false,
         };
@@ -342,7 +336,7 @@ export default function MobileApp() {
 
       setAutoSettings((prev) => ({ ...prev, enabled: true }));
       setUrdBalance((prev) => prev - autoCost);
-      alert(`⚡ 자동 게임 세팅이 활성화되었습니다!\n회당 ${autoSettings.betsCount}회 (${autoCost} URD 소모)로 매일 지정 회차에 자동으로 실행됩니다.`);
+      alert(`⚡ 자동 게임 세팅이 활성화되었습니다!\n회당 ${autoSettings.betsCount}회 (옥구슬 ${autoCost}개 소모)로 매일 지정 회차에 자동으로 실행됩니다.`);
     } else {
       setAutoSettings((prev) => ({ ...prev, enabled: false }));
       alert("자동 게임 비활성화 완료");
@@ -359,8 +353,8 @@ export default function MobileApp() {
 
   // Purchased Active Game Machines
   const [myMachines, setMyMachines] = useState<ActiveMachine[]>([
-    { id: "m-1", level: 1, name: "$100 노드", price: 100, urdBonus: 1500, payoutCap: 200, accumulatedPayout: 50, purchasedAt: "2026-07-21" },
-    { id: "m-2", level: 3, name: "$1,000 노드", price: 1000, urdBonus: 17000, payoutCap: 3000, accumulatedPayout: 800, purchasedAt: "2026-07-21" },
+    { id: "m-1", level: 1, name: "상운 게임기", price: 100, urdBonus: 100, payoutCap: 200, accumulatedPayout: 50, purchasedAt: "2026-07-21" },
+    { id: "m-2", level: 3, name: "홍운 게임기", price: 1000, urdBonus: 1200, payoutCap: 3000, accumulatedPayout: 800, purchasedAt: "2026-07-21" },
   ]);
 
   // Purchase Confirmation Modal State
@@ -411,10 +405,10 @@ export default function MobileApp() {
     setConfirmPurchaseModal(null);
 
     alert(lang === "ko" 
-      ? `🎉 $${price.toLocaleString()} 게임기 구매 성공! ${urdBonus.toLocaleString()} URD 토큰이 즉시 지급되었습니다.` 
+      ? `🎉 $${price.toLocaleString()} 게임기 구매 성공! 옥구슬 ${urdBonus.toLocaleString()}개가 즉시 지급되었습니다.` 
       : lang === "en" 
-      ? `🎉 Purchased $${price.toLocaleString()} Node! +${urdBonus.toLocaleString()} URD credited.` 
-      : `🎉 成功购买 $${price.toLocaleString()} 节点！赠送 ${urdBonus.toLocaleString()} URD 代币！`);
+      ? `🎉 Purchased $${price.toLocaleString()} Machine! +${urdBonus.toLocaleString()} Jade Beads credited.` 
+      : `🎉 成功购买 $${price.toLocaleString()} 游戏机！赠送 ${urdBonus.toLocaleString()} 个玉珠！`);
   };
   const [directTree] = useState([
     { id: 1, nickname: "User A", referralSeq: 1, status: "ACTIVE" },
@@ -463,20 +457,25 @@ export default function MobileApp() {
   const [isPlayingGame, setIsPlayingGame] = useState(false);
 
   const handlePlayGame = (betAmount: number = 100) => {
-    if (urdBalance < 10) {
-      alert("URD代币不足！(单次游戏需消耗 10 URD)");
+    if (usdtBalance < 100) {
+      alert(lang === "ko" ? "USDT 잔액이 부족합니다! (필요: 100 USDT)" : lang === "en" ? "Insufficient USDT! (Required: 100 USDT)" : "USDT 余额不足！(需要 100 USDT)");
+      return;
+    }
+    if (urdBalance < 1) {
+      alert(lang === "ko" ? "옥구슬이 부족합니다! (필요: 1개)" : lang === "en" ? "Insufficient Jade Beads! (Required: 1)" : "玉珠不足！(需要 1 个)");
       return;
     }
 
     setIsPlayingGame(true);
-    setUrdBalance((prev) => prev - 10);
+    setUsdtBalance((prev) => prev - 100);
+    setUrdBalance((prev) => prev - 1);
 
     setTimeout(() => {
-      // 50% random chance for USDT 102% vs Coin 120% (80% URC + 40% URD)
-      const isUsdtWin = Math.random() > 0.5;
+      // 90% chance for USDT_WIN (금전당첨: 102 USDT), 10% chance for COIN_WIN (옥보당첨: 80 USDT + 40 Jade Beads)
+      const isUsdtWin = Math.random() < 0.9;
 
       if (isUsdtWin) {
-        const rewardUsdt = betAmount * 1.02; // 102% payout
+        const rewardUsdt = 102; // 102% payout
         setUsdtBalance((prev) => prev + rewardUsdt);
         setGameResultModal({
           show: true,
@@ -484,15 +483,15 @@ export default function MobileApp() {
           usdtAmount: rewardUsdt,
         });
       } else {
-        const rewardUrc = betAmount * 0.80; // 80% URC
-        const rewardUrd = betAmount * 0.40; // 40% URD
-        setUrcBalance((prev) => prev + rewardUrc);
-        setUrdBalance((prev) => prev + rewardUrd);
+        const rewardUsdt = 80;
+        const rewardBeads = 40;
+        setUsdtBalance((prev) => prev + rewardUsdt);
+        setUrdBalance((prev) => prev + rewardBeads);
         setGameResultModal({
           show: true,
           type: "COIN_WIN",
-          urcAmount: rewardUrc,
-          urdAmount: rewardUrd,
+          usdtAmount: rewardUsdt,
+          urdAmount: rewardBeads,
         });
       }
       setIsPlayingGame(false);
@@ -550,45 +549,9 @@ export default function MobileApp() {
     setTimeout(() => setReferralCopied(false), 2000);
   };
 
-  const handleSwapChange = (val: string) => {
-    setFromAmount(val);
-    setToAmount(val && !isNaN(Number(val)) ? (Number(val) * 0.999).toFixed(4) : "");
-  };
-
-  const handleConfirmSwap = () => {
-    const val = Number(fromAmount);
-    if (!val || val <= 0) {
-      alert("请输入有效的兑换金额");
-      return;
-    }
-
-    if (isUsdtToUrc) {
-      if (val > usdtBalance) {
-        alert("USDT 余额不足");
-        return;
-      }
-      const received = val * 0.999;
-      setUsdtBalance((prev) => prev - val);
-      setUrcBalance((prev) => prev + received);
-      alert(`成功将 ${val} USDT 闪兑为 ${received.toFixed(2)} URC !`);
-    } else {
-      if (val > urcBalance) {
-        alert("URC 余额不足");
-        return;
-      }
-      const received = val * 0.999;
-      setUrcBalance((prev) => prev - val);
-      setUsdtBalance((prev) => prev + received);
-      alert(`成功将 ${val} URC 闪兑为 ${received.toFixed(2)} USDT !`);
-    }
-
-    setFromAmount("");
-    setToAmount("");
-  };
-
   const withdrawFee = Number(withdrawAmount) ? Number(withdrawAmount) * 0.03 : 0;
   const withdrawFinal = Number(withdrawAmount) ? Number(withdrawAmount) * 0.97 : 0;
-  const totalAssetValuation = usdtBalance + urcBalance + urdBalance / 15;
+  const totalAssetValuation = usdtBalance;
 
   const fetchNetworkData = async () => {
     setLoadingNetwork(true);
@@ -691,9 +654,9 @@ export default function MobileApp() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-[#848E9C]">URC</p>
-                  <p className="text-sm font-bold font-mono text-[#EAECEF] mt-0.5">
-                    {urcBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  <p className="text-[10px] text-[#848E9C]">{lang === "ko" ? "옥구슬" : lang === "en" ? "Jade Beads" : "玉珠"}</p>
+                  <p className="text-sm font-bold font-mono text-[#FCD535] mt-0.5">
+                    {urdBalance.toLocaleString()} {lang === "ko" ? "개" : lang === "en" ? "Bead(s)" : "个"}
                   </p>
                 </div>
               </div>
@@ -880,8 +843,8 @@ export default function MobileApp() {
                 </div>
               </div>
 
-              {/* 4 Action Buttons: Deposit, Withdraw, Swap, History */}
-              <div className="grid grid-cols-4 gap-2 pt-2">
+              {/* 3 Action Buttons: Deposit, Withdraw, History */}
+              <div className="grid grid-cols-3 gap-2 pt-2">
                 <button
                   onClick={() => setShowDepositModal(true)}
                   className="bg-[#0B0E11] hover:bg-[#2B3139] border border-[#2B3139] hover:border-[#FCD535] py-3 rounded-xl flex flex-col items-center justify-center space-y-1.5 transition-all group"
@@ -896,14 +859,6 @@ export default function MobileApp() {
                 >
                   <ArrowUpRight size={18} className="text-[#F6465D] group-hover:scale-110 transition-transform" />
                   <span className="text-xs font-bold text-[#EAECEF]">{t.withdraw}</span>
-                </button>
-
-                <button
-                  onClick={() => setShowSwapModal(true)}
-                  className="bg-[#0B0E11] hover:bg-[#2B3139] border border-[#2B3139] hover:border-[#FCD535] py-3 rounded-xl flex flex-col items-center justify-center space-y-1.5 transition-all group"
-                >
-                  <ArrowRightLeft size={18} className="text-[#FCD535] group-hover:scale-110 transition-transform" />
-                  <span className="text-xs font-bold text-[#EAECEF]">{t.swap}</span>
                 </button>
 
                 <button
@@ -947,51 +902,26 @@ export default function MobileApp() {
                     <p className="text-[10px] font-bold text-[#848E9C] mt-0.5">0.00%</p>
                   </div>
                 </div>
-                {/* Token 2: URC */}
-                <div className="bg-[#1E2329] border border-[#2B3139] hover:border-[#FCD535]/60 rounded-2xl p-4 flex justify-between items-center transition-all">
-                  <div className="flex items-center space-x-3">
-                    <UrcLogo />
-                    <div>
-                      <div className="flex items-center space-x-1.5">
-                        <span className="text-sm font-extrabold text-[#EAECEF]">URC</span>
-                        <span className="text-[9px] font-extrabold text-[#FCD535] bg-[#FCD535]/10 border border-[#FCD535]/30 px-1.5 py-0.5 rounded">
-                          UTILITY
-                        </span>
-                      </div>
-                      <p className="text-xs font-mono text-[#848E9C] mt-0.5">
-                        {urcBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })} URC
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-extrabold font-mono text-[#EAECEF]">
-                      ${urcBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                    </p>
-                    <p className="text-[10px] font-bold text-[#0ECB81] mt-0.5">+12.40%</p>
-                  </div>
-                </div>
 
-                {/* Token 3: URD */}
-                <div className="bg-[#1E2329] border border-[#2B3139] hover:border-[#3498DB]/60 rounded-2xl p-4 flex justify-between items-center transition-all">
+                {/* Token 2: Jade Beads */}
+                <div className="bg-[#1E2329] border border-[#2B3139] hover:border-[#2ECC71]/60 rounded-2xl p-4 flex justify-between items-center transition-all">
                   <div className="flex items-center space-x-3">
-                    <UrdLogo />
+                    <JadeLogo />
                     <div>
                       <div className="flex items-center space-x-1.5">
-                        <span className="text-sm font-extrabold text-[#EAECEF]">URD</span>
-                        <span className="text-[9px] font-extrabold text-[#3498DB] bg-[#3498DB]/10 border border-[#3498DB]/30 px-1.5 py-0.5 rounded">
-                          GAME TOKEN
+                        <span className="text-sm font-extrabold text-[#EAECEF]">JADE</span>
+                        <span className="text-[9px] font-extrabold text-[#2ECC71] bg-[#2ECC71]/10 border border-[#2ECC71]/30 px-1.5 py-0.5 rounded">
+                          BEADS
                         </span>
                       </div>
                       <p className="text-xs font-mono text-[#848E9C] mt-0.5">
-                        {urdBalance.toLocaleString()} URD
+                        {urdBalance.toLocaleString()} {lang === "ko" ? "개" : lang === "en" ? "Bead(s)" : "个"}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-extrabold font-mono text-[#EAECEF]">
-                      ${(urdBalance / 15).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                    <p className="text-[10px] font-bold text-[#848E9C] mt-0.5">0.00%</p>
+                    <p className="text-sm font-extrabold font-mono text-[#EAECEF]">-</p>
+                    <p className="text-[10px] font-bold text-[#848E9C] mt-0.5">PLAY ITEM</p>
                   </div>
                 </div>
 
@@ -1094,24 +1024,19 @@ export default function MobileApp() {
               <div className="flex items-center space-x-2 text-[#F6465D] border-b border-[#2B3139] pb-3">
                 <ArrowUpRight size={18} />
                 <h3 className="text-sm font-extrabold text-[#EAECEF]">
-                  {withdrawToken} {lang === "ko" ? "출금 (BSC)" : lang === "en" ? "Withdrawal (BSC)" : "提现 (BSC)"}
+                  USDT {lang === "ko" ? "출금 (BSC)" : lang === "en" ? "Withdrawal (BSC)" : "提现 (BSC)"}
                 </h3>
               </div>
 
               <div className="space-y-3">
-                {/* Select Coin to Withdraw (USDT & URC only, URD excluded) */}
+                {/* Select Coin to Withdraw (USDT only, URC/URD excluded) */}
                 <div>
                   <label className="text-xs text-[#848E9C] font-bold">
-                    {lang === "ko" ? "출금 자산 선택" : lang === "en" ? "Select Asset" : "选择提现资产"}
+                    {lang === "ko" ? "출금 자산" : lang === "en" ? "Withdrawal Asset" : "提现资产"}
                   </label>
-                  <select
-                    value={withdrawToken}
-                    onChange={(e) => setWithdrawToken(e.target.value as "USDT" | "URC")}
-                    className="w-full mt-1 bg-[#0B0E11] border border-[#2B3139] rounded-xl px-3 py-2.5 text-xs text-[#FCD535] font-bold focus:outline-none focus:border-[#FCD535]"
-                  >
-                    <option value="USDT">USDT (Tether) - BSC BEP20</option>
-                    <option value="URC">URC (Utility Token) - BSC BEP20</option>
-                  </select>
+                  <div className="w-full mt-1 bg-[#0B0E11] border border-[#2B3139] rounded-xl px-3 py-2.5 text-xs text-[#FCD535] font-bold">
+                    USDT (Tether) - BSC BEP20
+                  </div>
                 </div>
 
                 {/* BSC Withdrawal Address with Square Paste Icon Button */}
@@ -1154,10 +1079,10 @@ export default function MobileApp() {
                 <div>
                   <div className="flex justify-between items-center text-xs">
                     <label className="text-[#848E9C] font-bold">
-                      {lang === "ko" ? `출금 금액 (${withdrawToken})` : `Amount (${withdrawToken})`}
+                      {lang === "ko" ? "출금 금액 (USDT)" : "Amount (USDT)"}
                     </label>
                     <span className="text-[#848E9C] text-[10px]">
-                      {lang === "ko" ? "보유" : "Bal"}: {withdrawToken === "USDT" ? `${usdtBalance.toFixed(2)} USDT` : `${urcBalance.toFixed(2)} URC`}
+                      {lang === "ko" ? "보유" : "Bal"}: {usdtBalance.toFixed(2)} USDT
                     </span>
                   </div>
                   <input
@@ -1166,10 +1091,10 @@ export default function MobileApp() {
                     onChange={(e) => setWithdrawAmount(e.target.value)}
                     placeholder={
                       lang === "ko" 
-                        ? `최소 30 ${withdrawToken}` 
+                        ? "최소 30 USDT" 
                         : lang === "en" 
-                        ? `Min 30 ${withdrawToken}` 
-                        : `最少 30 ${withdrawToken}`
+                        ? "Min 30 USDT" 
+                        : "最少 30 USDT"
                     }
                     className="w-full mt-1 bg-[#0B0E11] border border-[#2B3139] rounded-xl px-3 py-2.5 text-xs text-[#EAECEF] focus:outline-none focus:border-[#FCD535] font-mono"
                   />
@@ -1178,123 +1103,34 @@ export default function MobileApp() {
                 <div className="bg-[#0B0E11] rounded-xl p-3 border border-[#2B3139] space-y-1 text-xs">
                   <div className="flex justify-between text-[#848E9C]">
                     <span>{lang === "ko" ? "출금 수수료 (3%)" : lang === "en" ? "Fee (3%)" : "手续费 (3%)"}</span>
-                    <span>{withdrawFee.toFixed(2)} {withdrawToken}</span>
+                    <span>{withdrawFee.toFixed(2)} USDT</span>
                   </div>
                   <div className="flex justify-between font-bold text-[#EAECEF] pt-1 border-t border-[#2B3139]">
                     <span>{lang === "ko" ? "실제 수령 금액" : lang === "en" ? "You Receive" : "实际到账"}</span>
-                    <span className="text-[#0ECB81]">{withdrawFinal.toFixed(2)} {withdrawToken}</span>
+                    <span className="text-[#0ECB81]">{withdrawFinal.toFixed(2)} USDT</span>
                   </div>
                 </div>
 
                 <button
                   onClick={() => {
-                    const currentBal = withdrawToken === "USDT" ? usdtBalance : urcBalance;
                     if (!withdrawAmount || Number(withdrawAmount) < 30) {
-                      alert(`최소 출금 금액은 30 ${withdrawToken}입니다.`);
+                      alert(lang === "ko" ? "최소 출금 금액은 30 USDT입니다." : "Minimum withdrawal amount is 30 USDT.");
                       return;
                     }
-                    if (Number(withdrawAmount) > currentBal) {
-                      alert(`${withdrawToken} 잔액이 부족합니다.`);
+                    if (Number(withdrawAmount) > usdtBalance) {
+                      alert(lang === "ko" ? "USDT 잔액이 부족합니다." : "Insufficient USDT balance.");
                       return;
                     }
 
-                    if (withdrawToken === "USDT") {
-                      setUsdtBalance((prev) => prev - Number(withdrawAmount));
-                    } else {
-                      setUrcBalance((prev) => prev - Number(withdrawAmount));
-                    }
+                    setUsdtBalance((prev) => prev - Number(withdrawAmount));
 
                     setWithdrawAmount("");
                     setShowWithdrawModal(false);
-                    alert(`✅ ${withdrawAmount} ${withdrawToken} 출금 신청이 성공적으로 접수되었습니다. (네트워크 승인 후 지급)`);
+                    alert(`✅ ${withdrawAmount} USDT ${lang === "ko" ? "출금 신청이 성공적으로 접수되었습니다. (네트워크 승인 후 지급)" : "withdrawal request submitted successfully."}`);
                   }}
                   className="w-full py-3 bg-[#FCD535] text-[#0B0E11] font-black rounded-xl text-sm hover:opacity-90 active:scale-95 transition-all"
                 >
                   {t.applyWithdraw}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Swap Modal Popup */}
-        {showSwapModal && (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-[#1E2329] border border-[#2B3139] rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-2xl relative">
-              <button 
-                onClick={() => setShowSwapModal(false)}
-                className="absolute top-3 right-3 text-[#848E9C] hover:text-[#EAECEF] text-sm font-bold p-1 hover:bg-[#2B3139] rounded"
-              >
-                ✕
-              </button>
-
-              <div className="flex items-center space-x-2 text-[#FCD535] border-b border-[#2B3139] pb-3">
-                <ArrowRightLeft size={18} />
-                <h3 className="text-sm font-extrabold text-[#EAECEF]">{t.instantSwap}</h3>
-              </div>
-
-              <div className="space-y-3">
-                {/* From Token */}
-                <div className="bg-[#0B0E11] p-3 rounded-xl border border-[#2B3139] space-y-1">
-                  <div className="flex justify-between items-center text-xs text-[#848E9C]">
-                    <span>{t.pay}</span>
-                    <span>{isUsdtToUrc ? `잔액: $${usdtBalance.toFixed(2)}` : `잔액: ${urcBalance.toFixed(2)}`}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="number"
-                      value={fromAmount}
-                      onChange={(e) => {
-                        setFromAmount(e.target.value);
-                        setToAmount(e.target.value ? (Number(e.target.value) * 0.999).toFixed(2) : "");
-                      }}
-                      placeholder="0.00"
-                      className="w-full bg-transparent text-lg font-black text-[#EAECEF] focus:outline-none font-mono"
-                    />
-                    <span className="text-xs font-bold text-[#FCD535] bg-[#FCD535]/10 px-2 py-1 rounded">
-                      {isUsdtToUrc ? "USDT" : "URC"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Switch Button */}
-                <div className="flex justify-center -my-2 relative z-10">
-                  <button
-                    onClick={() => { setIsUsdtToUrc(!isUsdtToUrc); setFromAmount(""); setToAmount(""); }}
-                    className="p-2 bg-[#2B3139] hover:bg-[#FCD535] hover:text-[#0B0E11] text-[#FCD535] rounded-full border border-[#2B3139] transition-all"
-                  >
-                    <ArrowRightLeft size={14} />
-                  </button>
-                </div>
-
-                {/* To Token */}
-                <div className="bg-[#0B0E11] p-3 rounded-xl border border-[#2B3139] space-y-1">
-                  <div className="flex justify-between items-center text-xs text-[#848E9C]">
-                    <span>{t.receive}</span>
-                    <span>{isUsdtToUrc ? `잔액: ${urcBalance.toFixed(2)}` : `잔액: $${usdtBalance.toFixed(2)}`}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="text"
-                      readOnly
-                      value={toAmount}
-                      placeholder="0.00"
-                      className="w-full bg-transparent text-lg font-black text-[#0ECB81] focus:outline-none font-mono"
-                    />
-                    <span className="text-xs font-bold text-[#0ECB81] bg-[#0ECB81]/10 px-2 py-1 rounded">
-                      {isUsdtToUrc ? "URC" : "USDT"}
-                    </span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => {
-                    handleConfirmSwap();
-                    setShowSwapModal(false);
-                  }}
-                  className="w-full py-3 bg-[#FCD535] text-[#0B0E11] font-black rounded-xl text-sm hover:opacity-90 active:scale-95 transition-all"
-                >
-                  {t.confirmSwap}
                 </button>
               </div>
             </div>
@@ -1480,9 +1316,9 @@ export default function MobileApp() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#848E9C]">
-                    {lang === "ko" ? "보너스 토큰:" : lang === "en" ? "Bonus Tokens:" : "赠送代币:"}
+                    {lang === "ko" ? "보너스 옥구슬:" : lang === "en" ? "Bonus Jade Beads:" : "赠送玉珠:"}
                   </span>
-                  <span className="font-bold text-[#0ECB81]">+{confirmPurchaseModal.urdBonus.toLocaleString()} URD</span>
+                  <span className="font-bold text-[#0ECB81]">+{confirmPurchaseModal.urdBonus.toLocaleString()} {lang === "ko" ? "개" : lang === "en" ? "Bead(s)" : "个"}</span>
                 </div>
               </div>
 
@@ -1532,26 +1368,26 @@ export default function MobileApp() {
                 { 
                   level: 1, 
                   price: 100, 
-                  urdBonus: 1500, 
+                  urdBonus: 100, 
                   capRate: 2.0, 
                   capUsd: "$200 (200%)", 
-                  desc: lang === "ko" ? "1,500 URD 토큰 증정 • 수당 캡 200% 달성 시 소멸" : lang === "en" ? "Bonus 1,500 URD • Expires at 200% Payout Cap" : "赠送 1,500 URD 代币 • 200% 封顶" 
+                  desc: lang === "ko" ? "옥구슬 100개 증정 • 수당 캡 200% 달성 시 소멸" : lang === "en" ? "Bonus 100 Jade Beads • Expires at 200% Payout Cap" : "赠送 100 个玉珠 • 200% 封顶" 
                 },
                 { 
                   level: 2, 
                   price: 500, 
-                  urdBonus: 8000, 
+                  urdBonus: 550, 
                   capRate: 2.5, 
                   capUsd: "$1,250 (250%)", 
-                  desc: lang === "ko" ? "8,000 URD 토큰 증정 • 수당 캡 250% 달성 시 소멸" : lang === "en" ? "Bonus 8,000 URD • Expires at 250% Payout Cap" : "赠送 8,000 URD 代币 • 250% 封顶" 
+                  desc: lang === "ko" ? "옥구슬 550개, 홍바오 1개 증정 • 수당 캡 250% 달성 시 소멸" : lang === "en" ? "Bonus 550 Jade Beads, 1 Hongbao • Expires at 250% Payout Cap" : "赠送 550 个玉珠, 1 个红包 • 250% 封顶" 
                 },
                 { 
                   level: 3, 
                   price: 1000, 
-                  urdBonus: 17000, 
+                  urdBonus: 1200, 
                   capRate: 3.0, 
                   capUsd: "$3,000 (300%)", 
-                  desc: lang === "ko" ? "17,000 URD 토큰 증정 • 수당 캡 300% 달성 시 소멸" : lang === "en" ? "Bonus 17,000 URD • Expires at 300% Payout Cap" : "赠送 17,000 URD 代币 • 300% 封顶" 
+                  desc: lang === "ko" ? "옥구슬 1,200개, 홍바오 3개 증정 • 수당 캡 300% 달성 시 소멸" : lang === "en" ? "Bonus 1,200 Jade Beads, 3 Hongbao • Expires at 300% Payout Cap" : "赠送 1,200 个玉珠, 3 个红包 • 300% 封顶" 
                 },
               ].map((p) => (
                 <div key={p.level} className="bg-[#1E2329] border border-[#2B3139] hover:border-[#FCD535] rounded-2xl p-5 space-y-4 transition-all shadow-lg">
@@ -1595,11 +1431,11 @@ export default function MobileApp() {
                 </h2>
               </div>
 
-              {/* URD Balance */}
+              {/* Jade Balance */}
               <div className="bg-[#1E2329] rounded-xl p-4 border border-[#2B3139]">
-                <p className="text-xs font-bold text-[#848E9C]">URD {lang === "ko" ? "보유량" : lang === "en" ? "Balance" : "余额"}</p>
+                <p className="text-xs font-bold text-[#848E9C]">{lang === "ko" ? "옥구슬 보유량" : lang === "en" ? "Jade Beads Balance" : "玉珠持有量"}</p>
                 <h2 className="text-xl font-extrabold text-[#FCD535] mt-1 tracking-tight">
-                  {urdBalance.toLocaleString()} <span className="text-xs font-normal text-[#EAECEF]">URD</span>
+                  {urdBalance.toLocaleString()} <span className="text-xs font-normal text-[#EAECEF]">{lang === "ko" ? "개" : lang === "en" ? "Bead(s)" : "个"}</span>
                 </h2>
               </div>
             </div>
@@ -1691,7 +1527,7 @@ export default function MobileApp() {
                   <div className="space-y-2">
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-[#848E9C] font-bold">{t.selectRound}</span>
-                      <span className="text-[#FCD535] font-bold">{t.totalCost}: {manualBetsCount * 10} URD</span>
+                      <span className="text-[#FCD535] font-bold">{t.totalCost}: {manualBetsCount * 1} {lang === "ko" ? "옥구슬" : lang === "en" ? "Bead(s)" : "个玉珠"}</span>
                     </div>
                     <div className="grid grid-cols-4 gap-2">
                       {[1, 2, 5, 10].map((cnt) => (
@@ -1704,7 +1540,7 @@ export default function MobileApp() {
                               : "bg-[#0B0E11] border-[#2B3139] text-[#848E9C]"
                           }`}
                         >
-                          {cnt}{lang === "ko" ? "회" : lang === "en" ? " Times" : "次"} ({cnt * 10} URD)
+                          {cnt}{lang === "ko" ? "회" : lang === "en" ? " Times" : "次"} ({cnt * 1} {lang === "ko" ? "옥구슬" : lang === "en" ? "Jade" : "玉"})
                         </button>
                       ))}
                     </div>
@@ -1717,7 +1553,7 @@ export default function MobileApp() {
                     <Play size={16} />
                     <span>
                       {manualRound}
-                      {lang === "ko" ? "회차" : lang === "en" ? " Round" : "轮"} {t.manualBetBtn} ({manualBetsCount * 10} URD {lang === "ko" ? "소모" : lang === "en" ? "Cost" : "消耗"})
+                      {lang === "ko" ? "회차" : lang === "en" ? " Round" : "轮"} {t.manualBetBtn} ({manualBetsCount * 1} {lang === "ko" ? "옥구슬 소모" : lang === "en" ? "Jade Bead(s)" : "个玉珠"})
                     </span>
                   </button>
                 </div>
@@ -1754,10 +1590,10 @@ export default function MobileApp() {
                   <div className="space-y-2">
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-[#848E9C] font-bold">
-                        {lang === "ko" ? "회당 자동 참여 횟수 설정 (1회당 10 URD)" : lang === "en" ? "Auto Play Count (10 URD each)" : "每轮自动游戏次数 (每轮10 URD)"}
+                        {lang === "ko" ? "회당 자동 참여 횟수 설정 (1회당 옥구슬 1개)" : lang === "en" ? "Auto Play Count (1 Jade Bead each)" : "每轮自动游戏次数 (每轮 1 个玉珠)"}
                       </span>
                       <span className="text-[#FCD535] font-bold">
-                        {lang === "ko" ? "회당 소모" : lang === "en" ? "Cost / Round" : "每轮消耗"}: {autoSettings.betsCount * 10} URD
+                        {lang === "ko" ? "회당 소모" : lang === "en" ? "Cost / Round" : "每轮消耗"}: {autoSettings.betsCount * 1} {lang === "ko" ? "옥구슬" : lang === "en" ? "Jade" : "玉"}
                       </span>
                     </div>
                     <div className="grid grid-cols-4 gap-2">
@@ -1771,7 +1607,7 @@ export default function MobileApp() {
                               : "bg-[#0B0E11] border-[#2B3139] text-[#848E9C]"
                           }`}
                         >
-                          {cnt}{lang === "ko" ? "회" : lang === "en" ? " Times" : "次"} ({cnt * 10} URD)
+                          {cnt}{lang === "ko" ? "회" : lang === "en" ? " Times" : "次"} ({cnt * 1} {lang === "ko" ? "옥구슬" : lang === "en" ? "Jade" : "玉"})
                         </button>
                       ))}
                     </div>
@@ -1822,7 +1658,7 @@ export default function MobileApp() {
                         <span className="text-[10px] text-[#848E9C]">({b.betAt})</span>
                       </div>
                       <p className="text-[10px] text-[#848E9C] mt-0.5">
-                        {b.betsCount}{lang === "ko" ? "회 배팅" : lang === "en" ? " Bets" : "次下注"} • {b.urdSpent} URD {lang === "ko" ? "소모" : lang === "en" ? "Cost" : "消耗"}
+                        {b.betsCount}{lang === "ko" ? "회 배팅" : lang === "en" ? " Bets" : "次下注"} • {b.urdSpent} {lang === "ko" ? "옥구슬 소모" : lang === "en" ? "Jade Bead(s)" : "个玉珠"}
                       </p>
                     </div>
                     <span className="text-[10px] font-bold text-[#FCD535] bg-[#FCD535]/10 px-2 py-1 rounded">

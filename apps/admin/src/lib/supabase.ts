@@ -16,7 +16,7 @@ function createSafeClient(url: string, key: string, options?: any) {
       ],
       system_settings: [
         { id: "1", key: "daily_rate", value: "1.2", description: "일일 수익률 (%)" },
-        { id: "2", key: "min_withdraw", value: "10.00", description: "최소 출금 가능 금액 (USDT)" },
+        { id: "2", key: "min_withdraw", value: "30.00", description: "최소 출금 가능 금액 (USDT)" },
         { id: "3", key: "withdrawal_fee_rate", value: "3", description: "출금 수수료 (%)" }
       ],
       ledger_entries: [

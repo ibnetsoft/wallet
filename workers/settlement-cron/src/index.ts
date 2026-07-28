@@ -28,7 +28,7 @@ const CHEOTAN_TICKETS: Record<number, number> = {
 const RANK_BONUS_POOLS = [
   { pool: '1star', rate: 0.05, minStars: 1 }, // 1스타 이상 전체, 5%
   { pool: '2star', rate: 0.04, minStars: 2 }, // 2스타 이상, 4%
-  { pool: '3star', rate: 0.03, minStars: 3 }, // 3스타 이상, 3%
+  { pool: '3star', rate: 0.02, minStars: 3 }, // 3스타 이상, 2%
   { pool: '4star', rate: 0.01, minStars: 4 }, // 4스타 이상, 1%
   { pool: '5star', rate: 0.01, minStars: 5 }, // 5스타 이상, 1%
   { pool: '6star', rate: 0.01, minStars: 6 }, // 6스타 이상, 1%

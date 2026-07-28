@@ -139,9 +139,9 @@ export default function GameRoundsPage() {
     <div className="space-y-8 font-sans">
       <div className="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
         <div>
-          <h2 className="text-2xl font-bold text-white tracking-tight">일일 URD 게임 회차 설정</h2>
+          <h2 className="text-2xl font-bold text-white tracking-tight">일일 게임 회차 설정</h2>
           <p className="text-sm text-[#8E8E93] mt-1">
-            유저들이 매일 참여할 수 있는 URD 로또 게임의 회차 시간대를 생성하고 삭제합니다.
+            유저들이 매일 참여할 수 있는 로또 게임의 회차 시간대를 생성하고 삭제합니다.
           </p>
         </div>
         <button
