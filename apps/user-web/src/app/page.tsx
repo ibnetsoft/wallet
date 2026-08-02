@@ -294,14 +294,35 @@ export default function MobileApp() {
   const [historyPage, setHistoryPage] = useState(1);
   const [walletHistoryTab, setWalletHistoryTab] = useState<"tx" | "bonus" | "swap">("tx");
   const [bonusHistoryPage, setBonusHistoryPage] = useState(1);
+  const [showGameConfirmModal, setShowGameConfirmModal] = useState(false);
+  const [gameStatusTab, setGameStatusTab] = useState<"active" | "waiting" | "ended">("active");
+  const [purchaseSuccessEffect, setPurchaseSuccessEffect] = useState<{ show: boolean, level: number, name: string, urdBonus: number } | null>(null);
 
+  // 1단계: 컨펌 팝업 열기
   const handleManualBet = () => {
     const cost = manualBetsCount * 1;
     if (urdBalance < cost) {
-      alert(`옥구슬이 부족합니다! (필요: ${cost}개, 보유: ${urdBalance}개)`);
+      setShowGameConfirmModal(false);
+      const notif: GameNotification = {
+        id: `n-${Date.now()}`,
+        round: `${manualRound}회차`,
+        time: new Date().toLocaleTimeString("ko-KR", { hour12: false, hour: "2-digit", minute: "2-digit" }),
+        title: "⚠️ 옥구슬 부족 — 게임 참여 불가",
+        resultType: "COIN_WIN",
+        rewardText: `보유 옥구슬(${urdBalance}개)이 부족합니다. 필요: ${cost}개`,
+        createdAt: new Date().toLocaleTimeString("ko-KR", { hour12: false, hour: "2-digit", minute: "2-digit" }),
+        read: false,
+      };
+      setNotifications((prev) => [notif, ...prev]);
       return;
     }
+    setShowGameConfirmModal(true);
+  };
 
+  // 2단계: 컨펌 후 실제 참여 실행
+  const confirmManualBet = () => {
+    const cost = manualBetsCount * 1;
+    setShowGameConfirmModal(false);
     setUrdBalance((prev) => prev - cost);
     const newBet: GameBetRecord = {
       id: `b-${Date.now()}`,
@@ -311,9 +332,19 @@ export default function MobileApp() {
       status: "WAITING",
       betAt: new Date().toLocaleTimeString("ko-KR", { hour12: false, hour: "2-digit", minute: "2-digit" }),
     };
-
     setMyBets((prev) => [newBet, ...prev]);
-    alert(`🎉 ${manualRound}회차 게임 참여 완료! (${manualBetsCount}회 / 옥구슬 ${cost}개 소모)\nAI 당첨 발표 시각에 결과가 발표됩니다.`);
+    // 벨 알림으로 참여 완료 통보
+    const notif: GameNotification = {
+      id: `n-${Date.now()}`,
+      round: `${manualRound}회차`,
+      time: new Date().toLocaleTimeString("ko-KR", { hour12: false, hour: "2-digit", minute: "2-digit" }),
+      title: `🎮 ${manualRound}회차 게임 참여 완료`,
+      resultType: "COIN_WIN",
+      rewardText: `${manualBetsCount}회 참여 · 옥구슬 ${cost}개 소모 · AI 발표 대기 중`,
+      createdAt: new Date().toLocaleTimeString("ko-KR", { hour12: false, hour: "2-digit", minute: "2-digit" }),
+      read: false,
+    };
+    setNotifications((prev) => [notif, ...prev]);
   };
 
   const handleToggleAutoSettings = () => {
@@ -406,11 +437,13 @@ export default function MobileApp() {
     setMyMachines((prev) => [...prev, newMachine]);
     setConfirmPurchaseModal(null);
 
-    alert(lang === "ko" 
-      ? `🎉 $${price.toLocaleString()} 게임기 구매 성공! 옥구슬 ${urdBonus.toLocaleString()}개가 즉시 지급되었습니다.` 
-      : lang === "en" 
-      ? `🎉 Purchased $${price.toLocaleString()} Machine! +${urdBonus.toLocaleString()} Jade Beads credited.` 
-      : `🎉 成功购买 $${price.toLocaleString()} 游戏机！赠送 ${urdBonus.toLocaleString()} 个玉珠！`);
+    // 구매 성공 이펙트 실행 (기존 alert 대체)
+    setPurchaseSuccessEffect({ show: true, level, name: nodeName, urdBonus });
+    
+    // 3.5초 후 자동 닫기
+    setTimeout(() => {
+      setPurchaseSuccessEffect(null);
+    }, 3500);
   };
   const [directTree] = useState([
     { id: 1, nickname: "User A", referralSeq: 1, status: "ACTIVE" },
@@ -1529,7 +1562,11 @@ export default function MobileApp() {
                   urdBonus: 100, 
                   capRate: 2.0, 
                   capUsd: "$200 (200%)", 
-                  desc: lang === "ko" ? "옥구슬 100개 증정 • 수당 캡 200% 달성 시 소멸" : lang === "en" ? "Bonus 100 Jade Beads • Expires at 200% Payout Cap" : "赠送 100 个玉珠 • 200% 封顶" 
+                  desc: lang === "ko" ? "옥구슬 100개 증정 • 수당 캡 200% 달성 시 소멸" : lang === "en" ? "Bonus 100 Jade Beads • Expires at 200% Payout Cap" : "赠送 100 个玉珠 • 200% 封顶",
+                  badgeZh: "祥云",
+                  badgeTheme: "from-gray-300 via-white to-gray-400",
+                  badgeGlow: "shadow-[0_0_20px_rgba(255,255,255,0.3)]",
+                  badgeText: "text-gray-100 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
                 },
                 { 
                   level: 2, 
@@ -1537,7 +1574,11 @@ export default function MobileApp() {
                   urdBonus: 550, 
                   capRate: 2.5, 
                   capUsd: "$1,250 (250%)", 
-                  desc: lang === "ko" ? "옥구슬 550개, 홍바오 1개 증정 • 수당 캡 250% 달성 시 소멸" : lang === "en" ? "Bonus 550 Jade Beads, 1 Hongbao • Expires at 250% Payout Cap" : "赠送 550 个玉珠, 1 个红包 • 250% 封顶" 
+                  desc: lang === "ko" ? "옥구슬 550개, 홍바오 1개 증정 • 수당 캡 250% 달성 시 소멸" : lang === "en" ? "Bonus 550 Jade Beads, 1 Hongbao • Expires at 250% Payout Cap" : "赠送 550 个玉珠, 1 个红包 • 250% 封顶",
+                  badgeZh: "紫光",
+                  badgeTheme: "from-purple-500 via-fuchsia-400 to-purple-600",
+                  badgeGlow: "shadow-[0_0_20px_rgba(192,38,211,0.4)]",
+                  badgeText: "text-purple-100 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
                 },
                 { 
                   level: 3, 
@@ -1545,27 +1586,45 @@ export default function MobileApp() {
                   urdBonus: 1200, 
                   capRate: 3.0, 
                   capUsd: "$3,000 (300%)", 
-                  desc: lang === "ko" ? "옥구슬 1,200개, 홍바오 3개 증정 • 수당 캡 300% 달성 시 소멸" : lang === "en" ? "Bonus 1,200 Jade Beads, 3 Hongbao • Expires at 300% Payout Cap" : "赠送 1,200 个玉珠, 3 个红包 • 300% 封顶" 
+                  desc: lang === "ko" ? "옥구슬 1,200개, 홍바오 3개 증정 • 수당 캡 300% 달성 시 소멸" : lang === "en" ? "Bonus 1,200 Jade Beads, 3 Hongbao • Expires at 300% Payout Cap" : "赠送 1,200 个玉珠, 3 个红包 • 300% 封顶",
+                  badgeZh: "鸿运",
+                  badgeTheme: "from-red-600 via-orange-500 to-red-700",
+                  badgeGlow: "shadow-[0_0_25px_rgba(239,68,68,0.5)] border border-red-500/50",
+                  badgeText: "text-yellow-100 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
                 },
               ].map((p) => (
-                <div key={p.level} className="bg-[#1E2329] border border-[#2B3139] hover:border-[#FCD535] rounded-2xl p-5 space-y-4 transition-all shadow-lg">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <span className="text-2xl font-black text-[#FCD535]">${p.price.toLocaleString()}</span>
-                      <h4 className="text-sm font-bold text-[#EAECEF] mt-1">{p.level === 1 ? t.node100Name : p.level === 2 ? t.node500Name : t.node1000Name}</h4>
+                <div key={p.level} className="bg-[#1E2329] border border-[#2B3139] hover:border-[#FCD535] rounded-2xl p-5 space-y-4 transition-all shadow-lg overflow-hidden relative">
+                  
+                  {/* Background Glow Effect */}
+                  <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${p.badgeTheme} opacity-10 blur-3xl rounded-full -mr-10 -mt-10 pointer-events-none`} />
+
+                  <div className="flex justify-between items-start relative z-10">
+                    <div className="flex items-center space-x-3">
+                      {/* Chinese Character Badge */}
+                      <div className={`w-14 h-14 rounded-xl flex items-center justify-center bg-gradient-to-br ${p.badgeTheme} ${p.badgeGlow}`}>
+                        <span className={`text-2xl font-black ${p.badgeText} tracking-widest`} style={{ fontFamily: "serif" }}>
+                          {p.badgeZh}
+                        </span>
+                      </div>
+                      
+                      <div>
+                        <span className="text-2xl font-black text-[#FCD535]">${p.price.toLocaleString()}</span>
+                        <h4 className="text-sm font-bold text-[#EAECEF] mt-1">{p.level === 1 ? t.node100Name : p.level === 2 ? t.node500Name : t.node1000Name}</h4>
+                      </div>
                     </div>
-                    <span className="bg-[#0ECB81]/10 text-[#0ECB81] border border-[#0ECB81]/30 text-[10px] font-extrabold px-2.5 py-1 rounded-full">
+                    
+                    <span className="bg-[#0ECB81]/10 text-[#0ECB81] border border-[#0ECB81]/30 text-[10px] font-extrabold px-2.5 py-1 rounded-full whitespace-nowrap">
                       {t.cap}: {p.capUsd}
                     </span>
                   </div>
 
-                  <p className="text-xs text-[#848E9C] bg-[#0B0E11] p-3 rounded-xl border border-[#2B3139]">
+                  <p className="text-xs text-[#848E9C] bg-[#0B0E11] p-3 rounded-xl border border-[#2B3139] relative z-10">
                     {p.desc}
                   </p>
 
                   <button 
                     onClick={() => handleRequestPurchase(p.level, p.price, p.urdBonus, p.capRate)}
-                    className="w-full py-3 bg-[#FCD535] text-[#0B0E11] font-black rounded-xl text-sm hover:opacity-90 active:scale-95 transition-all shadow-[0_0_20px_rgba(252,213,53,0.2)] flex items-center justify-center space-x-1.5"
+                    className="w-full py-3 bg-[#FCD535] text-[#0B0E11] font-black rounded-xl text-sm hover:opacity-90 active:scale-95 transition-all shadow-[0_0_20px_rgba(252,213,53,0.2)] flex items-center justify-center space-x-1.5 relative z-10"
                   >
                     <ShoppingBag size={16} />
                     <span>${p.price.toLocaleString()} USDT {t.buyProduct}</span>
@@ -1714,6 +1773,89 @@ export default function MobileApp() {
                       {lang === "ko" ? "회차" : lang === "en" ? " Round" : "轮"} {t.manualBetBtn} ({manualBetsCount * 1} {lang === "ko" ? "옥구슬 소모" : lang === "en" ? "Jade Bead(s)" : "个玉珠"})
                     </span>
                   </button>
+
+                  {/* ── 게임 참여 컨펌 팝업 ── */}
+                  {showGameConfirmModal && (
+                    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                      <div className="bg-[#1E2329] border border-[#FCD535]/40 rounded-2xl w-full max-w-xs p-6 space-y-5 shadow-[0_0_40px_rgba(252,213,53,0.25)] relative">
+                        {/* 닫기 */}
+                        <button
+                          onClick={() => setShowGameConfirmModal(false)}
+                          className="absolute top-3 right-3 text-[#848E9C] hover:text-[#EAECEF] p-1.5 hover:bg-[#2B3139] rounded-lg transition-colors"
+                        >
+                          ✕
+                        </button>
+
+                        {/* 헤더 */}
+                        <div className="text-center space-y-1">
+                          <div className="w-14 h-14 rounded-full bg-[#FCD535]/10 border border-[#FCD535]/30 flex items-center justify-center mx-auto">
+                            <Gamepad2 size={28} className="text-[#FCD535]" />
+                          </div>
+                          <h3 className="text-base font-black text-[#EAECEF] pt-1">
+                            {lang === "ko" ? "게임 참여 확인" : lang === "en" ? "Confirm Game Entry" : "确认参与游戏"}
+                          </h3>
+                          <p className="text-xs text-[#848E9C]">
+                            {lang === "ko" ? "아래 내용을 확인하고 참여하세요" : lang === "en" ? "Please review before joining" : "请确认以下信息后参与"}
+                          </p>
+                        </div>
+
+                        {/* 참여 정보 */}
+                        <div className="bg-[#0B0E11] rounded-xl border border-[#2B3139] divide-y divide-[#2B3139]">
+                          <div className="flex justify-between items-center px-4 py-3">
+                            <span className="text-xs text-[#848E9C] font-bold">
+                              {lang === "ko" ? "참여 회차" : lang === "en" ? "Round" : "参与轮次"}
+                            </span>
+                            <span className="text-sm font-black text-[#FCD535]">
+                              {manualRound}{lang === "ko" ? "회차" : lang === "en" ? " Round" : "轮"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center px-4 py-3">
+                            <span className="text-xs text-[#848E9C] font-bold">
+                              {lang === "ko" ? "게임 횟수" : lang === "en" ? "Play Count" : "游戏次数"}
+                            </span>
+                            <span className="text-sm font-black text-[#EAECEF]">
+                              {manualBetsCount}{lang === "ko" ? "회" : lang === "en" ? " Times" : "次"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center px-4 py-3">
+                            <span className="text-xs text-[#848E9C] font-bold">
+                              {lang === "ko" ? "소모 옥구슬" : lang === "en" ? "Jade Beads" : "消耗玉珠"}
+                            </span>
+                            <span className="text-sm font-black text-[#F6465D]">
+                              -{manualBetsCount * 1} {lang === "ko" ? "개" : lang === "en" ? "Bead(s)" : "个"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center px-4 py-3">
+                            <span className="text-xs text-[#848E9C] font-bold">
+                              {lang === "ko" ? "참여 후 잔액" : lang === "en" ? "After Balance" : "参与后余额"}
+                            </span>
+                            <span className={`text-sm font-black font-mono ${
+                              urdBalance - manualBetsCount * 1 >= 0 ? "text-[#0ECB81]" : "text-[#F6465D]"
+                            }`}>
+                              {Math.max(0, urdBalance - manualBetsCount * 1)}{lang === "ko" ? "개" : lang === "en" ? " Bead(s)" : "个"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* 버튼 */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            onClick={() => setShowGameConfirmModal(false)}
+                            className="py-3 rounded-xl border border-[#2B3139] bg-[#0B0E11] text-[#848E9C] font-bold text-sm hover:border-[#EAECEF] hover:text-[#EAECEF] transition-all active:scale-95"
+                          >
+                            {lang === "ko" ? "취소" : lang === "en" ? "Cancel" : "取消"}
+                          </button>
+                          <button
+                            onClick={confirmManualBet}
+                            className="py-3 rounded-xl bg-[#FCD535] text-[#0B0E11] font-black text-sm hover:opacity-90 transition-all active:scale-95 shadow-[0_0_16px_rgba(252,213,53,0.3)] flex items-center justify-center space-x-1.5"
+                          >
+                            <Play size={14} />
+                            <span>{lang === "ko" ? "참여 확인" : lang === "en" ? "Confirm" : "确认参与"}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 /* Auto Game Tab */
@@ -1744,32 +1886,78 @@ export default function MobileApp() {
                     </div>
                   </div>
 
-                  {/* Auto Bets Count Selection (Requirement 5) */}
+                  {/* Auto Bets Count — 숫자 직접 입력 */}
                   <div className="space-y-2">
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-[#848E9C] font-bold">
-                        {lang === "ko" ? "회당 자동 참여 횟수 설정 (1회당 옥구슬 1개)" : lang === "en" ? "Auto Play Count (1 Jade Bead each)" : "每轮自动游戏次数 (每轮 1 个玉珠)"}
+                        {lang === "ko" ? "회당 자동 참여 횟수 (1회당 옥구슬 1개)" : lang === "en" ? "Auto Play Count (1 Jade Bead each)" : "每轮自动游戏次数 (每轮 1 个玉珠)"}
                       </span>
-                      <span className="text-[#FCD535] font-bold">
-                        {lang === "ko" ? "회당 소모" : lang === "en" ? "Cost / Round" : "每轮消耗"}: {autoSettings.betsCount * 1} {lang === "ko" ? "옥구슬" : lang === "en" ? "Jade" : "玉"}
+                      <span className="text-[#FCD535] font-bold text-[11px]">
+                        {lang === "ko" ? "소모" : lang === "en" ? "Cost" : "消耗"}: {autoSettings.betsCount} {lang === "ko" ? "옥구슬" : lang === "en" ? "Jade" : "玉"}
                       </span>
                     </div>
-                    <div className="grid grid-cols-4 gap-2">
-                      {[1, 5, 10, 20].map((cnt) => (
+
+                    <div className="flex items-center space-x-2">
+                      {/* 감소 버튼 */}
+                      <button
+                        type="button"
+                        onClick={() => setAutoSettings((prev) => ({ ...prev, betsCount: Math.max(1, prev.betsCount - 1) }))}
+                        className="w-10 h-10 flex-shrink-0 rounded-xl bg-[#0B0E11] border border-[#2B3139] text-[#EAECEF] font-black text-lg hover:border-[#FCD535] hover:text-[#FCD535] transition-all active:scale-90 flex items-center justify-center"
+                      >
+                        −
+                      </button>
+
+                      {/* 숫자 입력 */}
+                      <div className="relative flex-1">
+                        <input
+                          type="number"
+                          min={1}
+                          max={100}
+                          value={autoSettings.betsCount}
+                          onChange={(e) => {
+                            const v = parseInt(e.target.value, 10);
+                            if (!isNaN(v) && v >= 1 && v <= 100) {
+                              setAutoSettings((prev) => ({ ...prev, betsCount: v }));
+                            } else if (e.target.value === "") {
+                              setAutoSettings((prev) => ({ ...prev, betsCount: 1 }));
+                            }
+                          }}
+                          className="w-full bg-[#0B0E11] border border-[#2B3139] focus:border-[#FCD535] rounded-xl py-2.5 text-center text-lg font-black text-[#FCD535] outline-none transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                        <span className="absolute right-3 inset-y-0 flex items-center text-[10px] text-[#848E9C] font-bold pointer-events-none">
+                          {lang === "ko" ? "회" : lang === "en" ? "×" : "次"}
+                        </span>
+                      </div>
+
+                      {/* 증가 버튼 */}
+                      <button
+                        type="button"
+                        onClick={() => setAutoSettings((prev) => ({ ...prev, betsCount: Math.min(100, prev.betsCount + 1) }))}
+                        className="w-10 h-10 flex-shrink-0 rounded-xl bg-[#0B0E11] border border-[#2B3139] text-[#EAECEF] font-black text-lg hover:border-[#FCD535] hover:text-[#FCD535] transition-all active:scale-90 flex items-center justify-center"
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    {/* 빠른 선택 칩 */}
+                    <div className="flex space-x-2">
+                      {[1, 5, 10, 30, 50].map((n) => (
                         <button
-                          key={cnt}
-                          onClick={() => setAutoSettings((prev) => ({ ...prev, betsCount: cnt }))}
-                          className={`py-2 rounded-lg text-xs font-bold border transition-all ${
-                            autoSettings.betsCount === cnt
-                              ? "bg-[#FCD535] text-[#0B0E11] border-[#FCD535]"
-                              : "bg-[#0B0E11] border-[#2B3139] text-[#848E9C]"
+                          key={n}
+                          type="button"
+                          onClick={() => setAutoSettings((prev) => ({ ...prev, betsCount: n }))}
+                          className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold border transition-all ${
+                            autoSettings.betsCount === n
+                              ? "bg-[#FCD535]/20 border-[#FCD535] text-[#FCD535]"
+                              : "bg-[#0B0E11] border-[#2B3139] text-[#848E9C] hover:border-[#FCD535]/50 hover:text-[#EAECEF]"
                           }`}
                         >
-                          {cnt}{lang === "ko" ? "회" : lang === "en" ? " Times" : "次"} ({cnt * 1} {lang === "ko" ? "옥구슬" : lang === "en" ? "Jade" : "玉"})
+                          {n}
                         </button>
                       ))}
                     </div>
                   </div>
+
 
                   {/* Daily Auto Repeat Checkbox Toggle */}
                   <div className="bg-[#0B0E11] p-3.5 rounded-xl border border-[#2B3139] flex items-center justify-between">
@@ -1802,29 +1990,165 @@ export default function MobileApp() {
               )}
             </div>
 
-            {/* My Betting History List */}
-            <div className="space-y-2.5">
-              <h3 className="text-xs font-extrabold text-[#848E9C] uppercase px-1">{t.recentBets}</h3>
-              <div className="space-y-2">
-                {myBets.map((b) => (
-                  <div key={b.id} className="bg-[#1E2329] border border-[#2B3139] rounded-xl p-3 flex justify-between items-center">
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs font-bold text-[#FCD535]">
-                          {b.round === 1 ? t.round1 : b.round === 2 ? t.round2 : t.round3} {lang === "ko" ? "참여" : lang === "en" ? "Joined" : "参与"}
-                        </span>
-                        <span className="text-[10px] text-[#848E9C]">({b.betAt})</span>
-                      </div>
-                      <p className="text-[10px] text-[#848E9C] mt-0.5">
-                        {b.betsCount}{lang === "ko" ? "회 배팅" : lang === "en" ? " Bets" : "次下注"} • {b.urdSpent} {lang === "ko" ? "옥구슬 소모" : lang === "en" ? "Jade Bead(s)" : "个玉珠"}
-                      </p>
-                    </div>
-                    <span className="text-[10px] font-bold text-[#FCD535] bg-[#FCD535]/10 px-2 py-1 rounded">
-                      ● {lang === "ko" ? "대기 중" : lang === "en" ? "Waiting" : "等待中"} ({b.round === 1 ? "12:30" : b.round === 2 ? "15:30" : "18:30"} {lang === "ko" ? "발표" : lang === "en" ? "Draw" : "公布"})
-                    </span>
-                  </div>
+            {/* ── 게임 상태 탭 섹션 ── */}
+            <div className="space-y-3">
+              {/* 탭 헤더 */}
+              <div className="flex items-center justify-between px-1">
+                <h3 className="text-xs font-extrabold text-[#EAECEF] flex items-center space-x-1.5">
+                  <Gamepad2 size={14} className="text-[#FCD535]" />
+                  <span>{lang === "ko" ? "게임 현황" : lang === "en" ? "Game Status" : "游戏状态"}</span>
+                </h3>
+              </div>
+
+              {/* 3-Tab Selector */}
+              <div className="grid grid-cols-3 gap-1.5 bg-[#0B0E11] p-1 rounded-xl border border-[#2B3139]">
+                {([
+                  { id: "active"  as const, ko: "진행중",  en: "Active",  zh: "进行中", dot: "bg-[#0ECB81]" },
+                  { id: "waiting" as const, ko: "대기",    en: "Waiting", zh: "等待中", dot: "bg-[#FCD535]" },
+                  { id: "ended"   as const, ko: "종료",    en: "Ended",   zh: "已结束", dot: "bg-[#848E9C]" },
+                ] as { id: "active" | "waiting" | "ended"; ko: string; en: string; zh: string; dot: string }[]).map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setGameStatusTab(tab.id)}
+                    className={`py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center space-x-1.5 ${
+                      gameStatusTab === tab.id
+                        ? "bg-[#1E2329] text-[#EAECEF] shadow-sm"
+                        : "text-[#848E9C] hover:text-[#EAECEF]"
+                    }`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${tab.dot} ${gameStatusTab === tab.id ? "opacity-100" : "opacity-40"}`} />
+                    <span>{lang === "ko" ? tab.ko : lang === "en" ? tab.en : tab.zh}</span>
+                  </button>
                 ))}
               </div>
+
+              {/* ── 진행중 탭 ── */}
+              {gameStatusTab === "active" && (() => {
+                const activeGames = [
+                  ...myBets.filter(b => b.status === "WAITING"),
+                  // 샘플 진행중 데이터 (실서버 연동 전)
+                  ...(myBets.length === 0 ? [
+                    { id: "demo-a1", round: 2, betsCount: 3, urdSpent: 3, status: "WAITING" as const, betAt: "14:05" },
+                    { id: "demo-a2", round: 2, betsCount: 1, urdSpent: 1, status: "WAITING" as const, betAt: "14:12" },
+                  ] : []),
+                ];
+                return (
+                  <div className="space-y-2">
+                    {activeGames.length === 0 ? (
+                      <div className="bg-[#1E2329] rounded-xl p-5 text-center border border-[#2B3139]">
+                        <p className="text-xs text-[#848E9C]">{lang === "ko" ? "현재 진행 중인 게임이 없습니다." : lang === "en" ? "No active games." : "暂无进行中的游戏。"}</p>
+                      </div>
+                    ) : activeGames.map((b) => (
+                      <div key={b.id} className="bg-[#1E2329] border border-[#0ECB81]/30 rounded-xl p-3.5 flex justify-between items-center hover:border-[#0ECB81]/60 transition-all">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center space-x-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#0ECB81] animate-pulse" />
+                            <span className="text-xs font-extrabold text-[#FCD535]">
+                              {b.round === 1 ? t.round1 : b.round === 2 ? t.round2 : t.round3}
+                            </span>
+                            <span className="text-[10px] text-[#848E9C]">({b.betAt})</span>
+                          </div>
+                          <p className="text-[10px] text-[#848E9C]">
+                            {b.betsCount}{lang === "ko" ? "회 참여" : lang === "en" ? " Plays" : "次"} · {b.urdSpent} {lang === "ko" ? "옥구슬" : "Jade"}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[10px] font-bold text-[#0ECB81] bg-[#0ECB81]/10 border border-[#0ECB81]/30 px-2 py-1 rounded-lg">
+                            ● {lang === "ko" ? "진행중" : lang === "en" ? "Active" : "进行中"}
+                          </span>
+                          <p className="text-[9px] text-[#848E9C] mt-1">
+                            {lang === "ko" ? "발표" : "Draw"}: {b.round === 1 ? "12:30" : b.round === 2 ? "15:30" : "18:30"}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              {/* ── 대기 탭 ── */}
+              {gameStatusTab === "waiting" && (() => {
+                const waitingGames = [
+                  { id: "w1", round: 3, betsCount: 2, urdSpent: 2, drawTime: "18:30", betAt: "17:05" },
+                  { id: "w2", round: 3, betsCount: 5, urdSpent: 5, drawTime: "18:30", betAt: "17:22" },
+                  { id: "w3", round: 1, betsCount: 1, urdSpent: 1, drawTime: "12:30", betAt: "11:10" },
+                ];
+                return (
+                  <div className="space-y-2">
+                    {waitingGames.map((g) => (
+                      <div key={g.id} className="bg-[#1E2329] border border-[#FCD535]/20 rounded-xl p-3.5 flex justify-between items-center hover:border-[#FCD535]/50 transition-all">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center space-x-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#FCD535]" />
+                            <span className="text-xs font-extrabold text-[#FCD535]">
+                              {g.round === 1 ? t.round1 : g.round === 2 ? t.round2 : t.round3}
+                            </span>
+                            <span className="text-[10px] text-[#848E9C]">({g.betAt})</span>
+                          </div>
+                          <p className="text-[10px] text-[#848E9C]">
+                            {g.betsCount}{lang === "ko" ? "회 참여" : lang === "en" ? " Plays" : "次"} · {g.urdSpent} {lang === "ko" ? "옥구슬" : "Jade"}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[10px] font-bold text-[#FCD535] bg-[#FCD535]/10 border border-[#FCD535]/30 px-2 py-1 rounded-lg">
+                            ⏳ {lang === "ko" ? "대기" : lang === "en" ? "Waiting" : "等待"}
+                          </span>
+                          <p className="text-[9px] text-[#848E9C] mt-1">
+                            {lang === "ko" ? "발표" : "Draw"}: {g.drawTime}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              {/* ── 종료 탭 ── */}
+              {gameStatusTab === "ended" && (() => {
+                const endedGames = [
+                  { id: "e1", round: 1, betsCount: 3, urdSpent: 3, betAt: "11:15", result: "WIN",  reward: "+306.00 USDT", date: "2026-07-21" },
+                  { id: "e2", round: 2, betsCount: 1, urdSpent: 1, betAt: "14:08", result: "LOSE", reward: "-",            date: "2026-07-21" },
+                  { id: "e3", round: 3, betsCount: 5, urdSpent: 5, betAt: "17:30", result: "WIN",  reward: "+510.00 USDT", date: "2026-07-20" },
+                  { id: "e4", round: 1, betsCount: 2, urdSpent: 2, betAt: "11:05", result: "LOSE", reward: "-",            date: "2026-07-20" },
+                  { id: "e5", round: 3, betsCount: 10,urdSpent: 10,betAt: "17:45", result: "WIN",  reward: "+1,020.00 USDT",date: "2026-07-18" },
+                ];
+                return (
+                  <div className="space-y-2">
+                    {endedGames.map((g) => (
+                      <div key={g.id} className={`bg-[#1E2329] border rounded-xl p-3.5 flex justify-between items-center transition-all ${
+                        g.result === "WIN" ? "border-[#0ECB81]/20 hover:border-[#0ECB81]/40" : "border-[#2B3139] hover:border-[#848E9C]/40"
+                      }`}>
+                        <div className="space-y-0.5">
+                          <div className="flex items-center space-x-2">
+                            <span className={`text-xs font-extrabold ${ g.result === "WIN" ? "text-[#FCD535]" : "text-[#848E9C]" }`}>
+                              {g.round === 1 ? t.round1 : g.round === 2 ? t.round2 : t.round3}
+                            </span>
+                            <span className="text-[9px] font-mono text-[#848E9C]">{g.date} {g.betAt}</span>
+                          </div>
+                          <p className="text-[10px] text-[#848E9C]">
+                            {g.betsCount}{lang === "ko" ? "회 참여" : lang === "en" ? " Plays" : "次"} · {g.urdSpent} {lang === "ko" ? "옥구슬" : "Jade"}
+                          </p>
+                        </div>
+                        <div className="text-right space-y-1">
+                          {g.result === "WIN" ? (
+                            <>
+                              <span className="text-[10px] font-bold text-[#0ECB81] bg-[#0ECB81]/10 border border-[#0ECB81]/30 px-2 py-1 rounded-lg block">
+                                🏆 {lang === "ko" ? "당첨" : lang === "en" ? "WIN" : "中奖"}
+                              </span>
+                              <p className="text-xs font-black text-[#0ECB81] font-mono">{g.reward}</p>
+                            </>
+                          ) : (
+                            <span className="text-[10px] font-bold text-[#848E9C] bg-[#848E9C]/10 border border-[#848E9C]/20 px-2 py-1 rounded-lg">
+                              ✕ {lang === "ko" ? "미당첨" : lang === "en" ? "LOSE" : "未中奖"}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+
             </div>
 
           </div>
@@ -2136,6 +2460,63 @@ export default function MobileApp() {
             </button>
           ))}
         </div>
+        {/* ── PURCHASE SUCCESS FULLSCREEN EFFECT ── */}
+        {purchaseSuccessEffect?.show && (
+          <div 
+            className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden"
+            onClick={() => setPurchaseSuccessEffect(null)}
+          >
+            {/* Background Overlay */}
+            <div className="absolute inset-0 bg-[#0B0E11]/90 backdrop-blur-md animate-in fade-in duration-300" />
+            
+            {/* Dynamic Light Rays */}
+            <div className={`absolute inset-0 opacity-40 animate-pulse ${
+              purchaseSuccessEffect.level === 1 ? "bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.4)_0%,transparent_70%)]" :
+              purchaseSuccessEffect.level === 2 ? "bg-[radial-gradient(circle_at_center,rgba(192,38,211,0.5)_0%,transparent_70%)]" :
+              "bg-[radial-gradient(circle_at_center,rgba(239,68,68,0.6)_0%,transparent_70%)]"
+            }`} />
+
+            {/* Content Container */}
+            <div className="relative z-10 flex flex-col items-center text-center animate-in zoom-in-50 slide-in-from-bottom-10 duration-500 spring-bounce">
+              
+              {/* Giant Chinese Character Badge */}
+              <div className={`w-40 h-40 rounded-3xl flex items-center justify-center mb-6 border-2 transform rotate-3 shadow-2xl ${
+                purchaseSuccessEffect.level === 1 ? "bg-gradient-to-br from-gray-300 via-white to-gray-400 border-white shadow-white/50" :
+                purchaseSuccessEffect.level === 2 ? "bg-gradient-to-br from-purple-500 via-fuchsia-400 to-purple-600 border-purple-300 shadow-purple-500/60" :
+                "bg-gradient-to-br from-red-600 via-orange-500 to-red-700 border-yellow-400 shadow-red-500/70"
+              }`}>
+                <span className={`text-6xl font-black tracking-widest ${
+                  purchaseSuccessEffect.level === 1 ? "text-gray-100 drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)]" :
+                  purchaseSuccessEffect.level === 2 ? "text-purple-100 drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)]" :
+                  "text-yellow-100 drop-shadow-[0_4px_10px_rgba(0,0,0,0.6)]"
+                }`} style={{ fontFamily: "serif" }}>
+                  {purchaseSuccessEffect.level === 1 ? "祥云" : purchaseSuccessEffect.level === 2 ? "紫光" : "鸿运"}
+                </span>
+              </div>
+
+              {/* Title & Rewards */}
+              <h1 className="text-3xl font-black text-white mb-2 drop-shadow-lg">
+                {lang === "ko" ? "구매 완료!" : lang === "en" ? "Purchase Success!" : "购买成功！"}
+              </h1>
+              <p className="text-lg font-bold text-[#FCD535] mb-6">
+                {purchaseSuccessEffect.name} {lang === "ko" ? "활성화" : lang === "en" ? "Activated" : "已激活"}
+              </p>
+
+              <div className="bg-[#1E2329]/80 border border-[#2B3139] rounded-2xl p-4 flex flex-col items-center min-w-[240px] backdrop-blur-sm">
+                <span className="text-xs text-[#848E9C] font-bold mb-1">
+                  {lang === "ko" ? "지급된 옥구슬" : lang === "en" ? "Bonus Jade Received" : "获得玉珠"}
+                </span>
+                <span className="text-2xl font-black text-[#0ECB81]">
+                  +{purchaseSuccessEffect.urdBonus.toLocaleString()}
+                </span>
+              </div>
+
+              <p className="text-[#848E9C] text-[10px] mt-10 animate-pulse">
+                {lang === "ko" ? "화면을 터치하여 닫기" : lang === "en" ? "Tap anywhere to close" : "点击屏幕关闭"}
+              </p>
+            </div>
+          </div>
+        )}
       </nav>
     </div>
   );
