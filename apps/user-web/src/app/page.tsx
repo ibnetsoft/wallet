@@ -626,15 +626,17 @@ export default function MobileApp() {
       </div>
 
       {/* ── LOGO BANNER ── */}
-      <div className="w-full bg-[#0B0E11] flex items-center justify-center py-2 border-b border-[#2B3139]/60">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/logo.png"
-          alt="U彩宝369"
-          className="h-14 w-auto object-contain"
-          style={{ maxWidth: "240px", mixBlendMode: "lighten" }}
-        />
-      </div>
+      {activeTab === "home" && (
+        <div className="w-full bg-[#0B0E11] flex items-center justify-center py-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.png"
+            alt="U彩宝369"
+            className="w-full h-auto object-contain"
+            style={{ mixBlendMode: "lighten" }}
+          />
+        </div>
+      )}
 
 
       {/* Wallet Network & Price Sub Header (Below grey line) */}
@@ -1331,6 +1333,7 @@ export default function MobileApp() {
                     mother: lang === "ko" ? "엄마 보너스"   : lang === "en" ? "Mother Bonus" : "母体奖",
                     rank:   lang === "ko" ? "직급 보너스"   : lang === "en" ? "Rank Bonus" : "平级奖",
                   };
+                  const bonusList: { id: string; type: BonusTypeKey; fromName: string; fromId: string; reason: string; amount: string; time: string; }[] = [
                     { id: "b1",  type: "direct", fromName: "User A", fromId: "URC883921", reason: lang === "ko" ? "홍운 게임기 구매" : "HongYun Machine Purchase",  amount: "+200.00", time: "2026-07-21 12:30" },
                     { id: "b2",  type: "mentor", fromName: "User B", fromId: "URC883922", reason: lang === "ko" ? "자광 게임기 구매" : "ZiGuang Machine Purchase",  amount: "+50.00",  time: "2026-07-21 12:30" },
                     { id: "b3",  type: "mother", fromName: "User C", fromId: "URC883923", reason: lang === "ko" ? "상운 게임기 구매" : "ShangYun Machine Purchase", amount: "+50.00",  time: "2026-07-21 12:30" },
