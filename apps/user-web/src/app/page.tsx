@@ -292,6 +292,8 @@ export default function MobileApp() {
   });
 
   const [historyPage, setHistoryPage] = useState(1);
+  const [walletHistoryTab, setWalletHistoryTab] = useState<"tx" | "bonus" | "swap">("tx");
+  const [bonusHistoryPage, setBonusHistoryPage] = useState(1);
 
   const handleManualBet = () => {
     const cost = manualBetsCount * 1;
@@ -590,6 +592,18 @@ export default function MobileApp() {
         </div>
       </div>
 
+      {/* ── LOGO BANNER ── */}
+      <div className="w-full bg-[#0B0E11] flex items-center justify-center py-2 border-b border-[#2B3139]/60">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logo.png"
+          alt="U彩宝369"
+          className="h-14 w-auto object-contain"
+          style={{ maxWidth: "240px", mixBlendMode: "lighten" }}
+        />
+      </div>
+
+
       {/* Wallet Network & Price Sub Header (Below grey line) */}
       {activeTab === "wallet" && (
         <div className="bg-[#161A1E] border-b border-[#2B3139] px-5 py-2.5 flex justify-between items-center text-xs">
@@ -661,6 +675,60 @@ export default function MobileApp() {
                 </div>
               </div>
             </div>
+
+            {/* Quick Menu 3x2 Grid */}
+            {(() => {
+              const menuItems = [
+                {
+                  label: lang === "ko" ? "마이페이지" : lang === "en" ? "My Page" : "我的页面",
+                  icon: "👤",
+                  tab: "home" as TabType,
+                },
+                {
+                  label: lang === "ko" ? "게임기구매" : lang === "en" ? "Buy Machine" : "购买游戏机",
+                  icon: "🛒",
+                  tab: "products" as TabType,
+                },
+                {
+                  label: lang === "ko" ? "게임참여" : lang === "en" ? "Play Game" : "参与游戏",
+                  icon: "🎮",
+                  tab: "game" as TabType,
+                },
+                {
+                  label: lang === "ko" ? "지갑" : lang === "en" ? "Wallet" : "钱包",
+                  icon: "💰",
+                  tab: "wallet" as TabType,
+                },
+                {
+                  label: lang === "ko" ? "보너스내역" : lang === "en" ? "Bonus History" : "奖金记录",
+                  icon: "🎁",
+                  tab: "wallet" as TabType,
+                },
+                {
+                  label: lang === "ko" ? "조직도" : lang === "en" ? "Network" : "组织图",
+                  icon: "🌐",
+                  tab: "network" as TabType,
+                },
+              ];
+              return (
+                <div className="grid grid-cols-3 gap-2.5">
+                  {menuItems.map((item, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveTab(item.tab)}
+                      style={{
+                        background: "linear-gradient(135deg, #FCD535 0%, #F0B90B 100%)",
+                        boxShadow: "0 2px 8px rgba(252,213,53,0.35)",
+                      }}
+                      className="flex flex-col items-center justify-center gap-1 rounded-2xl py-3.5 px-1 transition-all duration-200 active:scale-95 hover:brightness-110"
+                    >
+                      <span className="text-xl leading-none">{item.icon}</span>
+                      <span className="text-white font-bold text-[11px] leading-tight text-center">{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
 
             {/* Active Purchased Game Machines Section */}
             <div className="space-y-2.5">
@@ -791,10 +859,10 @@ export default function MobileApp() {
               </div>
               <div className="space-y-2">
                 {[
-                  { label: lang === "ko" ? "직추천 보너스 (20%)" : lang === "en" ? "Direct Bonus (20%)" : "直推奖 (20%)", value: "+$200.00" },
-                  { label: lang === "ko" ? "육성 보너스 (10%)" : lang === "en" ? "Mentoring Bonus (10%)" : "育人奖 (10%)", value: "+$50.00" },
-                  { label: lang === "ko" ? "엄마 보너스 (10%)" : lang === "en" ? "Mother Bonus (10%)" : "母体奖 (10%)", value: "+$50.00" },
-                  { label: lang === "ko" ? "직급 보너스 (15%)" : lang === "en" ? "Rank Bonus (15%)" : "平级奖 (15%)", value: "+$50.00" },
+                  { label: lang === "ko" ? "직추천 보너스" : lang === "en" ? "Direct Bonus" : "直推奖", value: "+$200.00" },
+                  { label: lang === "ko" ? "육성 보너스" : lang === "en" ? "Mentoring Bonus" : "育人奖", value: "+$50.00" },
+                  { label: lang === "ko" ? "엄마 보너스" : lang === "en" ? "Mother Bonus" : "母体奖", value: "+$50.00" },
+                  { label: lang === "ko" ? "직급 보너스" : lang === "en" ? "Rank Bonus" : "平级奖", value: "+$50.00" },
                 ].map((b) => (
                   <div key={b.label} className="flex justify-between text-xs">
                     <span className="text-[#848E9C]">{b.label}</span>
@@ -945,30 +1013,13 @@ export default function MobileApp() {
               <div className="flex items-center justify-center space-x-2 text-[#FCD535]">
                 <Wallet size={20} />
                 <h3 className="text-sm font-bold text-[#EAECEF]">
-                  {depositToken} {lang === "ko" ? "입금 (BSC)" : lang === "en" ? "Deposit (BSC)" : "充值 (BSC)"}
+                  USDT {lang === "ko" ? "입금 (BSC)" : lang === "en" ? "Deposit (BSC)" : "充值 (BSC)"}
                 </h3>
               </div>
 
-              {/* Deposit Token Selector (USDT & URC) */}
-              <div className="grid grid-cols-2 gap-2 bg-[#0B0E11] p-1 rounded-xl border border-[#2B3139]">
-                <button
-                  type="button"
-                  onClick={() => setDepositToken("USDT")}
-                  className={`py-2 text-xs font-bold rounded-lg transition-all ${
-                    depositToken === "USDT" ? "bg-[#26A17B] text-white" : "text-[#848E9C] hover:text-[#EAECEF]"
-                  }`}
-                >
-                  USDT (Tether)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDepositToken("URC")}
-                  className={`py-2 text-xs font-bold rounded-lg transition-all ${
-                    depositToken === "URC" ? "bg-[#FCD535] text-[#0B0E11]" : "text-[#848E9C] hover:text-[#EAECEF]"
-                  }`}
-                >
-                  URC (Token)
-                </button>
+              {/* USDT only — URC deposit removed */}
+              <div className="bg-[#0B0E11] py-2 px-4 rounded-xl border border-[#26A17B]/40 text-center">
+                <span className="text-xs font-bold text-[#26A17B]">USDT (Tether) · BSC BEP-20</span>
               </div>
 
               {/* Dynamic QR Code Image */}
@@ -1139,96 +1190,203 @@ export default function MobileApp() {
 
         {/* History Modal Popup */}
         {showHistoryModal && (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-[#1E2329] border border-[#2B3139] rounded-2xl w-full max-w-md p-5 space-y-4 shadow-2xl relative">
-              <button 
-                onClick={() => setShowHistoryModal(false)}
-                className="absolute top-3 right-3 text-[#848E9C] hover:text-[#EAECEF] text-sm font-bold p-1 hover:bg-[#2B3139] rounded"
-              >
-                ✕
-              </button>
-
-              <div className="flex items-center justify-between border-b border-[#2B3139] pb-3">
-                <div className="flex items-center space-x-2 text-[#848E9C]">
-                  <FileText size={18} />
-                  <h3 className="text-sm font-extrabold text-[#EAECEF]">{t.txHistoryTitle}</h3>
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end justify-center sm:items-center p-0 sm:p-4">
+            <div className="bg-[#1E2329] border border-[#2B3139] rounded-t-2xl sm:rounded-2xl w-full max-w-md shadow-2xl relative flex flex-col" style={{ maxHeight: "90vh" }}>
+              {/* Modal Header */}
+              <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-[#2B3139] flex-shrink-0">
+                <div className="flex items-center space-x-2">
+                  <FileText size={16} className="text-[#FCD535]" />
+                  <h3 className="text-sm font-extrabold text-[#EAECEF]">
+                    {lang === "ko" ? "내역 조회" : lang === "en" ? "History" : "历史记录"}
+                  </h3>
                 </div>
-                <span className="text-[10px] text-[#848E9C] font-mono">총 12건</span>
+                <button
+                  onClick={() => setShowHistoryModal(false)}
+                  className="text-[#848E9C] hover:text-[#EAECEF] p-1.5 hover:bg-[#2B3139] rounded-lg transition-colors"
+                >
+                  ✕
+                </button>
               </div>
 
-              {/* Paginated History Item List */}
-              {(() => {
-                const historyList = [
-                  { id: "h1", type: lang === "ko" ? "입금 완료" : "Deposit Completed", amount: "+500.00 USDT", time: "2026-07-21 14:20", status: "성공", isPlus: true },
-                  { id: "h2", type: lang === "ko" ? "직추천 보너스" : "Direct Bonus", amount: "+200.00 USDT", time: "2026-07-21 12:30", status: "지급완료", isPlus: true },
-                  { id: "h3", type: lang === "ko" ? "육성 보너스" : "Mentoring Bonus", amount: "+50.00 USDT", time: "2026-07-21 12:30", status: "지급완료", isPlus: true },
-                  { id: "h4", type: lang === "ko" ? "엄마 보너스" : "Mother Bonus", amount: "+50.00 USDT", time: "2026-07-21 12:30", status: "지급완료", isPlus: true },
-                  { id: "h5", type: lang === "ko" ? "직급 보너스 (15%)" : "Rank Bonus", amount: "+50.00 USDT", time: "2026-07-21 12:30", status: "지급완료", isPlus: true },
-                  { id: "h6", type: lang === "ko" ? "게임기 장비 구매" : "Machine Purchased", amount: "-500.00 USDT", time: "2026-07-20 18:10", status: "완료", isPlus: false },
-                  { id: "h7", type: lang === "ko" ? "USDT ➔ URC 스왑" : "USDT ➔ URC Swap", amount: "-100.00 USDT", time: "2026-07-19 11:05", status: "성공", isPlus: false },
-                  { id: "h8", type: lang === "ko" ? "1회차 게임 당첨" : "Round 1 Game Win", amount: "+102.00 USDT", time: "2026-07-18 12:30", status: "지급완료", isPlus: true },
-                  { id: "h9", type: lang === "ko" ? "게임기 장비 구매" : "Machine Purchased", amount: "-100.00 USDT", time: "2026-07-17 09:15", status: "완료", isPlus: false },
-                  { id: "h10", type: lang === "ko" ? "입금 완료" : "Deposit Completed", amount: "+1,000.00 USDT", time: "2026-07-16 16:40", status: "성공", isPlus: true },
-                  { id: "h11", type: lang === "ko" ? "직추천 보너스" : "Direct Bonus", amount: "+100.00 USDT", time: "2026-07-15 11:20", status: "지급완료", isPlus: true },
-                  { id: "h12", type: lang === "ko" ? "3회차 게임 당첨" : "Round 3 Game Win", amount: "+50.00 USDT", time: "2026-07-14 18:30", status: "지급완료", isPlus: true },
-                ];
+              {/* 3 Sub-tabs */}
+              <div className="flex px-5 pt-3 gap-1 flex-shrink-0">
+                {([
+                  { id: "tx" as const,    label: lang === "ko" ? "입출금" : lang === "en" ? "Transactions" : "充提" },
+                  { id: "bonus" as const, label: lang === "ko" ? "보너스 내역" : lang === "en" ? "Bonus History" : "奖金记录" },
+                  { id: "swap" as const,  label: lang === "ko" ? "스왑" : lang === "en" ? "Swap" : "兑换" },
+                ] as { id: "tx" | "bonus" | "swap"; label: string }[]).map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => { setWalletHistoryTab(tab.id); setBonusHistoryPage(1); setHistoryPage(1); }}
+                    className={`flex-1 py-2 text-[11px] font-bold rounded-lg transition-all ${
+                      walletHistoryTab === tab.id
+                        ? "bg-[#FCD535] text-[#0B0E11]"
+                        : "bg-[#0B0E11] text-[#848E9C] hover:text-[#EAECEF] border border-[#2B3139]"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
 
-                const itemsPerPage = 10;
-                const totalPages = Math.ceil(historyList.length / itemsPerPage);
-                const currentItems = historyList.slice((historyPage - 1) * itemsPerPage, historyPage * itemsPerPage);
+              {/* Tab Content */}
+              <div className="overflow-y-auto flex-1 px-5 pb-5 pt-3" style={{ scrollbarWidth: "none" }}>
 
-                return (
-                  <div className="space-y-3">
-                    <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-                      {currentItems.map((tx) => (
-                        <div key={tx.id} className="bg-[#0B0E11] p-3 rounded-xl border border-[#2B3139] flex justify-between items-center hover:border-[#2B3139]/80 transition-colors">
-                          <div>
-                            <p className="text-xs font-bold text-[#EAECEF]">{tx.type}</p>
-                            <p className="text-[10px] text-[#848E9C] mt-0.5 font-mono">{tx.time}</p>
+                {/* ── 입출금 탭 ── */}
+                {walletHistoryTab === "tx" && (() => {
+                  const txList = [
+                    { id: "h1",  type: lang === "ko" ? "입금 완료"      : "Deposit",   amount: "+500.00 USDT",   time: "2026-07-21 14:20", status: lang === "ko" ? "성공" : "Success",   isPlus: true },
+                    { id: "h6",  type: lang === "ko" ? "게임기 구매"    : "Machine Purchase", amount: "-500.00 USDT", time: "2026-07-20 18:10", status: lang === "ko" ? "완료" : "Done",    isPlus: false },
+                    { id: "h8",  type: lang === "ko" ? "1회차 게임 당첨": "Round 1 Win", amount: "+102.00 USDT", time: "2026-07-18 12:30", status: lang === "ko" ? "지급완료" : "Paid",    isPlus: true },
+                    { id: "h9",  type: lang === "ko" ? "게임기 구매"    : "Machine Purchase", amount: "-100.00 USDT", time: "2026-07-17 09:15", status: lang === "ko" ? "완료" : "Done",    isPlus: false },
+                    { id: "h10", type: lang === "ko" ? "입금 완료"      : "Deposit",   amount: "+1,000.00 USDT", time: "2026-07-16 16:40", status: lang === "ko" ? "성공" : "Success",   isPlus: true },
+                    { id: "h12", type: lang === "ko" ? "3회차 게임 당첨": "Round 3 Win", amount: "+50.00 USDT",   time: "2026-07-14 18:30", status: lang === "ko" ? "지급완료" : "Paid",    isPlus: true },
+                  ];
+                  const pp = 10;
+                  const tp = Math.ceil(txList.length / pp);
+                  const items = txList.slice((historyPage - 1) * pp, historyPage * pp);
+                  return (
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        {items.map((tx) => (
+                          <div key={tx.id} className="bg-[#0B0E11] p-3 rounded-xl border border-[#2B3139] flex justify-between items-center">
+                            <div>
+                              <p className="text-xs font-bold text-[#EAECEF]">{tx.type}</p>
+                              <p className="text-[10px] text-[#848E9C] mt-0.5 font-mono">{tx.time}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className={`text-xs font-mono font-bold ${tx.isPlus ? "text-[#0ECB81]" : "text-[#F6465D]"}`}>{tx.amount}</p>
+                              <span className="text-[9px] text-[#848E9C] font-bold">{tx.status}</span>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className={`text-xs font-mono font-bold ${tx.isPlus ? "text-[#0ECB81]" : "text-[#EAECEF]"}`}>
-                              {tx.amount}
-                            </p>
-                            <span className="text-[9px] text-[#848E9C] font-bold">{tx.status}</span>
-                          </div>
+                        ))}
+                      </div>
+                      {tp > 1 && (
+                        <div className="flex justify-between items-center pt-2 border-t border-[#2B3139]">
+                          <button disabled={historyPage === 1} onClick={() => setHistoryPage((p) => Math.max(1, p - 1))} className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition-all ${historyPage === 1 ? "opacity-40 cursor-not-allowed bg-[#0B0E11] border-[#2B3139] text-[#848E9C]" : "bg-[#2B3139] border-[#2B3139] text-[#EAECEF] hover:bg-[#FCD535] hover:text-[#0B0E11]"}`}>◀ {lang === "ko" ? "이전" : "Prev"}</button>
+                          <span className="text-[11px] font-mono text-[#848E9C]"><strong className="text-[#FCD535]">{historyPage}</strong> / {tp}</span>
+                          <button disabled={historyPage === tp} onClick={() => setHistoryPage((p) => Math.min(tp, p + 1))} className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition-all ${historyPage === tp ? "opacity-40 cursor-not-allowed bg-[#0B0E11] border-[#2B3139] text-[#848E9C]" : "bg-[#2B3139] border-[#2B3139] text-[#EAECEF] hover:bg-[#FCD535] hover:text-[#0B0E11]"}`}>{lang === "ko" ? "다음" : "Next"} ▶</button>
                         </div>
-                      ))}
+                      )}
                     </div>
+                  );
+                })()}
 
-                    {/* Pagination Controls (10 items per page) */}
-                    <div className="flex justify-between items-center pt-2 border-t border-[#2B3139] text-xs">
-                      <button
-                        disabled={historyPage === 1}
-                        onClick={() => setHistoryPage((prev) => Math.max(1, prev - 1))}
-                        className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition-all ${
-                          historyPage === 1
-                            ? "bg-[#0B0E11] border-[#2B3139] text-[#848E9C] opacity-50 cursor-not-allowed"
-                            : "bg-[#2B3139] border-[#2B3139] text-[#EAECEF] hover:bg-[#FCD535] hover:text-[#0B0E11]"
-                        }`}
-                      >
-                        ◀ 이전 10개
-                      </button>
+                {/* ── 보너스 내역 탭 ── */}
+                {walletHistoryTab === "bonus" && (() => {
+                  type BonusTypeKey = "direct" | "mentor" | "mother" | "rank";
+                  const bonusTypeColor: Record<BonusTypeKey, string> = {
+                    direct: "text-[#FCD535] bg-[#FCD535]/10 border-[#FCD535]/30",
+                    mentor: "text-[#0ECB81] bg-[#0ECB81]/10 border-[#0ECB81]/30",
+                    mother: "text-[#F0B90B] bg-[#F0B90B]/10 border-[#F0B90B]/30",
+                    rank:   "text-[#9B59B6] bg-[#9B59B6]/10 border-[#9B59B6]/30",
+                  };
+                  const bonusTypeLabel: Record<BonusTypeKey, string> = {
+                    direct: lang === "ko" ? "직추천 보너스" : lang === "en" ? "Direct Bonus" : "直推奖",
+                    mentor: lang === "ko" ? "육성 보너스"   : lang === "en" ? "Mentoring Bonus" : "育人奖",
+                    mother: lang === "ko" ? "엄마 보너스"   : lang === "en" ? "Mother Bonus" : "母体奖",
+                    rank:   lang === "ko" ? "직급 보너스"   : lang === "en" ? "Rank Bonus" : "平级奖",
+                  };
+                  const bonusList: { id: string; type: BonusTypeKey; fromName: string; fromId: string; reason: string; amount: string; time: string; }[] = [
+                    { id: "b1",  type: "direct", fromName: "김민수",  fromId: "URC883921", reason: lang === "ko" ? "홍운 게임기 구매" : "HongYun Machine Purchase",  amount: "+200.00", time: "2026-07-21 12:30" },
+                    { id: "b2",  type: "mentor", fromName: "이지현",  fromId: "URC883922", reason: lang === "ko" ? "자광 게임기 구매" : "ZiGuang Machine Purchase",  amount: "+50.00",  time: "2026-07-21 12:30" },
+                    { id: "b3",  type: "mother", fromName: "박준혁",  fromId: "URC883923", reason: lang === "ko" ? "상운 게임기 구매" : "ShangYun Machine Purchase", amount: "+50.00",  time: "2026-07-21 12:30" },
+                    { id: "b4",  type: "rank",   fromName: "최유진",  fromId: "URC883924", reason: lang === "ko" ? "직급 승급 달성"   : "Rank Promotion Achieved",   amount: "+50.00",  time: "2026-07-21 12:30" },
+                    { id: "b5",  type: "direct", fromName: "정승민",  fromId: "URC883925", reason: lang === "ko" ? "홍운 게임기 구매" : "HongYun Machine Purchase",  amount: "+100.00", time: "2026-07-15 11:20" },
+                    { id: "b6",  type: "mentor", fromName: "한소희",  fromId: "URC883926", reason: lang === "ko" ? "자광 게임기 구매" : "ZiGuang Machine Purchase",  amount: "+30.00",  time: "2026-07-14 09:45" },
+                    { id: "b7",  type: "direct", fromName: "오태준",  fromId: "URC883927", reason: lang === "ko" ? "상운 게임기 구매" : "ShangYun Machine Purchase", amount: "+20.00",  time: "2026-07-12 17:10" },
+                    { id: "b8",  type: "mother", fromName: "신아름",  fromId: "URC883928", reason: lang === "ko" ? "홍운 게임기 구매" : "HongYun Machine Purchase",  amount: "+100.00", time: "2026-07-10 14:22" },
+                    { id: "b9",  type: "rank",   fromName: "윤도현",  fromId: "URC883929", reason: lang === "ko" ? "직급 승급 달성"   : "Rank Promotion Achieved",   amount: "+75.00",  time: "2026-07-08 08:55" },
+                    { id: "b10", type: "direct", fromName: "임서연",  fromId: "URC883930", reason: lang === "ko" ? "자광 게임기 구매" : "ZiGuang Machine Purchase",  amount: "+100.00", time: "2026-07-05 20:40" },
+                    { id: "b11", type: "mentor", fromName: "강태양",  fromId: "URC883931", reason: lang === "ko" ? "상운 게임기 구매" : "ShangYun Machine Purchase", amount: "+20.00",  time: "2026-07-03 11:30" },
+                    { id: "b12", type: "direct", fromName: "배수현",  fromId: "URC883932", reason: lang === "ko" ? "홍운 게임기 구매" : "HongYun Machine Purchase",  amount: "+200.00", time: "2026-07-01 16:15" },
+                  ];
+                  const pp = 8;
+                  const tp = Math.ceil(bonusList.length / pp);
+                  const items = bonusList.slice((bonusHistoryPage - 1) * pp, bonusHistoryPage * pp);
+                  const totalBonus = bonusList.reduce((s, b) => s + parseFloat(b.amount.replace("+", "")), 0);
+                  return (
+                    <div className="space-y-3">
+                      {/* Summary Bar */}
+                      <div className="bg-[#0B0E11] rounded-xl p-3 border border-[#FCD535]/20 flex justify-between items-center">
+                        <span className="text-[10px] text-[#848E9C] font-bold">
+                          {lang === "ko" ? "총 수당 수익" : lang === "en" ? "Total Bonus Earned" : "总奖金收益"}
+                        </span>
+                        <span className="text-sm font-black text-[#FCD535] font-mono">+${totalBonus.toFixed(2)} USDT</span>
+                      </div>
 
-                      <span className="text-[11px] font-mono text-[#848E9C]">
-                        <strong className="text-[#FCD535]">{historyPage}</strong> / {totalPages} 페이지
-                      </span>
+                      {/* Bonus Items */}
+                      <div className="space-y-2">
+                        {items.map((b) => (
+                          <div key={b.id} className="bg-[#0B0E11] rounded-xl border border-[#2B3139] hover:border-[#FCD535]/30 transition-all overflow-hidden">
+                            {/* Top row: type badge + amount */}
+                            <div className="flex justify-between items-center px-3 pt-3 pb-2">
+                              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded border ${bonusTypeColor[b.type]}`}>
+                                {bonusTypeLabel[b.type]}
+                              </span>
+                              <span className="text-sm font-black text-[#0ECB81] font-mono">+{b.amount} USDT</span>
+                            </div>
+                            {/* Divider */}
+                            <div className="border-t border-[#2B3139]/60 mx-3" />
+                            {/* From member info */}
+                            <div className="px-3 py-2 flex justify-between items-center">
+                              <div className="flex items-center space-x-2">
+                                <div className="w-7 h-7 rounded-full bg-[#1E2329] border border-[#2B3139] flex items-center justify-center text-[10px] font-black text-[#FCD535]">
+                                  {b.fromName.charAt(0)}
+                                </div>
+                                <div>
+                                  <p className="text-xs font-bold text-[#EAECEF]">{b.fromName}</p>
+                                  <p className="text-[9px] font-mono text-[#848E9C]">{b.fromId}</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-[9px] text-[#848E9C]">{b.reason}</p>
+                                <p className="text-[9px] font-mono text-[#848E9C] mt-0.5">{b.time}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
 
-                      <button
-                        disabled={historyPage === totalPages}
-                        onClick={() => setHistoryPage((prev) => Math.min(totalPages, prev + 1))}
-                        className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition-all ${
-                          historyPage === totalPages
-                            ? "bg-[#0B0E11] border-[#2B3139] text-[#848E9C] opacity-50 cursor-not-allowed"
-                            : "bg-[#2B3139] border-[#2B3139] text-[#EAECEF] hover:bg-[#FCD535] hover:text-[#0B0E11]"
-                        }`}
-                      >
-                        다음 10개 ▶
-                      </button>
+                      {/* Pagination */}
+                      {tp > 1 && (
+                        <div className="flex justify-between items-center pt-2 border-t border-[#2B3139]">
+                          <button disabled={bonusHistoryPage === 1} onClick={() => setBonusHistoryPage((p) => Math.max(1, p - 1))} className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition-all ${bonusHistoryPage === 1 ? "opacity-40 cursor-not-allowed bg-[#0B0E11] border-[#2B3139] text-[#848E9C]" : "bg-[#2B3139] border-[#2B3139] text-[#EAECEF] hover:bg-[#FCD535] hover:text-[#0B0E11]"}`}>◀ {lang === "ko" ? "이전" : "Prev"}</button>
+                          <span className="text-[11px] font-mono text-[#848E9C]"><strong className="text-[#FCD535]">{bonusHistoryPage}</strong> / {tp} {lang === "ko" ? "페이지" : "Page"}</span>
+                          <button disabled={bonusHistoryPage === tp} onClick={() => setBonusHistoryPage((p) => Math.min(tp, p + 1))} className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition-all ${bonusHistoryPage === tp ? "opacity-40 cursor-not-allowed bg-[#0B0E11] border-[#2B3139] text-[#848E9C]" : "bg-[#2B3139] border-[#2B3139] text-[#EAECEF] hover:bg-[#FCD535] hover:text-[#0B0E11]"}`}>{lang === "ko" ? "다음" : "Next"} ▶</button>
+                        </div>
+                      )}
                     </div>
+                  );
+                })()}
+
+                {/* ── 스왑 탭 ── */}
+                {walletHistoryTab === "swap" && (
+                  <div className="space-y-2">
+                    {[
+                      { id: "s1", from: "100.00 USDT", to: "99.50 URC",  rate: "1 USDT = 0.995 URC", time: "2026-07-19 11:05", status: lang === "ko" ? "성공" : "Success" },
+                      { id: "s2", from: "50.00 USDT",  to: "49.75 URC",  rate: "1 USDT = 0.995 URC", time: "2026-07-10 15:30", status: lang === "ko" ? "성공" : "Success" },
+                    ].map((s) => (
+                      <div key={s.id} className="bg-[#0B0E11] p-3 rounded-xl border border-[#2B3139]">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs font-bold text-[#F6465D] font-mono">-{s.from}</span>
+                            <span className="text-[#848E9C] text-xs">➔</span>
+                            <span className="text-xs font-bold text-[#0ECB81] font-mono">+{s.to}</span>
+                          </div>
+                          <span className="text-[9px] font-bold text-[#0ECB81] bg-[#0ECB81]/10 px-2 py-0.5 rounded border border-[#0ECB81]/30">{s.status}</span>
+                        </div>
+                        <div className="flex justify-between mt-1.5">
+                          <span className="text-[9px] text-[#848E9C]">{s.rate}</span>
+                          <span className="text-[9px] font-mono text-[#848E9C]">{s.time}</span>
+                        </div>
+                      </div>
+                    ))}
+                    {/* Empty state placeholder if no swap */}
                   </div>
-                );
-              })()}
+                )}
+
+              </div>
             </div>
           </div>
         )}
