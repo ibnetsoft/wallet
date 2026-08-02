@@ -753,10 +753,9 @@ export default function MobileApp() {
                         background: "linear-gradient(135deg, #FCD535 0%, #F0B90B 100%)",
                         boxShadow: "0 2px 8px rgba(252,213,53,0.35)",
                       }}
-                      className="flex flex-col items-center justify-center gap-1 rounded-2xl py-3.5 px-1 transition-all duration-200 active:scale-95 hover:brightness-110"
+                      className="flex items-center justify-center rounded-2xl py-4 px-2 transition-all duration-200 active:scale-95 hover:brightness-110"
                     >
-                      <span className="text-xl leading-none">{item.icon}</span>
-                      <span className="text-white font-bold text-[11px] leading-tight text-center">{item.label}</span>
+                      <span className="text-[#0B0E11] font-black text-xs leading-tight text-center">{item.label}</span>
                     </button>
                   ))}
                 </div>
@@ -889,6 +888,12 @@ export default function MobileApp() {
                   <Zap size={14} className="text-[#FCD535]" />
                   <span className="text-xs font-bold text-[#EAECEF]">{lang === "ko" ? "오늘의 보너스" : lang === "en" ? "Today's Bonus" : "今日奖金"}</span>
                 </div>
+                <button 
+                  onClick={() => { setActiveTab("wallet"); setWalletHistoryTab("bonus"); setShowHistoryModal(true); }}
+                  className="text-[10px] text-[#848E9C] hover:text-[#EAECEF] font-bold bg-[#2B3139] hover:bg-[#3A424D] px-2 py-1 rounded transition-colors"
+                >
+                  {lang === "ko" ? "내역" : lang === "en" ? "History" : "记录"}
+                </button>
               </div>
               <div className="space-y-2">
                 {[
@@ -948,25 +953,25 @@ export default function MobileApp() {
               <div className="grid grid-cols-3 gap-2 pt-2">
                 <button
                   onClick={() => setShowDepositModal(true)}
-                  className="bg-[#0B0E11] hover:bg-[#2B3139] border border-[#2B3139] hover:border-[#FCD535] py-3 rounded-xl flex flex-col items-center justify-center space-y-1.5 transition-all group"
+                  className="bg-[#0B0E11] hover:bg-[#2B3139] border border-[#2B3139] hover:border-[#FCD535] py-3 rounded-xl flex flex-col items-center justify-center space-y-2 transition-all group"
                 >
-                  <ArrowDownLeft size={18} className="text-[#0ECB81] group-hover:scale-110 transition-transform" />
+                  <ArrowDownLeft size={24} strokeWidth={2.5} className="text-[#0ECB81] group-hover:scale-110 transition-transform" />
                   <span className="text-xs font-bold text-[#EAECEF]">{t.deposit}</span>
                 </button>
 
                 <button
                   onClick={() => setShowWithdrawModal(true)}
-                  className="bg-[#0B0E11] hover:bg-[#2B3139] border border-[#2B3139] hover:border-[#FCD535] py-3 rounded-xl flex flex-col items-center justify-center space-y-1.5 transition-all group"
+                  className="bg-[#0B0E11] hover:bg-[#2B3139] border border-[#2B3139] hover:border-[#FCD535] py-3 rounded-xl flex flex-col items-center justify-center space-y-2 transition-all group"
                 >
-                  <ArrowUpRight size={18} className="text-[#F6465D] group-hover:scale-110 transition-transform" />
+                  <ArrowUpRight size={24} strokeWidth={2.5} className="text-[#F6465D] group-hover:scale-110 transition-transform" />
                   <span className="text-xs font-bold text-[#EAECEF]">{t.withdraw}</span>
                 </button>
 
                 <button
                   onClick={() => setShowHistoryModal(true)}
-                  className="bg-[#0B0E11] hover:bg-[#2B3139] border border-[#2B3139] hover:border-[#FCD535] py-3 rounded-xl flex flex-col items-center justify-center space-y-1.5 transition-all group"
+                  className="bg-[#0B0E11] hover:bg-[#2B3139] border border-[#2B3139] hover:border-[#FCD535] py-3 rounded-xl flex flex-col items-center justify-center space-y-2 transition-all group"
                 >
-                  <FileText size={18} className="text-[#848E9C] group-hover:scale-110 transition-transform" />
+                  <FileText size={24} strokeWidth={2.5} className="text-[#848E9C] group-hover:scale-110 transition-transform" />
                   <span className="text-xs font-bold text-[#EAECEF]">{t.history}</span>
                 </button>
               </div>
