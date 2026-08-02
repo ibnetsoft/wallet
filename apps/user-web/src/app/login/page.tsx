@@ -48,9 +48,13 @@ export default function LoginPage() {
       <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-[#00D2FF]/10 to-transparent pointer-events-none" />
       
       <div className="mb-10 text-center relative z-10">
-        <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-[#00D2FF] to-[#BF5AF2] flex items-center justify-center text-white font-black text-3xl mb-4 shadow-[0_0_30px_rgba(0,210,255,0.3)]">
-          U
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logo.png"
+          alt="U彩宝369"
+          className="w-32 h-auto mx-auto mb-4 object-contain"
+          style={{ mixBlendMode: "lighten" }}
+        />
         <h1 className="text-2xl font-black text-white tracking-tight">Welcome to URC369</h1>
         <p className="text-sm text-[#8E8E93] mt-2">Log in to manage your assets & 369 games</p>
       </div>
@@ -101,7 +105,7 @@ export default function LoginPage() {
           type="button" 
           onClick={() => handleLogin()}
           disabled={loading}
-          className="w-full py-3.5 mt-4 bg-gradient-to-r from-[#00D2FF] to-[#0099CC] text-black font-black rounded-xl text-sm flex items-center justify-center space-x-2 active:scale-95 transition-transform shadow-[0_0_20px_rgba(0,210,255,0.4)] disabled:opacity-50 disabled:active:scale-100"
+          className="w-full py-3.5 mt-4 bg-[#FCD535] hover:bg-[#e5c130] text-[#0B0E11] font-black rounded-xl text-sm flex items-center justify-center space-x-2 active:scale-95 transition-all shadow-[0_0_20px_rgba(252,213,53,0.3)] disabled:opacity-50 disabled:active:scale-100"
         >
           {loading ? (
             <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
@@ -116,7 +120,7 @@ export default function LoginPage() {
 
       <div className="mt-8 text-center text-xs text-[#8E8E93] relative z-10">
         Don't have an account?{" "}
-        <Link href="/register" className="text-[#00D2FF] font-bold hover:underline">
+        <Link href="/register" className="text-[#FCD535] font-bold hover:underline">
           Register here
         </Link>
       </div>
