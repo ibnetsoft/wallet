@@ -209,8 +209,8 @@ export default function MobileApp() {
 
   // Pending Unpurchased Members List
   const [unpaidMembers, setUnpaidMembers] = useState<UnpaidMember[]>([
-    { id: "u-1", nickname: "User B", email: "b_kim@urc369.com", joinedAt: "2026-07-21" },
-    { id: "u-2", nickname: "User E", email: "yh_park@urc369.com", joinedAt: "2026-07-20" },
+    { id: "URC10002", nickname: "User B", email: "", joinedAt: "2026-07-21" },
+    { id: "URC10005", nickname: "User E", email: "", joinedAt: "2026-07-20" },
   ]);
 
   const handleDismissUnpaidMember = (id: string) => {
@@ -736,6 +736,7 @@ export default function MobileApp() {
                   label: lang === "ko" ? "보너스내역" : lang === "en" ? "Bonus History" : "奖金记录",
                   icon: "🎁",
                   tab: "wallet" as TabType,
+                  action: () => { setWalletHistoryTab("bonus"); setShowHistoryModal(true); }
                 },
                 {
                   label: lang === "ko" ? "조직도" : lang === "en" ? "Network" : "组织图",
@@ -748,7 +749,7 @@ export default function MobileApp() {
                   {menuItems.map((item, idx) => (
                     <button
                       key={idx}
-                      onClick={() => setActiveTab(item.tab)}
+                      onClick={() => item.action ? item.action() : setActiveTab(item.tab)}
                       style={{
                         background: "linear-gradient(135deg, #FCD535 0%, #F0B90B 100%)",
                         boxShadow: "0 2px 8px rgba(252,213,53,0.35)",
@@ -793,26 +794,44 @@ export default function MobileApp() {
                     .map((m) => {
                       const pct = Math.min(100, Math.floor((m.accumulatedPayout / m.payoutCap) * 100));
                       return (
-                        <div key={m.id} className="bg-[#1E2329] border border-[#2B3139] hover:border-[#FCD535]/50 rounded-xl p-3.5 space-y-2 transition-all">
-                          <div className="flex justify-between items-center">
-                            <div className="flex items-center space-x-2">
-                              <span className="text-xs font-black text-[#FCD535] bg-[#FCD535]/10 px-2 py-0.5 rounded">
-                                {m.level === 1 ? t.node100Name : m.level === 2 ? t.node500Name : t.node1000Name}
-                              </span>
-                              <span className="text-[10px] text-[#0ECB81] font-bold">● {t.runningStatus}</span>
-                            </div>
-                            <span className="text-[10px] font-mono text-[#848E9C]">
-                              {t.cap}: ${m.accumulatedPayout.toFixed(0)} / ${m.payoutCap.toFixed(0)}
+                        <div key={m.id} className="bg-[#1E2329] border border-[#2B3139] hover:border-[#FCD535]/50 rounded-xl p-3.5 flex items-center space-x-3 transition-all relative overflow-hidden">
+                          {/* Mini Chinese Character Badge - Neon Style */}
+                          <div className={`w-12 h-12 rounded-lg shrink-0 flex items-center justify-center border-2 ${
+                            m.level === 1 ? "bg-[#0B0E11]/80 border-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.5),inset_0_0_10px_rgba(34,211,238,0.2)]" :
+                            m.level === 2 ? "bg-[#0B0E11]/80 border-fuchsia-500 shadow-[0_0_15px_rgba(217,70,239,0.5),inset_0_0_10px_rgba(217,70,239,0.2)]" :
+                            "bg-[#0B0E11]/80 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5),inset_0_0_10px_rgba(239,68,68,0.2)]"
+                          }`}>
+                            <span className={`text-xl font-black tracking-widest ${
+                              m.level === 1 ? "text-cyan-300 drop-shadow-[0_0_8px_rgba(34,211,238,1)]" :
+                              m.level === 2 ? "text-fuchsia-300 drop-shadow-[0_0_8px_rgba(217,70,239,1)]" :
+                              "text-red-400 drop-shadow-[0_0_8px_rgba(239,68,68,1)]"
+                            }`} style={{ fontFamily: "serif" }}>
+                              {m.level === 1 ? "祥云" : m.level === 2 ? "紫光" : "鸿运"}
                             </span>
                           </div>
 
-                          <div className="w-full bg-[#0B0E11] rounded-full h-1.5">
-                            <div className="bg-[#0ECB81] h-1.5 rounded-full transition-all" style={{ width: `${pct}%` }} />
-                          </div>
+                          {/* Right Content */}
+                          <div className="flex-1 space-y-2 min-w-0">
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-[11px] font-black text-[#FCD535] bg-[#FCD535]/10 px-1.5 py-0.5 rounded truncate max-w-[80px]">
+                                  {m.level === 1 ? t.node100Name : m.level === 2 ? t.node500Name : t.node1000Name}
+                                </span>
+                                <span className="text-[10px] text-[#0ECB81] font-bold shrink-0">● {t.runningStatus}</span>
+                              </div>
+                              <span className="text-[10px] font-mono text-[#848E9C] shrink-0">
+                                {t.cap}: ${m.accumulatedPayout.toFixed(0)} / ${m.payoutCap.toFixed(0)}
+                              </span>
+                            </div>
 
-                          <div className="flex justify-between items-center text-[9px] text-[#848E9C]">
-                            <span>{t.purchaseDate}: {m.purchasedAt}</span>
-                            <span className="font-bold text-[#EAECEF]">{t.achievement} {pct}%</span>
+                            <div className="w-full bg-[#0B0E11] rounded-full h-1.5">
+                              <div className="bg-[#0ECB81] h-1.5 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                            </div>
+
+                            <div className="flex justify-between items-center text-[9px] text-[#848E9C]">
+                              <span>{t.purchaseDate}: {m.purchasedAt}</span>
+                              <span className="font-bold text-[#EAECEF]">{t.achievement} {pct}%</span>
+                            </div>
                           </div>
                         </div>
                       );
@@ -866,20 +885,7 @@ export default function MobileApp() {
               );
             })()}
 
-            {/* Quick Actions (Icons Only) */}
-            <div className="grid grid-cols-4 gap-3">
-              {[
-                { icon: <ArrowDownLeft size={20} />, onClick: () => { setActiveTab("wallet"); setShowDepositModal(true); } },
-                { icon: <ArrowUpRight size={20} />, onClick: () => setActiveTab("wallet") },
-                { icon: <ArrowRightLeft size={20} />, onClick: () => setActiveTab("wallet") },
-                { icon: <Gamepad2 size={20} />, onClick: () => setActiveTab("game") },
-              ].map((a, i) => (
-                <button key={i} onClick={a.onClick}
-                  className="bg-[#1E2329] hover:bg-[#2B3139] py-3 rounded-xl flex items-center justify-center text-[#FCD535] transition-colors">
-                  {a.icon}
-                </button>
-              ))}
-            </div>
+
 
             {/* Today's Bonus */}
             <div className="bg-[#1E2329] rounded-xl p-4 space-y-3">
@@ -889,7 +895,7 @@ export default function MobileApp() {
                   <span className="text-xs font-bold text-[#EAECEF]">{lang === "ko" ? "오늘의 보너스" : lang === "en" ? "Today's Bonus" : "今日奖金"}</span>
                 </div>
                 <button 
-                  onClick={() => { setActiveTab("wallet"); setWalletHistoryTab("bonus"); setShowHistoryModal(true); }}
+                  onClick={() => { setWalletHistoryTab("bonus"); setShowHistoryModal(true); }}
                   className="text-[10px] text-[#848E9C] hover:text-[#EAECEF] font-bold bg-[#2B3139] hover:bg-[#3A424D] px-2 py-1 rounded transition-colors"
                 >
                   {lang === "ko" ? "내역" : lang === "en" ? "History" : "记录"}
@@ -1325,19 +1331,18 @@ export default function MobileApp() {
                     mother: lang === "ko" ? "엄마 보너스"   : lang === "en" ? "Mother Bonus" : "母体奖",
                     rank:   lang === "ko" ? "직급 보너스"   : lang === "en" ? "Rank Bonus" : "平级奖",
                   };
-                  const bonusList: { id: string; type: BonusTypeKey; fromName: string; fromId: string; reason: string; amount: string; time: string; }[] = [
-                    { id: "b1",  type: "direct", fromName: "김민수",  fromId: "URC883921", reason: lang === "ko" ? "홍운 게임기 구매" : "HongYun Machine Purchase",  amount: "+200.00", time: "2026-07-21 12:30" },
-                    { id: "b2",  type: "mentor", fromName: "이지현",  fromId: "URC883922", reason: lang === "ko" ? "자광 게임기 구매" : "ZiGuang Machine Purchase",  amount: "+50.00",  time: "2026-07-21 12:30" },
-                    { id: "b3",  type: "mother", fromName: "박준혁",  fromId: "URC883923", reason: lang === "ko" ? "상운 게임기 구매" : "ShangYun Machine Purchase", amount: "+50.00",  time: "2026-07-21 12:30" },
-                    { id: "b4",  type: "rank",   fromName: "최유진",  fromId: "URC883924", reason: lang === "ko" ? "직급 승급 달성"   : "Rank Promotion Achieved",   amount: "+50.00",  time: "2026-07-21 12:30" },
-                    { id: "b5",  type: "direct", fromName: "정승민",  fromId: "URC883925", reason: lang === "ko" ? "홍운 게임기 구매" : "HongYun Machine Purchase",  amount: "+100.00", time: "2026-07-15 11:20" },
-                    { id: "b6",  type: "mentor", fromName: "한소희",  fromId: "URC883926", reason: lang === "ko" ? "자광 게임기 구매" : "ZiGuang Machine Purchase",  amount: "+30.00",  time: "2026-07-14 09:45" },
-                    { id: "b7",  type: "direct", fromName: "오태준",  fromId: "URC883927", reason: lang === "ko" ? "상운 게임기 구매" : "ShangYun Machine Purchase", amount: "+20.00",  time: "2026-07-12 17:10" },
-                    { id: "b8",  type: "mother", fromName: "신아름",  fromId: "URC883928", reason: lang === "ko" ? "홍운 게임기 구매" : "HongYun Machine Purchase",  amount: "+100.00", time: "2026-07-10 14:22" },
-                    { id: "b9",  type: "rank",   fromName: "윤도현",  fromId: "URC883929", reason: lang === "ko" ? "직급 승급 달성"   : "Rank Promotion Achieved",   amount: "+75.00",  time: "2026-07-08 08:55" },
-                    { id: "b10", type: "direct", fromName: "임서연",  fromId: "URC883930", reason: lang === "ko" ? "자광 게임기 구매" : "ZiGuang Machine Purchase",  amount: "+100.00", time: "2026-07-05 20:40" },
-                    { id: "b11", type: "mentor", fromName: "강태양",  fromId: "URC883931", reason: lang === "ko" ? "상운 게임기 구매" : "ShangYun Machine Purchase", amount: "+20.00",  time: "2026-07-03 11:30" },
-                    { id: "b12", type: "direct", fromName: "배수현",  fromId: "URC883932", reason: lang === "ko" ? "홍운 게임기 구매" : "HongYun Machine Purchase",  amount: "+200.00", time: "2026-07-01 16:15" },
+                    { id: "b1",  type: "direct", fromName: "User A", fromId: "URC883921", reason: lang === "ko" ? "홍운 게임기 구매" : "HongYun Machine Purchase",  amount: "+200.00", time: "2026-07-21 12:30" },
+                    { id: "b2",  type: "mentor", fromName: "User B", fromId: "URC883922", reason: lang === "ko" ? "자광 게임기 구매" : "ZiGuang Machine Purchase",  amount: "+50.00",  time: "2026-07-21 12:30" },
+                    { id: "b3",  type: "mother", fromName: "User C", fromId: "URC883923", reason: lang === "ko" ? "상운 게임기 구매" : "ShangYun Machine Purchase", amount: "+50.00",  time: "2026-07-21 12:30" },
+                    { id: "b4",  type: "rank",   fromName: "User D", fromId: "URC883924", reason: lang === "ko" ? "직급 승급 달성"   : "Rank Promotion Achieved",   amount: "+50.00",  time: "2026-07-21 12:30" },
+                    { id: "b5",  type: "direct", fromName: "User E", fromId: "URC883925", reason: lang === "ko" ? "홍운 게임기 구매" : "HongYun Machine Purchase",  amount: "+100.00", time: "2026-07-15 11:20" },
+                    { id: "b6",  type: "mentor", fromName: "User F", fromId: "URC883926", reason: lang === "ko" ? "자광 게임기 구매" : "ZiGuang Machine Purchase",  amount: "+30.00",  time: "2026-07-14 09:45" },
+                    { id: "b7",  type: "direct", fromName: "User G", fromId: "URC883927", reason: lang === "ko" ? "상운 게임기 구매" : "ShangYun Machine Purchase", amount: "+20.00",  time: "2026-07-12 17:10" },
+                    { id: "b8",  type: "mother", fromName: "User H", fromId: "URC883928", reason: lang === "ko" ? "홍운 게임기 구매" : "HongYun Machine Purchase",  amount: "+100.00", time: "2026-07-10 14:22" },
+                    { id: "b9",  type: "rank",   fromName: "User I", fromId: "URC883929", reason: lang === "ko" ? "직급 승급 달성"   : "Rank Promotion Achieved",   amount: "+75.00",  time: "2026-07-08 08:55" },
+                    { id: "b10", type: "direct", fromName: "User J", fromId: "URC883930", reason: lang === "ko" ? "자광 게임기 구매" : "ZiGuang Machine Purchase",  amount: "+100.00", time: "2026-07-05 20:40" },
+                    { id: "b11", type: "mentor", fromName: "User K", fromId: "URC883931", reason: lang === "ko" ? "상운 게임기 구매" : "ShangYun Machine Purchase", amount: "+20.00",  time: "2026-07-03 11:30" },
+                    { id: "b12", type: "direct", fromName: "User L", fromId: "URC883932", reason: lang === "ko" ? "홍운 게임기 구매" : "HongYun Machine Purchase",  amount: "+200.00", time: "2026-07-01 16:15" },
                   ];
                   const pp = 8;
                   const tp = Math.ceil(bonusList.length / pp);
@@ -1569,9 +1574,9 @@ export default function MobileApp() {
                   capUsd: "$200 (200%)", 
                   desc: lang === "ko" ? "옥구슬 100개 증정 • 수당 캡 200% 달성 시 소멸" : lang === "en" ? "Bonus 100 Jade Beads • Expires at 200% Payout Cap" : "赠送 100 个玉珠 • 200% 封顶",
                   badgeZh: "祥云",
-                  badgeTheme: "from-gray-300 via-white to-gray-400",
-                  badgeGlow: "shadow-[0_0_20px_rgba(255,255,255,0.3)]",
-                  badgeText: "text-gray-100 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
+                  badgeTheme: "border-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.5),inset_0_0_10px_rgba(34,211,238,0.2)]",
+                  badgeBgGlow: "from-cyan-500 to-cyan-700",
+                  badgeText: "text-cyan-300 drop-shadow-[0_0_10px_rgba(34,211,238,1)]"
                 },
                 { 
                   level: 2, 
@@ -1581,9 +1586,9 @@ export default function MobileApp() {
                   capUsd: "$1,250 (250%)", 
                   desc: lang === "ko" ? "옥구슬 550개, 홍바오 1개 증정 • 수당 캡 250% 달성 시 소멸" : lang === "en" ? "Bonus 550 Jade Beads, 1 Hongbao • Expires at 250% Payout Cap" : "赠送 550 个玉珠, 1 个红包 • 250% 封顶",
                   badgeZh: "紫光",
-                  badgeTheme: "from-purple-500 via-fuchsia-400 to-purple-600",
-                  badgeGlow: "shadow-[0_0_20px_rgba(192,38,211,0.4)]",
-                  badgeText: "text-purple-100 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
+                  badgeTheme: "border-fuchsia-500 shadow-[0_0_15px_rgba(217,70,239,0.5),inset_0_0_10px_rgba(217,70,239,0.2)]",
+                  badgeBgGlow: "from-fuchsia-500 to-fuchsia-700",
+                  badgeText: "text-fuchsia-300 drop-shadow-[0_0_10px_rgba(217,70,239,1)]"
                 },
                 { 
                   level: 3, 
@@ -1593,20 +1598,20 @@ export default function MobileApp() {
                   capUsd: "$3,000 (300%)", 
                   desc: lang === "ko" ? "옥구슬 1,200개, 홍바오 3개 증정 • 수당 캡 300% 달성 시 소멸" : lang === "en" ? "Bonus 1,200 Jade Beads, 3 Hongbao • Expires at 300% Payout Cap" : "赠送 1,200 个玉珠, 3 个红包 • 300% 封顶",
                   badgeZh: "鸿运",
-                  badgeTheme: "from-red-600 via-orange-500 to-red-700",
-                  badgeGlow: "shadow-[0_0_25px_rgba(239,68,68,0.5)] border border-red-500/50",
-                  badgeText: "text-yellow-100 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
+                  badgeTheme: "border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5),inset_0_0_10px_rgba(239,68,68,0.2)]",
+                  badgeBgGlow: "from-red-500 to-red-700",
+                  badgeText: "text-red-400 drop-shadow-[0_0_10px_rgba(239,68,68,1)]"
                 },
               ].map((p) => (
                 <div key={p.level} className="bg-[#1E2329] border border-[#2B3139] hover:border-[#FCD535] rounded-2xl p-5 space-y-4 transition-all shadow-lg overflow-hidden relative">
                   
                   {/* Background Glow Effect */}
-                  <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${p.badgeTheme} opacity-10 blur-3xl rounded-full -mr-10 -mt-10 pointer-events-none`} />
+                  <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${p.badgeBgGlow} opacity-10 blur-3xl rounded-full -mr-10 -mt-10 pointer-events-none`} />
 
                   <div className="flex justify-between items-start relative z-10">
                     <div className="flex items-center space-x-3">
-                      {/* Chinese Character Badge */}
-                      <div className={`w-14 h-14 rounded-xl flex items-center justify-center bg-gradient-to-br ${p.badgeTheme} ${p.badgeGlow}`}>
+                      {/* Chinese Character Badge - Neon Style */}
+                      <div className={`w-14 h-14 rounded-xl flex items-center justify-center bg-[#0B0E11]/80 border-2 ${p.badgeTheme}`}>
                         <span className={`text-2xl font-black ${p.badgeText} tracking-widest`} style={{ fontFamily: "serif" }}>
                           {p.badgeZh}
                         </span>
@@ -2278,7 +2283,7 @@ export default function MobileApp() {
                           <div className="w-0.5 h-4 bg-[#2B3139] -mt-4 mb-1" />
                           <div className="bg-[#1E2329] border border-[#2B3139] rounded-xl p-3 text-center w-full max-w-[130px] shadow-md">
                             <p className="text-xs font-bold text-[#EAECEF]">User B</p>
-                            <span className="text-[10px] text-[#848E9C] mt-0.5 block">b_kim@urc369.com</span>
+                            <span className="text-[10px] text-[#848E9C] mt-0.5 block">URC10002</span>
                           </div>
                         </div>
 
@@ -2287,7 +2292,7 @@ export default function MobileApp() {
                           <div className="w-0.5 h-4 bg-[#2B3139] -mt-4 mb-1" />
                           <div className="bg-[#1E2329] border border-[#2B3139] rounded-xl p-3 text-center w-full max-w-[130px] shadow-md">
                             <p className="text-xs font-bold text-[#EAECEF]">User E</p>
-                            <span className="text-[10px] text-[#848E9C] mt-0.5 block">yh_park@urc369.com</span>
+                            <span className="text-[10px] text-[#848E9C] mt-0.5 block">URC10005</span>
                           </div>
                         </div>
                       </div>
@@ -2325,14 +2330,14 @@ export default function MobileApp() {
                           <div className="w-0.5 h-4 bg-[#2B3139] -mt-4 mb-1" />
                           <div className="bg-[#1E2329] border border-[#2B3139] rounded-xl p-3 text-center min-w-[135px] shadow-md">
                             <p className="text-xs font-bold text-[#EAECEF]">User B</p>
-                            <span className="text-[10px] text-[#848E9C] mt-0.5 block">b_kim@urc369.com</span>
+                            <span className="text-[10px] text-[#848E9C] mt-0.5 block">URC10002</span>
                           </div>
 
                           {/* Level 2 Sub-Leg: User E (Placement under User B) */}
                           <div className="w-0.5 h-5 bg-[#2B3139] my-1" />
                           <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[100px]">
                             <p className="text-[10px] font-bold text-[#EAECEF]">User E</p>
-                            <span className="text-[9px] text-[#848E9C] block">yh_park@urc369.com</span>
+                            <span className="text-[9px] text-[#848E9C] block">URC10005</span>
                           </div>
                         </div>
                       </div>
@@ -2361,7 +2366,7 @@ export default function MobileApp() {
                       <div className="flex items-center space-x-2 min-w-0 pr-2">
                         <span className="text-xs font-bold text-[#EAECEF] flex-shrink-0">{m.nickname}</span>
                         <span className="text-[11px] font-mono text-[#848E9C] truncate">
-                          {m.email} • {m.joinedAt}
+                          {m.id} • {m.joinedAt}
                         </span>
                       </div>
 
@@ -2402,9 +2407,9 @@ export default function MobileApp() {
               </div>
               <div className="grid grid-cols-3 gap-2 pt-1">
                 {[
-                  { code: "ko", label: "🇰🇷 한국어" },
-                  { code: "en", label: "🇺🇸 English" },
                   { code: "zh", label: "🇨🇳 中文" },
+                  { code: "en", label: "🇺🇸 English" },
+                  { code: "ko", label: "🇰🇷 한국어" },
                 ].map((l) => (
                   <button
                     key={l.code}
@@ -2484,16 +2489,16 @@ export default function MobileApp() {
             {/* Content Container */}
             <div className="relative z-10 flex flex-col items-center text-center animate-in zoom-in-50 slide-in-from-bottom-10 duration-500 spring-bounce">
               
-              {/* Giant Chinese Character Badge */}
-              <div className={`w-40 h-40 rounded-3xl flex items-center justify-center mb-6 border-2 transform rotate-3 shadow-2xl ${
-                purchaseSuccessEffect.level === 1 ? "bg-gradient-to-br from-gray-300 via-white to-gray-400 border-white shadow-white/50" :
-                purchaseSuccessEffect.level === 2 ? "bg-gradient-to-br from-purple-500 via-fuchsia-400 to-purple-600 border-purple-300 shadow-purple-500/60" :
-                "bg-gradient-to-br from-red-600 via-orange-500 to-red-700 border-yellow-400 shadow-red-500/70"
+              {/* Giant Chinese Character Badge - Neon Style */}
+              <div className={`w-40 h-40 rounded-3xl flex items-center justify-center mb-6 border-4 transform rotate-3 shadow-2xl bg-[#0B0E11]/80 ${
+                purchaseSuccessEffect.level === 1 ? "border-cyan-400 shadow-[0_0_40px_rgba(34,211,238,0.6),inset_0_0_20px_rgba(34,211,238,0.3)]" :
+                purchaseSuccessEffect.level === 2 ? "border-fuchsia-500 shadow-[0_0_40px_rgba(217,70,239,0.6),inset_0_0_20px_rgba(217,70,239,0.3)]" :
+                "border-red-500 shadow-[0_0_40px_rgba(239,68,68,0.6),inset_0_0_20px_rgba(239,68,68,0.3)]"
               }`}>
-                <span className={`text-6xl font-black tracking-widest ${
-                  purchaseSuccessEffect.level === 1 ? "text-gray-100 drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)]" :
-                  purchaseSuccessEffect.level === 2 ? "text-purple-100 drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)]" :
-                  "text-yellow-100 drop-shadow-[0_4px_10px_rgba(0,0,0,0.6)]"
+                <span className={`text-7xl font-black tracking-widest ${
+                  purchaseSuccessEffect.level === 1 ? "text-cyan-300 drop-shadow-[0_0_20px_rgba(34,211,238,1)]" :
+                  purchaseSuccessEffect.level === 2 ? "text-fuchsia-300 drop-shadow-[0_0_20px_rgba(217,70,239,1)]" :
+                  "text-red-400 drop-shadow-[0_0_20px_rgba(239,68,68,1)]"
                 }`} style={{ fontFamily: "serif" }}>
                   {purchaseSuccessEffect.level === 1 ? "祥云" : purchaseSuccessEffect.level === 2 ? "紫光" : "鸿运"}
                 </span>
