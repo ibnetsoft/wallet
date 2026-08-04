@@ -1,45 +1,57 @@
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { Pool } from "pg";
 
 export const dynamic = "force-dynamic";
 
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
+
 export async function GET() {
   try {
-    // 1. Get users with balances
-    const { data: usersWithBalances, error: usersErr } = await supabaseAdmin
-      .from("users")
-      .select(`
-        id,
-        email,
-        user_wallets ( address ),
-        user_balances ( available_balance, asset_id )
-      `)
-      .limit(100);
+    const client = await pool.connect();
+    try {
+      // 1. Get users with balances
+      // Since it's a joined query, we write a SQL query to fetch what we need.
+      const usersRes = await client.query(`
+        SELECT 
+          u.id, 
+          u.email, 
+          COALESCE(
+            json_agg(json_build_object('address', uw.address)) FILTER (WHERE uw.address IS NOT NULL), 
+            '[]'
+          ) as user_wallets,
+          COALESCE(
+            json_agg(json_build_object('available_balance', ub.available_balance, 'asset_id', ub.asset_id)) FILTER (WHERE ub.asset_id IS NOT NULL), 
+            '[]'
+          ) as user_balances
+        FROM public.users u
+        LEFT JOIN public.user_wallets uw ON u.id = uw.user_id
+        LEFT JOIN public.user_balances ub ON u.id = ub.user_id
+        GROUP BY u.id, u.email
+        LIMIT 100
+      `);
+      
+      const usersWithBalances = usersRes.rows;
 
-    if (usersErr) throw usersErr;
+      // 2. Get system settings
+      const settingsRes = await client.query("SELECT key, value FROM public.system_settings");
+      const settings = settingsRes.rows;
 
-    // 2. Get system settings
-    const { data: settings, error: settingsErr } = await supabaseAdmin
-      .from("system_settings")
-      .select("key, value");
+      // 3. Get vault transfer logs
+      const logsRes = await client.query("SELECT * FROM public.vault_transfers ORDER BY created_at DESC LIMIT 30");
+      const logs = logsRes.rows;
 
-    if (settingsErr) throw settingsErr;
-
-    // 3. Get vault transfer logs
-    const { data: logs, error: logsErr } = await supabaseAdmin
-      .from("vault_transfers")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(30);
-
-    if (logsErr) throw logsErr;
-
-    return NextResponse.json({
-      success: true,
-      usersWithBalances,
-      settings,
-      logs
-    });
+      return NextResponse.json({
+        success: true,
+        usersWithBalances,
+        settings,
+        logs
+      });
+    } finally {
+      client.release();
+    }
   } catch (err: any) {
     console.error("wallet/status API error:", err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
