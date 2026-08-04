@@ -40,6 +40,39 @@ export default function WithdrawalAuditPage() {
 
   useEffect(() => {
     fetchPendingWithdrawals();
+
+    // Supabase Realtime Subscription setup (requires Supabase client configuration in real app)
+    import('@supabase/supabase-js').then(({ createClient }) => {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+      
+      if (supabaseUrl && supabaseAnonKey) {
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+        
+        const channel = supabase
+          .channel('schema-db-changes')
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'ledger_entries',
+              filter: "tx_type=eq.WITHDRAW"
+            },
+            (payload) => {
+              console.log('New withdrawal request:', payload);
+              alert('New withdrawal request received! Refreshing table.');
+              fetchPendingWithdrawals();
+            }
+          )
+          .subscribe();
+          
+        return () => {
+          supabase.removeChannel(channel);
+        };
+      }
+    }).catch(console.error);
+    
   }, []);
 
   const handleApprove = async (id: string, email: string, amount: number, asset: string) => {

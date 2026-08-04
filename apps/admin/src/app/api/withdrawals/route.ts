@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Pool } from "pg";
+import { ethers } from "ethers";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ export async function GET() {
         l.status,
         l.tx_hash,
         l.created_at,
+        l.details,
         u.email
       FROM public.ledger_entries l
       JOIN public.users u ON l.user_id = u.id
@@ -38,6 +40,7 @@ export async function GET() {
         fee: Math.abs(Number(w.amount)) * 0.03, // Calculate 3% default fee
         asset: "USDT",
         txHash: w.tx_hash || "—",
+        address: typeof w.details === 'string' ? JSON.parse(w.details)?.address : w.details?.address,
         status: w.status,
         time: new Date(w.created_at).toLocaleTimeString()
       }))
@@ -90,15 +93,70 @@ export async function POST(request: Request) {
     }
 
     if (action === "APPROVE") {
-      // Approve withdrawal: update status to COMPLETED
+      let address = "";
+      if (typeof entry.details === 'string') {
+        try {
+          address = JSON.parse(entry.details).address;
+        } catch (e) {}
+      } else if (entry.details) {
+        address = entry.details.address;
+      }
+
+      if (!address) {
+        await client.query("ROLLBACK");
+        return NextResponse.json(
+          { success: false, error: "Withdrawal address not found in details" },
+          { status: 400 }
+        );
+      }
+
+      const rpcUrl = process.env.NEXT_PUBLIC_BSC_RPC_URL;
+      const privateKey = process.env.MASTER_HOT_WALLET_PRIVATE_KEY;
+      
+      if (!rpcUrl || !privateKey) {
+        await client.query("ROLLBACK");
+        return NextResponse.json(
+          { success: false, error: "RPC URL or Private Key is not configured" },
+          { status: 500 }
+        );
+      }
+
+      const provider = new ethers.JsonRpcProvider(rpcUrl);
+      const wallet = new ethers.Wallet(privateKey, provider);
+
+      // USDT Contract on BSC: 0x55d398326f99059fF775485246999027B3197955
+      const usdtAddress = "0x55d398326f99059fF775485246999027B3197955";
+      const abi = ["function transfer(address to, uint256 amount) returns (bool)"];
+      const usdtContract = new ethers.Contract(usdtAddress, abi, wallet);
+
+      const amountToWithdraw = Math.abs(Number(entry.amount)) * 0.97; // 3% fee deduction
+      const parsedAmount = ethers.parseUnits(amountToWithdraw.toString(), 18);
+
+      let txHash = "";
+      try {
+        const tx = await usdtContract.transfer(address, parsedAmount);
+        // Wait for confirmation to ensure it's mined, though optional depending on UX
+        // await tx.wait(); 
+        txHash = tx.hash;
+      } catch (err: any) {
+        await client.query("ROLLBACK");
+        console.error("Blockchain TX error:", err);
+        return NextResponse.json(
+          { success: false, error: "Blockchain transaction failed: " + err.message },
+          { status: 500 }
+        );
+      }
+
+      // Approve withdrawal: update status to COMPLETED and save tx_hash
       await client.query(`
-        UPDATE public.ledger_entries SET status = 'COMPLETED' WHERE id = $1
-      `, [withdrawalId]);
+        UPDATE public.ledger_entries SET status = 'COMPLETED', tx_hash = $2 WHERE id = $1
+      `, [withdrawalId, txHash]);
 
       await client.query("COMMIT");
       return NextResponse.json({
         success: true,
-        message: "Withdrawal approved successfully. Hot wallet queued."
+        message: "Withdrawal approved successfully and tx sent.",
+        txHash
       });
 
     } else if (action === "REJECT") {
@@ -113,7 +171,7 @@ export async function POST(request: Request) {
       // Add a refund entry in ledger
       await client.query(`
         INSERT INTO public.ledger_entries (user_id, asset_id, amount, tx_type, status, tx_hash, details)
-        VALUES ($1, $2, $3, 'REFERRAL_BONUS', 'COMPLETED', $4, $5)
+        VALUES ($1, $2, $3, 'REFUND', 'COMPLETED', $4, $5)
       `, [
         entry.user_id, 
         entry.asset_id, 

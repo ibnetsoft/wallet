@@ -8,7 +8,7 @@ export function createClient() {
     console.warn("Using Mock Supabase Client for local development");
     const mockClient = {
       auth: {
-        signInWithPassword: async ({ email, password }) => {
+        signInWithPassword: async ({ email, password }: { email: string; password?: string }) => {
           console.log("Mock signing in:", email);
           if (typeof window !== "undefined") {
             localStorage.setItem("mock_user_email", email);

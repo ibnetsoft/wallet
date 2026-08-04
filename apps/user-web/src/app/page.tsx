@@ -601,9 +601,9 @@ export default function MobileApp() {
       
       {/* ── TOP STATUS BAR ── */}
       <div className="sticky top-0 z-40 bg-[#0B0E11]/95 backdrop-blur-md border-b border-[#2B3139] px-5 py-3 flex justify-between items-center">
-        <div className="flex items-center space-x-2">
-          <div className="w-7 h-7 rounded bg-[#FCD535] flex items-center justify-center text-[#0B0E11] font-black text-xs">U</div>
-          <span className="text-sm font-bold text-[#EAECEF]">URC369</span>
+        <div className="flex items-center h-7">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="URC369" className="h-5 w-auto object-contain mix-blend-lighten" />
         </div>
         <div className="flex items-center space-x-3">
           {activeTab === "game" && (
@@ -627,12 +627,12 @@ export default function MobileApp() {
 
       {/* ── LOGO BANNER ── */}
       {activeTab === "home" && (
-        <div className="w-full bg-[#0B0E11] flex items-center justify-center py-2">
+        <div className="w-full bg-[#0B0E11] flex items-center justify-center py-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logo.png"
             alt="U彩宝369"
-            className="w-full h-auto object-contain"
+            className="w-[85%] h-auto object-contain"
             style={{ mixBlendMode: "lighten" }}
           />
         </div>

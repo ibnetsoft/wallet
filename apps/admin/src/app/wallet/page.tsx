@@ -38,6 +38,10 @@ export default function WalletSweepPage() {
   const [coldVaultAddress, setColdVaultAddress] = useState("");
   const [hotBalanceUSDT, setHotBalanceUSDT] = useState<number | null>(null);
   const [coldBalanceUSDT, setColdBalanceUSDT] = useState<number | null>(null);
+  
+  // ── 수수료 지갑 상태 ──
+  const [feeWalletAddress, setFeeWalletAddress] = useState<string | null>(null);
+  const [feeWalletBalance, setFeeWalletBalance] = useState<number>(0);
 
   // ── 이체 폼 ──
   const [vaultAsset, setVaultAsset] = useState<"USDT" | "BNB">("USDT");
@@ -115,6 +119,18 @@ export default function WalletSweepPage() {
         .limit(30);
 
       if (logs) setVaultLogs(logs as VaultTransferLog[]);
+
+      // 4. 수수료 지갑 잔액 조회
+      try {
+        const feeRes = await fetch("/api/wallet/fee-status");
+        const feeData = await feeRes.json();
+        if (feeData.success) {
+          setFeeWalletAddress(feeData.address);
+          setFeeWalletBalance(feeData.balance);
+        }
+      } catch (err) {
+        console.error("Fee wallet fetch error:", err);
+      }
     } catch (err) {
       console.error("데이터 로드 오류:", err);
     } finally {
@@ -320,22 +336,38 @@ export default function WalletSweepPage() {
             </div>
           </div>
 
-          {/* 모으기 가능 잔액 */}
-          <div className="flex justify-between items-center p-4 bg-[#1C1C21] rounded-xl border border-[#FF9F0A]/30">
-            <div>
-              <p className="text-[10px] text-[#8E8E93] uppercase font-bold flex items-center space-x-1">
-                <ShieldAlert size={12} className="text-[#FF9F0A]" />
-                <span>유저 지갑 총 잔액 (DB 실제값)</span>
-              </p>
-              <p className="text-xl font-extrabold text-white mt-1 font-mono">
-                {totalSweepable.toLocaleString()} <span className="text-xs text-[#8E8E93]">USDT</span>
-              </p>
-              <p className="text-[10px] text-[#8E8E93] mt-0.5">{userWallets.length}개 유저 지갑 합산</p>
+          {/* 모으기 가능 잔액 및 가스비 지갑 정보 */}
+          <div className="p-4 bg-[#1C1C21] rounded-xl border border-[#FF9F0A]/30 space-y-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-[10px] text-[#8E8E93] uppercase font-bold flex items-center space-x-1">
+                  <ShieldAlert size={12} className="text-[#FF9F0A]" />
+                  <span>유저 지갑 총 잔액 (DB 실제값)</span>
+                </p>
+                <p className="text-xl font-extrabold text-white mt-1 font-mono">
+                  {totalSweepable.toLocaleString()} <span className="text-xs text-[#8E8E93]">USDT</span>
+                </p>
+                <p className="text-[10px] text-[#8E8E93] mt-0.5">{userWallets.length}개 유저 지갑 합산</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] text-[#8E8E93] uppercase font-bold">총 필요 예상 가스비</p>
+                <p className="text-sm font-bold text-[#FF9F0A] mt-1 font-mono">~{(userWallets.length * 0.0005).toFixed(4)} BNB</p>
+                <p className="text-[10px] text-[#8E8E93] mt-0.5">{userWallets.length} x 0.0005 BNB</p>
+              </div>
             </div>
-            <div className="text-right">
-              <p className="text-[10px] text-[#8E8E93] uppercase font-bold">예상 가스비</p>
-              <p className="text-sm font-bold text-[#FF9F0A] mt-1 font-mono">~0.04 BNB</p>
-              <p className="text-[10px] text-[#8E8E93] mt-0.5">온체인 실제 소모</p>
+            
+            <div className="pt-3 border-t border-[#26262B]">
+              <div className="flex justify-between items-center">
+                <p className="text-[10px] text-[#8E8E93] uppercase font-bold">가스비 대납 지갑 (마스터 수수료 지갑)</p>
+                <p className="text-xs font-bold text-[#30D5C8] font-mono">{feeWalletBalance.toFixed(4)} BNB 보유</p>
+              </div>
+              <div className="flex items-center space-x-2 mt-1">
+                <Wallet size={14} className="text-[#8E8E93] flex-shrink-0" />
+                <span className="text-[#EAECEF] font-mono text-xs break-all">{feeWalletAddress || "불러오는 중..."}</span>
+              </div>
+              {feeWalletBalance < (userWallets.length * 0.0005) && userWallets.length > 0 && (
+                <p className="text-[10px] text-[#FF453A] mt-1 font-bold">⚠️ 경고: 수수료 지갑의 BNB 잔액이 부족하여 스윕이 실패할 수 있습니다. 위 주소로 BNB를 입금하세요.</p>
+              )}
             </div>
           </div>
 

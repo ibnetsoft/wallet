@@ -12,6 +12,10 @@ interface UserProfile {
   joinedAt: string;
   assets: number;
   active: boolean;
+  totalReferrals: number;
+  usedEntries: number;
+  sponsorEmail: string;
+  sponsorNickname: string;
 }
 
 export default function UsersPage() {
@@ -41,6 +45,27 @@ export default function UsersPage() {
 
     fetchUsers();
   }, []);
+
+  const handleDeleteUser = async (userId: string, nickname: string) => {
+    if (!confirm(`정말 '${nickname}' 회원을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없으며 관련 데이터가 모두 삭제됩니다.`)) return;
+    
+    try {
+      const res = await fetch("/api/users", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUsers(users.filter(u => u.id !== userId));
+        alert("회원이 성공적으로 삭제되었습니다.");
+      } else {
+        alert(`삭제 실패: ${data.error}`);
+      }
+    } catch (e) {
+      alert("삭제 중 오류가 발생했습니다.");
+    }
+  };
 
   const filteredUsers = users.filter(u => u.email.includes(searchTerm) || u.nickname.includes(searchTerm) || u.code.includes(searchTerm));
 
@@ -76,8 +101,11 @@ export default function UsersPage() {
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-[#26262B] text-[#8E8E93] font-semibold uppercase tracking-wider pb-3">
+                <th className="py-3 px-2 text-center w-10">No.</th>
                 <th className="py-3 px-4">유저 회원 정보</th>
-                <th className="py-3 px-4">추천 초대 코드</th>
+                <th className="py-3 px-4 text-center">게임 횟수</th>
+                <th className="py-3 px-4 text-center">총추천인</th>
+                <th className="py-3 px-4">스폰서</th>
                 <th className="py-3 px-4">가입 날짜</th>
                 <th className="py-3 px-4 text-right">보유 자산 (USDT)</th>
                 <th className="py-3 px-4 text-center">상태</th>
@@ -87,15 +115,21 @@ export default function UsersPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-[#8E8E93]">회원 데이터를 불러오는 중...</td>
+                  <td colSpan={9} className="py-8 text-center text-[#8E8E93]">회원 데이터를 불러오는 중...</td>
                 </tr>
-              ) : filteredUsers.map((user) => (
+              ) : filteredUsers.map((user, index) => (
                 <tr key={user.id} className="border-b border-[#26262B]/40 hover:bg-[#1C1C21]/30 transition-all">
+                  <td className="py-3 px-2 text-center text-[#8E8E93] font-mono">{index + 1}</td>
                   <td className="py-3 px-4">
-                    <div className="font-semibold text-white">{user.nickname}</div>
+                    <div className="font-semibold text-white">{user.nickname} <span className="font-mono text-[#BF5AF2] text-[10px] ml-1">({user.code})</span></div>
                     <div className="text-[10px] text-[#8E8E93]">{user.email}</div>
                   </td>
-                  <td className="py-3 px-4 font-mono text-[#BF5AF2]">{user.code}</td>
+                  <td className="py-3 px-4 text-center font-mono font-bold text-white">{user.usedEntries}회</td>
+                  <td className="py-3 px-4 text-center font-mono text-[#00D2FF]">{user.totalReferrals}명</td>
+                  <td className="py-3 px-4">
+                    <div className="text-xs text-[#EAECEF]">{user.sponsorNickname || "없음"}</div>
+                    <div className="text-[10px] text-[#8E8E93]">{user.sponsorEmail !== "없음" ? user.sponsorEmail : ""}</div>
+                  </td>
                   <td className="py-3 px-4 text-[#8E8E93]">{user.joinedAt}</td>
                   <td className="py-3 px-4 text-right font-bold text-white font-mono">${user.assets.toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
                   <td className="py-3 px-4 text-center">
@@ -111,16 +145,19 @@ export default function UsersPage() {
                       </span>
                     )}
                   </td>
-                  <td className="py-3 px-4 text-center">
-                    <button className="px-3 py-1 bg-[#1C1C21] hover:bg-[#00D2FF] hover:text-[#0B0E11] text-[#00D2FF] text-[10px] font-bold rounded transition-colors mr-2">
-                      조직 계보도 보기
+                  <td className="py-3 px-4 text-center flex items-center justify-center space-x-2">
+                    <button className="px-3 py-1 bg-[#1C1C21] hover:bg-[#00D2FF] hover:text-[#0B0E11] text-[#00D2FF] text-[10px] font-bold rounded transition-colors">
+                      조직도
+                    </button>
+                    <button onClick={() => handleDeleteUser(user.id, user.nickname)} className="px-3 py-1 bg-[#F6465D]/10 hover:bg-[#F6465D] hover:text-white text-[#F6465D] text-[10px] font-bold rounded transition-colors">
+                      삭제
                     </button>
                   </td>
                 </tr>
               ))}
               {!loading && filteredUsers.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-[#8E8E93]">검색 결과가 없습니다.</td>
+                  <td colSpan={9} className="py-8 text-center text-[#8E8E93]">검색 결과가 없습니다.</td>
                 </tr>
               )}
             </tbody>
