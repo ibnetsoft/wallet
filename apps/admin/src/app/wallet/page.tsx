@@ -57,29 +57,15 @@ export default function WalletSweepPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // 1. 실제 유저 지갑 잔액 조회 (users, user_wallets, user_balances 조인)
-      const { data: usersWithBalances } = await supabaseAdmin
-        .from("users")
-        .select(`
-          id,
-          email,
-          user_wallets (
-            address
-          ),
-          user_balances (
-            available_balance,
-            asset_id
-          )
-        `)
-        .limit(100);
-
-      if (usersWithBalances) {
-        const mappedWallets = usersWithBalances.map((u: any) => {
-          // USDT (asset_id = 2) 잔고 매핑
+      const statusRes = await fetch("/api/wallet/status");
+      const statusData = await statusRes.json();
+      
+      if (statusData.success) {
+        // 1. 유저 지갑 및 잔고 설정
+        const mappedWallets = statusData.usersWithBalances.map((u: any) => {
           const usdtBalanceObj = u.user_balances?.find((b: any) => b.asset_id === 2);
           const usdt_balance = usdtBalanceObj ? parseFloat(usdtBalanceObj.available_balance) : 0;
           
-          // 지갑 주소 가져오기
           const wallet_address = u.user_wallets && u.user_wallets.length > 0
             ? u.user_wallets[0].address
             : "—";
@@ -91,34 +77,22 @@ export default function WalletSweepPage() {
             usdt_balance: usdt_balance
           };
         });
-
-        // 잔고가 많은 순서로 정렬
-        mappedWallets.sort((a, b) => b.usdt_balance - a.usdt_balance);
+        mappedWallets.sort((a: any, b: any) => b.usdt_balance - a.usdt_balance);
         setUserWallets(mappedWallets);
+
+        // 2. 시스템 설정 설정
+        if (statusData.settings) {
+          const map: Record<string, string> = {};
+          statusData.settings.forEach((s: { key: string; value: string }) => { map[s.key] = s.value; });
+          setMasterHotWallet(map["master_hot_wallet"] ?? "");
+          setColdVaultAddress(map["cold_vault_address"] ?? "");
+          setHotBalanceUSDT(map["hot_balance_usdt"] ? parseFloat(map["hot_balance_usdt"]) : null);
+          setColdBalanceUSDT(map["cold_balance_usdt"] ? parseFloat(map["cold_balance_usdt"]) : null);
+        }
+
+        // 3. 콜드 금고 이체 로그
+        if (statusData.logs) setVaultLogs(statusData.logs as VaultTransferLog[]);
       }
-
-      // 2. 시스템 설정 (마스터 핫 지갑 주소, 콜드 금고 주소, 잔액)
-      const { data: settings } = await supabaseAdmin
-        .from("system_settings")
-        .select("key, value");
-
-      if (settings) {
-        const map: Record<string, string> = {};
-        settings.forEach((s: { key: string; value: string }) => { map[s.key] = s.value; });
-        setMasterHotWallet(map["master_hot_wallet"] ?? "");
-        setColdVaultAddress(map["cold_vault_address"] ?? "");
-        setHotBalanceUSDT(map["hot_balance_usdt"] ? parseFloat(map["hot_balance_usdt"]) : null);
-        setColdBalanceUSDT(map["cold_balance_usdt"] ? parseFloat(map["cold_balance_usdt"]) : null);
-      }
-
-      // 3. 콜드 금고 이체 로그
-      const { data: logs } = await supabaseAdmin
-        .from("vault_transfers")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(30);
-
-      if (logs) setVaultLogs(logs as VaultTransferLog[]);
 
       // 4. 수수료 지갑 잔액 조회
       try {
