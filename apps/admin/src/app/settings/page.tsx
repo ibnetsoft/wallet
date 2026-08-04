@@ -45,13 +45,12 @@ export default function SettingsPage() {
   const loadSettings = useCallback(async () => {
     setSettingsLoading(true);
     try {
-      const { data } = await supabaseAdmin
-        .from("system_settings")
-        .select("key, value");
-
-      if (data) {
+      const res = await fetch("/api/wallet/status");
+      const data = await res.json();
+      
+      if (data.success && data.settings) {
         const map: Record<string, string> = {};
-        data.forEach((s: { key: string; value: string }) => { map[s.key] = s.value; });
+        data.settings.forEach((s: { key: string; value: string }) => { map[s.key] = s.value; });
         setSwapFee(map["swap_fee_rate"] ?? "0.1");
         setWithdrawalFee(map["withdrawal_fee_rate"] ?? "3.0");
         setHotWallet(map["master_hot_wallet"] ?? "");
@@ -98,13 +97,17 @@ export default function SettingsPage() {
     setFeeMsg(null);
     try {
       const rows = [
-        { key: "swap_fee_rate", value: swapFee, updated_at: new Date().toISOString() },
-        { key: "withdrawal_fee_rate", value: withdrawalFee, updated_at: new Date().toISOString() },
+        { key: "swap_fee_rate", value: swapFee, description: "스왑 수수료 (%)" },
+        { key: "withdrawal_fee_rate", value: withdrawalFee, description: "출금 수수료 (%)" },
       ];
-      const { error } = await supabaseAdmin
-        .from("system_settings")
-        .upsert(rows, { onConflict: "key" });
-      if (error) throw error;
+      const saveRes = await fetch("/api/settings/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rows })
+      });
+      const saveData = await saveRes.json();
+      if (!saveData.success) throw new Error(saveData.error);
+      
       setFeeMsg({ type: "ok", text: `수수료율이 저장되었습니다. (출금 ${withdrawalFee}%, 스왑 ${swapFee}%)` });
     } catch (err: unknown) {
       setFeeMsg({ type: "err", text: err instanceof Error ? err.message : "저장 실패" });
@@ -120,16 +123,20 @@ export default function SettingsPage() {
     setWalletMsg(null);
     try {
       const rows = [
-        { key: "master_hot_wallet", value: hotWallet.trim(), updated_at: new Date().toISOString() },
-        { key: "master_hot_wallet_private_key", value: hotPrivateKey.trim(), updated_at: new Date().toISOString() },
-        { key: "cold_vault_address", value: coldVault.trim(), updated_at: new Date().toISOString() },
-        { key: "hot_balance_usdt", value: hotBalanceUSDT, updated_at: new Date().toISOString() },
-        { key: "cold_balance_usdt", value: coldBalanceUSDT, updated_at: new Date().toISOString() },
+        { key: "master_hot_wallet", value: hotWallet.trim(), description: "마스터 핫 지갑 주소" },
+        { key: "master_hot_wallet_private_key", value: hotPrivateKey.trim(), description: "마스터 핫 지갑 개인키" },
+        { key: "cold_vault_address", value: coldVault.trim(), description: "콜드 금고 주소" },
+        { key: "hot_balance_usdt", value: hotBalanceUSDT, description: "핫 지갑 USDT 잔액" },
+        { key: "cold_balance_usdt", value: coldBalanceUSDT, description: "콜드 금고 USDT 잔액" },
       ];
-      const { error } = await supabaseAdmin
-        .from("system_settings")
-        .upsert(rows, { onConflict: "key" });
-      if (error) throw error;
+      const saveRes = await fetch("/api/settings/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rows })
+      });
+      const saveData = await saveRes.json();
+      if (!saveData.success) throw new Error(saveData.error);
+      
       setWalletMsg({ type: "ok", text: "지갑 주소, 개인키 및 잔액 설정이 DB에 저장되었습니다." });
     } catch (err: unknown) {
       setWalletMsg({ type: "err", text: err instanceof Error ? err.message : "저장 실패" });
