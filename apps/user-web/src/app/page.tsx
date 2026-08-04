@@ -320,31 +320,61 @@ export default function MobileApp() {
   };
 
   // 2단계: 컨펌 후 실제 참여 실행
-  const confirmManualBet = () => {
+  const confirmManualBet = async () => {
     const cost = manualBetsCount * 1;
+    if (!userId) {
+      alert(lang === "ko" ? "로그인 상태를 확인할 수 없습니다." : "User session not found.");
+      return;
+    }
+
+    const roundObj = dbRounds.find(r => r.round_number === manualRound);
+    if (!roundObj) {
+      alert(lang === "ko" ? "유효하지 않은 회차입니다." : "Invalid round.");
+      return;
+    }
+
     setShowGameConfirmModal(false);
-    setUrdBalance((prev) => prev - cost);
-    const newBet: GameBetRecord = {
-      id: `b-${Date.now()}`,
-      round: manualRound,
-      betsCount: manualBetsCount,
-      urdSpent: cost,
-      status: "WAITING",
-      betAt: new Date().toLocaleTimeString("ko-KR", { hour12: false, hour: "2-digit", minute: "2-digit" }),
-    };
-    setMyBets((prev) => [newBet, ...prev]);
-    // 벨 알림으로 참여 완료 통보
-    const notif: GameNotification = {
-      id: `n-${Date.now()}`,
-      round: `${manualRound}회차`,
-      time: new Date().toLocaleTimeString("ko-KR", { hour12: false, hour: "2-digit", minute: "2-digit" }),
-      title: `🎮 ${manualRound}회차 게임 참여 완료`,
-      resultType: "COIN_WIN",
-      rewardText: `${manualBetsCount}회 참여 · 옥구슬 ${cost}개 소모 · AI 발표 대기 중`,
-      createdAt: new Date().toLocaleTimeString("ko-KR", { hour12: false, hour: "2-digit", minute: "2-digit" }),
-      read: false,
-    };
-    setNotifications((prev) => [notif, ...prev]);
+
+    try {
+      const res = await fetch("/api/game-rounds/participate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId, round_id: roundObj.id, tickets_count: manualBetsCount })
+      });
+      const data = await res.json();
+      
+      if (!data.success) {
+        alert((lang === "ko" ? "참여 실패: " : "Error: ") + data.error);
+        return;
+      }
+
+      setUrdBalance((prev) => prev - cost);
+      const newBet: GameBetRecord = {
+        id: `b-${Date.now()}`,
+        round: manualRound,
+        betsCount: manualBetsCount,
+        urdSpent: cost,
+        status: "WAITING",
+        betAt: new Date().toLocaleTimeString("ko-KR", { hour12: false, hour: "2-digit", minute: "2-digit" }),
+      };
+      setMyBets((prev) => [newBet, ...prev]);
+      
+      // 벨 알림으로 참여 완료 통보
+      const notif: GameNotification = {
+        id: `n-${Date.now()}`,
+        round: `${manualRound}회차`,
+        time: new Date().toLocaleTimeString("ko-KR", { hour12: false, hour: "2-digit", minute: "2-digit" }),
+        title: `🎮 ${manualRound}회차 게임 참여 완료`,
+        resultType: "COIN_WIN",
+        rewardText: `${manualBetsCount}회 참여 · 옥구슬 ${cost}개 소모 · AI 발표 대기 중`,
+        createdAt: new Date().toLocaleTimeString("ko-KR", { hour12: false, hour: "2-digit", minute: "2-digit" }),
+        read: false,
+      };
+      setNotifications((prev) => [notif, ...prev]);
+    } catch (err) {
+      console.error(err);
+      alert(lang === "ko" ? "서버 통신 오류가 발생했습니다." : "Network error.");
+    }
   };
 
   const handleToggleAutoSettings = () => {
@@ -454,6 +484,7 @@ export default function MobileApp() {
     { id: 4, nickname: "User D", tier: 2, status: "ACTIVE" }
   ]);
   const [userEmail, setUserEmail] = useState("user@urc369.com");
+  const [userId, setUserId] = useState("");
   const [countdown, setCountdown] = useState("");
   const [urdBalance, setUrdBalance] = useState(3000);
   const [usdtBalance, setUsdtBalance] = useState(10500.00);
@@ -536,7 +567,10 @@ export default function MobileApp() {
   useEffect(() => {
     const fetchUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) setUserEmail(session.user.email || "Unknown");
+      if (session?.user) {
+        setUserEmail(session.user.email || "Unknown");
+        setUserId(session.user.id);
+      }
     };
     const fetchGameRounds = async () => {
       try {
@@ -797,19 +831,18 @@ export default function MobileApp() {
                       const pct = Math.min(100, Math.floor((m.accumulatedPayout / m.payoutCap) * 100));
                       return (
                         <div key={m.id} className="bg-[#1E2329] border border-[#2B3139] hover:border-[#FCD535]/50 rounded-xl p-3.5 flex items-center space-x-3 transition-all relative overflow-hidden">
-                          {/* Mini Chinese Character Badge - Neon Style */}
-                          <div className={`w-12 h-12 rounded-lg shrink-0 flex items-center justify-center border-2 ${
+                          {/* Mini Chinese Character Badge - Premium Image */}
+                          <div className={`w-12 h-12 rounded-lg shrink-0 overflow-hidden flex items-center justify-center border-2 ${
                             m.level === 1 ? "bg-[#0B0E11]/80 border-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.5),inset_0_0_10px_rgba(34,211,238,0.2)]" :
                             m.level === 2 ? "bg-[#0B0E11]/80 border-fuchsia-500 shadow-[0_0_15px_rgba(217,70,239,0.5),inset_0_0_10px_rgba(217,70,239,0.2)]" :
                             "bg-[#0B0E11]/80 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5),inset_0_0_10px_rgba(239,68,68,0.2)]"
                           }`}>
-                            <span className={`text-xl font-black tracking-widest ${
-                              m.level === 1 ? "text-cyan-300 drop-shadow-[0_0_8px_rgba(34,211,238,1)]" :
-                              m.level === 2 ? "text-fuchsia-300 drop-shadow-[0_0_8px_rgba(217,70,239,1)]" :
-                              "text-red-400 drop-shadow-[0_0_8px_rgba(239,68,68,1)]"
-                            }`} style={{ fontFamily: "serif" }}>
-                              {m.level === 1 ? "祥云" : m.level === 2 ? "紫光" : "鸿运"}
-                            </span>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img 
+                              src={m.level === 1 ? "/badges/xiangyun.jpg" : m.level === 2 ? "/badges/ziguang.jpg" : "/badges/hongyun.jpg"} 
+                              alt={m.level === 1 ? "祥云" : m.level === 2 ? "紫光" : "鸿运"} 
+                              className="w-full h-full object-cover mix-blend-lighten" 
+                            />
                           </div>
 
                           {/* Right Content */}
@@ -1577,6 +1610,7 @@ export default function MobileApp() {
                   capUsd: "$200 (200%)", 
                   desc: lang === "ko" ? "옥구슬 100개 증정 • 수당 캡 200% 달성 시 소멸" : lang === "en" ? "Bonus 100 Jade Beads • Expires at 200% Payout Cap" : "赠送 100 个玉珠 • 200% 封顶",
                   badgeZh: "祥云",
+                  imgSrc: "/badges/xiangyun.jpg",
                   badgeTheme: "border-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.5),inset_0_0_10px_rgba(34,211,238,0.2)]",
                   badgeBgGlow: "from-cyan-500 to-cyan-700",
                   badgeText: "text-cyan-300 drop-shadow-[0_0_10px_rgba(34,211,238,1)]"
@@ -1589,6 +1623,7 @@ export default function MobileApp() {
                   capUsd: "$1,250 (250%)", 
                   desc: lang === "ko" ? "옥구슬 550개, 홍바오 1개 증정 • 수당 캡 250% 달성 시 소멸" : lang === "en" ? "Bonus 550 Jade Beads, 1 Hongbao • Expires at 250% Payout Cap" : "赠送 550 个玉珠, 1 个红包 • 250% 封顶",
                   badgeZh: "紫光",
+                  imgSrc: "/badges/ziguang.jpg",
                   badgeTheme: "border-fuchsia-500 shadow-[0_0_15px_rgba(217,70,239,0.5),inset_0_0_10px_rgba(217,70,239,0.2)]",
                   badgeBgGlow: "from-fuchsia-500 to-fuchsia-700",
                   badgeText: "text-fuchsia-300 drop-shadow-[0_0_10px_rgba(217,70,239,1)]"
@@ -1601,6 +1636,7 @@ export default function MobileApp() {
                   capUsd: "$3,000 (300%)", 
                   desc: lang === "ko" ? "옥구슬 1,200개, 홍바오 3개 증정 • 수당 캡 300% 달성 시 소멸" : lang === "en" ? "Bonus 1,200 Jade Beads, 3 Hongbao • Expires at 300% Payout Cap" : "赠送 1,200 个玉珠, 3 个红包 • 300% 封顶",
                   badgeZh: "鸿运",
+                  imgSrc: "/badges/hongyun.jpg",
                   badgeTheme: "border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5),inset_0_0_10px_rgba(239,68,68,0.2)]",
                   badgeBgGlow: "from-red-500 to-red-700",
                   badgeText: "text-red-400 drop-shadow-[0_0_10px_rgba(239,68,68,1)]"
@@ -1613,11 +1649,10 @@ export default function MobileApp() {
 
                   <div className="flex justify-between items-start relative z-10">
                     <div className="flex items-center space-x-3">
-                      {/* Chinese Character Badge - Neon Style */}
-                      <div className={`w-14 h-14 rounded-xl flex items-center justify-center bg-[#0B0E11]/80 border-2 ${p.badgeTheme}`}>
-                        <span className={`text-2xl font-black ${p.badgeText} tracking-widest`} style={{ fontFamily: "serif" }}>
-                          {p.badgeZh}
-                        </span>
+                      {/* Chinese Character Badge - Premium Image */}
+                      <div className={`w-14 h-14 rounded-xl overflow-hidden flex items-center justify-center bg-[#0B0E11]/80 border-2 ${p.badgeTheme}`}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={p.imgSrc} alt={p.badgeZh} className="w-full h-full object-cover mix-blend-lighten" />
                       </div>
                       
                       <div>
