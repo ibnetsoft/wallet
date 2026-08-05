@@ -88,16 +88,20 @@ export async function POST(req: Request) {
 
     // 5. public.users 에 레코드 강제 생성
     // email 컬러에는 진짜 이메일(real_email)을 넣음. (이제 DB에서 UNIQUE가 아니므로 중복 가능)
+    // parent_id만 사용 (recommender_id는 DB에 없을 수 있음)
+    const insertData: Record<string, any> = {
+      id: userId,
+      email: email,
+      nickname: nickname,
+      status: "PENDING",
+    };
+    if (parentId) {
+      insertData.parent_id = parentId;
+    }
+
     const { error: dbError } = await supabase
       .from("users")
-      .insert({
-        id: userId,
-        email: email,
-        nickname: nickname,
-        recommender_id: recommenderId,
-        parent_id: parentId, // For legacy support
-        status: "PENDING",
-      });
+      .insert(insertData);
 
     if (dbError) {
       // 롤백 (Auth 유저 삭제)
