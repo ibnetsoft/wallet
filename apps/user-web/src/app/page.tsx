@@ -494,6 +494,10 @@ export default function MobileApp() {
     { id: 4, nickname: "User D", tier: 2, status: "ACTIVE" }
   ]);
   const [userEmail, setUserEmail] = useState("user@urc369.com");
+  const [userNickname, setUserNickname] = useState("User");
+  const [isEditingNickname, setIsEditingNickname] = useState(false);
+  const [editNicknameValue, setEditNicknameValue] = useState("");
+  const [nicknameUpdateLoading, setNicknameUpdateLoading] = useState(false);
   const [userId, setUserId] = useState("");
   const [countdown, setCountdown] = useState("");
   const [urdBalance, setUrdBalance] = useState(3000);
@@ -533,6 +537,28 @@ export default function MobileApp() {
   } | null>(null);
 
   const [isPlayingGame, setIsPlayingGame] = useState(false);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
+
+  const handleUpdateNickname = async () => {
+    if (!editNicknameValue.trim()) return;
+    setNicknameUpdateLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: { nickname: editNicknameValue }
+      });
+      if (error) throw error;
+      setUserNickname(editNicknameValue);
+      setIsEditingNickname(false);
+    } catch (e: any) {
+      alert("Failed to update nickname: " + e.message);
+    } finally {
+      setNicknameUpdateLoading(false);
+    }
+  };
 
   const handlePlayGame = (betAmount: number = 100) => {
     if (usdtBalance < 100) {
@@ -582,6 +608,9 @@ export default function MobileApp() {
       if (session?.user) {
         setUserEmail(session.user.email || "Unknown");
         setUserId(session.user.id);
+        if (session.user.user_metadata?.nickname) {
+          setUserNickname(session.user.user_metadata.nickname);
+        }
       }
     };
     const fetchGameRounds = async () => {
@@ -2514,11 +2543,52 @@ export default function MobileApp() {
         {activeTab === "settings" && (
           <div className="p-5 space-y-5">
             {/* User Profile Card */}
-            <div className="bg-[#1E2329] rounded-xl p-4 flex items-center space-x-3">
-              <div className="w-12 h-12 rounded-full bg-[#2B3139] flex justify-center items-center font-bold text-[#FCD535]">U</div>
-              <div>
-                <p className="font-bold text-[#EAECEF]">{userEmail}</p>
-                <button onClick={handleLogout} className="text-xs text-[#F6465D] mt-1 flex items-center">
+            <div className="bg-[#1E2329] rounded-xl p-4 flex items-start space-x-3">
+              <div className="w-12 h-12 rounded-full bg-[#2B3139] flex justify-center items-center font-bold text-[#FCD535] flex-shrink-0">
+                {userNickname.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-[#EAECEF] truncate">{userEmail}</p>
+
+                {isEditingNickname ? (
+                  <div className="mt-2 flex flex-col space-y-2">
+                    <input 
+                      type="text" 
+                      value={editNicknameValue}
+                      onChange={(e) => setEditNicknameValue(e.target.value)}
+                      className="w-full bg-[#0B0E11] border border-[#2B3139] rounded px-3 py-2 text-sm text-[#EAECEF] focus:border-[#FCD535] outline-none transition-colors"
+                      placeholder="New nickname"
+                      maxLength={20}
+                    />
+                    <div className="flex space-x-2">
+                      <button 
+                        onClick={handleUpdateNickname}
+                        disabled={nicknameUpdateLoading}
+                        className="flex-1 py-1.5 bg-[#FCD535] text-[#0B0E11] text-xs font-bold rounded active:scale-95 transition-all disabled:opacity-50"
+                      >
+                        {nicknameUpdateLoading ? "..." : (lang === "ko" ? "저장" : lang === "en" ? "Save" : "保存")}
+                      </button>
+                      <button 
+                        onClick={() => setIsEditingNickname(false)}
+                        className="flex-1 py-1.5 bg-[#2B3139] text-[#EAECEF] text-xs font-bold rounded hover:bg-[#3B424B] active:scale-95 transition-all"
+                      >
+                        {lang === "ko" ? "취소" : lang === "en" ? "Cancel" : "取消"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-1 flex items-center space-x-2">
+                    <span className="text-sm text-[#FCD535] font-semibold truncate">{userNickname}</span>
+                    <button onClick={() => {
+                      setEditNicknameValue(userNickname);
+                      setIsEditingNickname(true);
+                    }} className="text-[#848E9C] hover:text-[#EAECEF] flex-shrink-0 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                    </button>
+                  </div>
+                )}
+
+                <button onClick={handleLogout} className="text-xs text-[#F6465D] mt-4 flex items-center hover:opacity-80 transition-opacity">
                   <LogOut size={12} className="mr-1" /> {t.logout}
                 </button>
               </div>
