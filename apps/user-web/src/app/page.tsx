@@ -28,7 +28,7 @@ const MOCK_SPONSOR: SponsorMember[] = [];
 
 const STAR_COLORS = ["", "#FCD535", "#C0C0C0", "#CD7F32", "#0ECB81", "#BF5AF2", "#FF9F0A", "#F6465D"];
 function StarBadge({ level }: { level: number }) {
-  if (level === 0) return <span className="text-[10px] text-[#848E9C] font-semibold">Normal</span>;
+  if (level === 0) return <span className="text-[10px] text-[#0ECB81] font-semibold">Normal</span>;
   return (
     <span className="flex items-center space-x-0.5">
       {Array.from({ length: level }).map((_, i) => (
@@ -2341,7 +2341,7 @@ export default function MobileApp() {
                   <div className="relative flex flex-col items-center">
                     <div className="bg-[#FCD535] text-[#0B0E11] rounded-2xl px-6 py-3 shadow-[0_0_25px_rgba(252,213,53,0.35)] text-center">
                       <div className="flex items-center justify-center space-x-1.5">
-                        <span className="text-sm font-black">👑 User ({lang === "ko" ? "나" : lang === "en" ? "Me" : "我"})</span>
+                        <span className="text-sm font-black">👑 {userNickname}</span>
                         <StarBadge level={0} />
                       </div>
                       <p className="text-[10px] font-bold opacity-80 mt-0.5">
