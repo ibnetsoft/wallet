@@ -11,10 +11,10 @@ const NICKNAME_REGEX = /^[A-Za-z][A-Za-z0-9]{2,19}$/;
 
 function validateNickname(value: string): string {
   if (!value) return "";
-  if (value.length < 3) return "3자 이상 입력하세요 · At least 3 characters";
-  if (value.length > 20) return "20자 이하로 입력하세요 · Max 20 characters";
-  if (!/^[A-Za-z]/.test(value)) return "영문으로 시작해야 합니다 · Must start with a letter";
-  if (!/^[A-Za-z0-9]+$/.test(value)) return "영문·숫자만 사용 가능합니다 · Only letters & numbers";
+  if (value.length < 3) return "请输入至少3个字符";
+  if (value.length > 20) return "最多20个字符";
+  if (!/^[A-Za-z]/.test(value)) return "必须以英文字母开头";
+  if (!/^[A-Za-z0-9]+$/.test(value)) return "只能使用英文字母和数字";
   return "";
 }
 
@@ -22,10 +22,14 @@ function RegisterForm() {
   const supabase = createClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [nickname, setNickname] = useState("");
   const [nicknameError, setNicknameError] = useState("");
   const [nicknameTouched, setNicknameTouched] = useState(false);
   const [referralCode, setReferralCode] = useState("URC883920");
+
+  const [verifyCode, setVerifyCode] = useState("");
+  const [codeSent, setCodeSent] = useState(false);
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -60,7 +64,17 @@ function RegisterForm() {
     const nickErr = validateNickname(nickname);
     if (nickErr || !isNicknameValid) {
       setNicknameTouched(true);
-      setNicknameError(nickErr || "유효한 닉네임(ID)을 입력하세요 · Enter a valid nickname");
+      setNicknameError(nickErr || "请输入有效的昵称(ID)");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("两次输入的密码不一致！");
+      return;
+    }
+
+    if (!codeSent || verifyCode.length !== 6) {
+      setError("请先发送并输入6位邮箱验证码！");
       return;
     }
 
@@ -131,28 +145,62 @@ function RegisterForm() {
 
         {/* 이메일 */}
         <div className="space-y-1">
-          <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1">
-            邮箱地址 (이메일)
+          <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1 flex items-center gap-1.5">
+            邮箱地址
+            <span className="text-[#F6465D] font-black">*</span>
           </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#848E9C]">
-              <Mail size={16} />
+          <div className="flex space-x-2">
+            <div className="relative flex-1">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#848E9C]">
+                <Mail size={16} />
+              </div>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="name@example.com"
+                className="w-full bg-[#1E2329] border border-[#2B3139] focus:border-[#FCD535] pl-11 pr-4 py-3 rounded text-sm text-[#EAECEF] font-semibold outline-none transition-colors"
+              />
             </div>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              placeholder="name@example.com"
-              className="w-full bg-[#1E2329] border border-[#2B3139] focus:border-[#FCD535] pl-11 pr-4 py-3 rounded text-sm text-[#EAECEF] font-semibold outline-none transition-colors"
-            />
+            <button
+              type="button"
+              onClick={() => {
+                if(!email) return alert("请输入邮箱地址！");
+                alert("验证码已发送至 " + email);
+                setCodeSent(true);
+              }}
+              className="px-4 bg-[#2B3139] hover:bg-[#3B424B] text-[#EAECEF] text-xs font-bold rounded transition-colors whitespace-nowrap"
+            >
+              发送验证码
+            </button>
           </div>
         </div>
+
+        {/* 인증번호 입력 */}
+        {codeSent && (
+          <div className="space-y-1">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#848E9C]">
+                <CheckCircle2 size={16} />
+              </div>
+              <input
+                type="text"
+                value={verifyCode}
+                onChange={(e) => setVerifyCode(e.target.value)}
+                required
+                maxLength={6}
+                placeholder="请输入6位验证码 (예: 123456)"
+                className="w-full bg-[#1E2329] border border-[#2B3139] focus:border-[#0ECB81] pl-11 pr-4 py-3 rounded text-sm text-[#0ECB81] font-semibold outline-none transition-colors tracking-widest"
+              />
+            </div>
+          </div>
+        )}
 
         {/* 닉네임(ID) */}
         <div className="space-y-1">
           <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1 flex items-center gap-1.5">
-            昵称 · ID (닉네임)
+            昵称 · ID
             <span className="text-[#F6465D] font-black">*</span>
           </label>
           <div className="relative">
@@ -176,7 +224,7 @@ function RegisterForm() {
               required
               maxLength={21}
               autoComplete="username"
-              placeholder="예: JohnDoe123 (영문으로 시작)"
+              placeholder="例如: JohnDoe123 (以英文字母开头)"
               className={`w-full bg-[#1E2329] border pl-11 pr-10 py-3 rounded text-sm text-[#EAECEF] font-semibold outline-none transition-colors ${
                 nicknameTouched
                   ? isNicknameValid
@@ -208,7 +256,7 @@ function RegisterForm() {
           {/* 조건 안내 — 에러 없을 때만 */}
           {!nicknameError && (
             <p className="text-[10px] text-[#848E9C] ml-1">
-              영문으로 시작 · 영문+숫자 · 3~20자 · 특수문자 불가
+              以英文字母开头 · 仅限英文字母和数字 · 3~20个字符
             </p>
           )}
 
@@ -226,8 +274,9 @@ function RegisterForm() {
 
         {/* 비밀번호 */}
         <div className="space-y-1">
-          <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1">
-            密码 (비밀번호)
+          <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1 flex items-center gap-1.5">
+            密码
+            <span className="text-[#F6465D] font-black">*</span>
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#848E9C]">
@@ -238,17 +287,44 @@ function RegisterForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              placeholder="8자리 이상 / 最少 8 个字符"
+              placeholder="最少 8 个字符"
               minLength={8}
               className="w-full bg-[#1E2329] border border-[#2B3139] focus:border-[#FCD535] pl-11 pr-4 py-3 rounded text-sm text-[#EAECEF] font-semibold outline-none transition-colors"
             />
           </div>
         </div>
 
+        {/* 비밀번호 확인 */}
+        <div className="space-y-1">
+          <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1 flex items-center gap-1.5">
+            确认密码
+            <span className="text-[#F6465D] font-black">*</span>
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#848E9C]">
+              <Lock size={16} />
+            </div>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              placeholder="请再次输入密码"
+              minLength={8}
+              className={`w-full bg-[#1E2329] border pl-11 pr-4 py-3 rounded text-sm text-[#EAECEF] font-semibold outline-none transition-colors ${
+                confirmPassword && password !== confirmPassword
+                  ? "border-[#F6465D] focus:border-[#F6465D]"
+                  : "border-[#2B3139] focus:border-[#FCD535]"
+              }`}
+            />
+          </div>
+        </div>
+
         {/* 추천코드 */}
         <div className="space-y-1">
-          <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1">
-            邀请码 (추천코드 - 필수)
+          <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1 flex items-center gap-1.5">
+            邀请码
+            <span className="text-[#F6465D] font-black">*</span>
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#848E9C]">
@@ -259,7 +335,7 @@ function RegisterForm() {
               value={referralCode}
               onChange={(e) => setReferralCode(e.target.value)}
               required
-              placeholder="추천코드 / 邀请码"
+              placeholder="邀请码"
               className="w-full bg-[#1E2329] border border-[#2B3139] focus:border-[#FCD535] pl-11 pr-4 py-3 rounded text-sm text-[#EAECEF] font-semibold outline-none transition-colors"
             />
           </div>
@@ -274,7 +350,7 @@ function RegisterForm() {
             <div className="w-5 h-5 border-2 border-[#0B0E11]/20 border-t-[#0B0E11] rounded-full animate-spin" />
           ) : (
             <>
-              <span>注册 (회원가입)</span>
+              <span>注册</span>
               <ArrowRight size={16} />
             </>
           )}
