@@ -198,8 +198,21 @@ interface UnpaidMember {
 export default function MobileApp() {
   const supabase = createClient();
   const router = useRouter();
-  const [lang, setLang] = useState<Language>("ko");
+  const [lang, setLang] = useState<Language>("zh");
   const t = I18N[lang];
+
+  useEffect(() => {
+    const saved = localStorage.getItem("urc_lang");
+    if (saved === "zh" || saved === "en" || saved === "ko") {
+      setLang(saved as Language);
+    }
+  }, []);
+
+  const changeLang = (l: Language) => {
+    setLang(l);
+    localStorage.setItem("urc_lang", l);
+  };
+
   const [activeTab, setActiveTab] = useState<TabType>("home");
   const [networkTab, setNetworkTab] = useState<NetworkTabType>("referral");
   const [referralCopied, setReferralCopied] = useState(false);
@@ -2519,20 +2532,21 @@ export default function MobileApp() {
               </div>
               <div className="grid grid-cols-3 gap-2 pt-1">
                 {[
-                  { code: "zh", label: "🇨🇳 中文" },
-                  { code: "en", label: "🇺🇸 English" },
-                  { code: "ko", label: "🇰🇷 한국어" },
+                  { code: "zh", src: "https://flagcdn.com/w40/cn.png", label: "中文" },
+                  { code: "en", src: "https://flagcdn.com/w40/gb.png", label: "English" },
+                  { code: "ko", src: "https://flagcdn.com/w40/kr.png", label: "한국어" },
                 ].map((l) => (
                   <button
                     key={l.code}
-                    onClick={() => setLang(l.code as Language)}
-                    className={`py-2.5 px-3 rounded-lg text-xs font-bold transition-all border ${
+                    onClick={() => changeLang(l.code as Language)}
+                    className={`flex flex-col items-center justify-center space-y-1.5 py-3 px-2 rounded-lg text-xs font-bold transition-all border ${
                       lang === l.code
-                        ? "bg-[#FCD535] text-[#0B0E11] border-[#FCD535]"
-                        : "bg-[#0B0E11] text-[#848E9C] border-[#2B3139] hover:text-[#EAECEF]"
+                        ? "bg-[#FCD535] text-[#0B0E11] border-[#FCD535] shadow-[0_0_10px_rgba(252,213,53,0.3)]"
+                        : "bg-[#0B0E11] text-[#848E9C] border-[#2B3139] hover:text-[#EAECEF] hover:border-[#848E9C]"
                     }`}
                   >
-                    {l.label}
+                    <img src={l.src} alt={l.label} className="w-6 h-auto rounded-sm shadow-sm" />
+                    <span>{l.label}</span>
                   </button>
                 ))}
               </div>

@@ -152,7 +152,7 @@ export default function LoginPage() {
           <img src="https://flagcdn.com/w40/cn.png" alt="中文" className="w-7 h-auto rounded-sm shadow-md" />
         </button>
         <button onClick={() => changeLang("en")} className={`transition-all ${lang === "en" ? "scale-125 grayscale-0 ring-2 ring-[#FCD535] rounded-sm" : "grayscale opacity-50 hover:grayscale-0 hover:opacity-100 hover:scale-110"}`} title="English">
-          <img src="https://flagcdn.com/w40/us.png" alt="English" className="w-7 h-auto rounded-sm shadow-md" />
+          <img src="https://flagcdn.com/w40/gb.png" alt="English" className="w-7 h-auto rounded-sm shadow-md" />
         </button>
         <button onClick={() => changeLang("ko")} className={`transition-all ${lang === "ko" ? "scale-125 grayscale-0 ring-2 ring-[#FCD535] rounded-sm" : "grayscale opacity-50 hover:grayscale-0 hover:opacity-100 hover:scale-110"}`} title="한국어">
           <img src="https://flagcdn.com/w40/kr.png" alt="한국어" className="w-7 h-auto rounded-sm shadow-md" />
