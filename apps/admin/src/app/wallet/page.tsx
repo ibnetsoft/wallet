@@ -52,7 +52,7 @@ export default function WalletSweepPage() {
   const [vaultMsg, setVaultMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   // ── 자체 지갑 생성 상태 ──
-  const [generatedWallet, setGeneratedWallet] = useState<{ address: string; privateKey: string } | null>(null);
+
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -116,32 +116,7 @@ export default function WalletSweepPage() {
 
   const totalSweepable = userWallets.reduce((acc, w) => acc + (w.usdt_balance ?? 0), 0);
 
-  // ── 자체 지갑 주소 생성 ──
-  const handleGenerateWallet = async () => {
-    if (!confirm("새로운 마스터 핫 지갑 주소를 자체 생성하시겠습니까?\n기존에 설정된 마스터 지갑 주소가 대체됩니다.")) return;
-    try {
-      const wallet = ethers.Wallet.createRandom();
-      setGeneratedWallet({
-        address: wallet.address,
-        privateKey: wallet.privateKey
-      });
-      
-      const res = await fetch("/api/wallet/setup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address: wallet.address })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setMasterHotWallet(wallet.address);
-        setHotBalanceUSDT(0);
-      } else {
-        alert("지갑 주소를 DB에 저장하는데 실패했습니다: " + data.error);
-      }
-    } catch (e: any) {
-      alert("지갑 생성 오류: " + e.message);
-    }
-  };
+
 
   // ── 스윕: API를 통해 DB 트랜잭션 수행 ──
   const handleSweep = async () => {
@@ -292,20 +267,13 @@ export default function WalletSweepPage() {
           <div className="p-3 bg-[#121215] rounded-xl border border-[#26262B] space-y-2">
             <div className="flex justify-between items-center">
               <label className="text-[10px] text-[#8E8E93] uppercase font-bold">마스터 핫 지갑 주소 (수신처)</label>
-              <button
-                type="button"
-                onClick={handleGenerateWallet}
-                className="px-2.5 py-1 bg-[#BF5AF2]/10 hover:bg-[#BF5AF2]/20 border border-[#BF5AF2]/30 text-[#BF5AF2] text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
-              >
-                지갑 자체 생성
-              </button>
             </div>
             <div className="flex items-center space-x-2 mt-2">
               <Wallet size={16} className="text-[#00D2FF] flex-shrink-0" />
               {masterHotWallet ? (
                 <span className="text-white font-mono text-xs break-all">{masterHotWallet}</span>
               ) : (
-                <span className="text-[#FF453A] text-xs">⚠️ 설정되지 않음 (지갑 자체 생성 버튼을 클릭해 지갑을 생성하세요)</span>
+                <span className="text-[#FF453A] text-xs">⚠️ 설정되지 않음 (시스템 환경 설정 메뉴에서 핫 지갑을 생성 및 등록하세요)</span>
               )}
             </div>
           </div>
@@ -550,40 +518,7 @@ export default function WalletSweepPage() {
         )}
       </div>
 
-      {/* ━━━━ 자체 지갑 생성 확인 팝업/모달 ━━━━ */}
-      {generatedWallet && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#16161A] border border-[#26262B] rounded-2xl max-w-md w-full shadow-2xl p-6 relative">
-            <h3 className="text-base font-bold text-white mb-4 flex items-center space-x-2 text-[#0ECB81]">
-              <CheckCircle size={18} />
-              <span>신규 마스터 핫 지갑 자체 생성 완료</span>
-            </h3>
-            <p className="text-xs text-[#8E8E93] mb-4 leading-relaxed">
-              새로운 EVM(이더리움/바이낸스 체인) 지갑이 무작위로 자체 생성되었습니다. 
-              <strong>개인키는 서버나 DB에 보관되지 않으므로 반드시 안전한 곳에 즉시 복사하여 보관하세요!</strong>
-            </p>
 
-            <div className="space-y-4 font-sans">
-              <div className="p-3 bg-[#121215] rounded-xl border border-[#26262B]">
-                <label className="text-[10px] text-[#8E8E93] uppercase font-bold">생성된 지갑 주소</label>
-                <p className="text-xs font-mono font-bold text-white mt-1 break-all select-all">{generatedWallet.address}</p>
-              </div>
-
-              <div className="p-3 bg-[#121215] rounded-xl border border-[#FF453A]/20">
-                <label className="text-[10px] text-[#FF453A] uppercase font-bold">개인키 (Private Key) - 노출 주의!</label>
-                <p className="text-xs font-mono font-bold text-[#FF453A] mt-1 break-all select-all">{generatedWallet.privateKey}</p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setGeneratedWallet(null)}
-              className="w-full py-3.5 mt-6 bg-[#0ECB81] hover:bg-[#0ECB81]/90 text-black font-black rounded-xl text-xs active:scale-95 transition-transform cursor-pointer"
-            >
-              확인하고 닫기
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
