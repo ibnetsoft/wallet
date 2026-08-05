@@ -1789,8 +1789,12 @@ export default function MobileApp() {
 
                   <div className="space-y-2">
                     <div className="flex justify-between items-center text-xs">
-                      <span className="text-[#848E9C] font-bold">{t.selectPlayCount}</span>
-                      <span className="text-[#FCD535] font-bold">{t.totalCost}: {manualBetsCount * 1} {lang === "ko" ? "옥구슬" : lang === "en" ? "Bead(s)" : "个玉珠"}</span>
+                      <span className="text-[#848E9C] font-bold">
+                        {lang === "ko" ? "회당 참여 횟수 (1회당 옥구슬 1개)" : lang === "en" ? "Play Count (1 Jade Bead each)" : "每轮参与次数 (每轮 1 个玉珠)"}
+                      </span>
+                      <span className="text-[#FCD535] font-bold text-[11px]">
+                        {lang === "ko" ? "소모" : lang === "en" ? "Cost" : "消耗"}: {manualBetsCount} {lang === "ko" ? "옥구슬" : lang === "en" ? "Jade" : "玉"}
+                      </span>
                     </div>
                     
                     <div className="flex items-center space-x-2">
@@ -1833,6 +1837,24 @@ export default function MobileApp() {
                       >
                         +
                       </button>
+                    </div>
+
+                    {/* 빠른 선택 칩 */}
+                    <div className="flex space-x-2">
+                      {[1, 5, 10, 30, 50].map((n) => (
+                        <button
+                          key={n}
+                          type="button"
+                          onClick={() => setManualBetsCount(n)}
+                          className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold border transition-all ${
+                            manualBetsCount === n
+                              ? "bg-[#FCD535]/20 border-[#FCD535] text-[#FCD535]"
+                              : "bg-[#0B0E11] border-[#2B3139] text-[#848E9C] hover:border-[#FCD535]/50 hover:text-[#EAECEF]"
+                          }`}
+                        >
+                          {n}
+                        </button>
+                      ))}
                     </div>
                   </div>
 
