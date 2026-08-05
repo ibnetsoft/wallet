@@ -148,14 +148,14 @@ export default function LoginPage() {
 
       {/* 언어 선택 */}
       <div className="mt-8 flex justify-center items-center space-x-6 relative z-10">
-        <button onClick={() => changeLang("zh")} className={`text-2xl transition-all ${lang === "zh" ? "scale-125 grayscale-0" : "grayscale opacity-50 hover:grayscale-0 hover:opacity-100"}`} title="中文">
-          🇨🇳
+        <button onClick={() => changeLang("zh")} className={`transition-all ${lang === "zh" ? "scale-125 grayscale-0 ring-2 ring-[#FCD535] rounded-sm" : "grayscale opacity-50 hover:grayscale-0 hover:opacity-100 hover:scale-110"}`} title="中文">
+          <img src="https://flagcdn.com/w40/cn.png" alt="中文" className="w-7 h-auto rounded-sm shadow-md" />
         </button>
-        <button onClick={() => changeLang("en")} className={`text-2xl transition-all ${lang === "en" ? "scale-125 grayscale-0" : "grayscale opacity-50 hover:grayscale-0 hover:opacity-100"}`} title="English">
-          🇺🇸
+        <button onClick={() => changeLang("en")} className={`transition-all ${lang === "en" ? "scale-125 grayscale-0 ring-2 ring-[#FCD535] rounded-sm" : "grayscale opacity-50 hover:grayscale-0 hover:opacity-100 hover:scale-110"}`} title="English">
+          <img src="https://flagcdn.com/w40/us.png" alt="English" className="w-7 h-auto rounded-sm shadow-md" />
         </button>
-        <button onClick={() => changeLang("ko")} className={`text-2xl transition-all ${lang === "ko" ? "scale-125 grayscale-0" : "grayscale opacity-50 hover:grayscale-0 hover:opacity-100"}`} title="한국어">
-          🇰🇷
+        <button onClick={() => changeLang("ko")} className={`transition-all ${lang === "ko" ? "scale-125 grayscale-0 ring-2 ring-[#FCD535] rounded-sm" : "grayscale opacity-50 hover:grayscale-0 hover:opacity-100 hover:scale-110"}`} title="한국어">
+          <img src="https://flagcdn.com/w40/kr.png" alt="한국어" className="w-7 h-auto rounded-sm shadow-md" />
         </button>
       </div>
     </div>
