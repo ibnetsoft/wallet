@@ -43,7 +43,18 @@ export default function LoginPage() {
 
       if (error) {
         setError(error.message);
-      } else {
+      } else if (data?.user) {
+        // Record last login time
+        try {
+          await fetch('/api/auth/record-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: data.user.id })
+          });
+        } catch (e) {
+          console.error("Failed to record login time", e);
+        }
+
         console.log("Redirecting to dashboard...");
         router.push("/");
         router.refresh();

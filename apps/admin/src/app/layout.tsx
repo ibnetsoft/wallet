@@ -60,6 +60,10 @@ export default function RootLayout({
               <Wallet size={18} />
               <span>지갑 & 모으기 관리</span>
             </Link>
+            <Link href="/transactions" className="flex items-center space-x-3 px-4 py-3 rounded-xl text-[#8E8E93] hover:bg-[#1C1C21] hover:text-[#FFFFFF] transition-all">
+              <Activity size={18} />
+              <span>전체 거래 내역 (장부)</span>
+            </Link>
             <Link href="/settings" className="flex items-center space-x-3 px-4 py-3 rounded-xl text-[#8E8E93] hover:bg-[#1C1C21] hover:text-[#FFFFFF] transition-all">
               <Settings size={18} />
               <span>시스템 환경 설정</span>
