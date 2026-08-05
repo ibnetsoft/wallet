@@ -22,22 +22,9 @@ interface SponsorMember {
   tier: number; isRolledIn: boolean; originalRecommender?: string; salesVolume: number;
 }
 
-const MOCK_DIRECT: DirectMember[] = [
-  { id: "u1", nickname: "User_01", status: "ACTIVE", referralSeq: 1, totalPurchase: 500, isRollup: false },
-  { id: "u2", nickname: "User_02", status: "ACTIVE", referralSeq: 2, totalPurchase: 100, isRollup: false },
-  { id: "u3", nickname: "User_03", status: "ACTIVE", referralSeq: 3, totalPurchase: 1000, isRollup: true },
-  { id: "u4", nickname: "User_04", status: "ACTIVE", referralSeq: 4, totalPurchase: 100, isRollup: false },
-  { id: "u5", nickname: "User_05", status: "ACTIVE", referralSeq: 5, totalPurchase: 500, isRollup: false },
-  { id: "u6", nickname: "User_06", status: "PENDING", referralSeq: 6, totalPurchase: 1000, isRollup: true },
-];
+const MOCK_DIRECT: DirectMember[] = [];
 
-const MOCK_SPONSOR: SponsorMember[] = [
-  { id: "u1", nickname: "User_01", status: "ACTIVE", tier: 1, isRolledIn: false, salesVolume: 500 },
-  { id: "u2", nickname: "User_02", status: "ACTIVE", tier: 1, isRolledIn: false, salesVolume: 100 },
-  { id: "u4", nickname: "User_04", status: "ACTIVE", tier: 1, isRolledIn: false, salesVolume: 100 },
-  { id: "u5", nickname: "User_05", status: "ACTIVE", tier: 1, isRolledIn: false, salesVolume: 500 },
-  { id: "u1-3", nickname: "User_01 (3rd)", status: "ACTIVE", tier: 1, isRolledIn: true, originalRecommender: "User_01", salesVolume: 1000 },
-];
+const MOCK_SPONSOR: SponsorMember[] = [];
 
 const STAR_COLORS = ["", "#FCD535", "#C0C0C0", "#CD7F32", "#0ECB81", "#BF5AF2", "#FF9F0A", "#F6465D"];
 function StarBadge({ level }: { level: number }) {
@@ -425,10 +412,7 @@ export default function MobileApp() {
   };
 
   // Purchased Active Game Machines
-  const [myMachines, setMyMachines] = useState<ActiveMachine[]>([
-    { id: "m-1", level: 1, name: "상운 게임기", price: 100, urdBonus: 100, payoutCap: 200, accumulatedPayout: 50, purchasedAt: "2026-07-21" },
-    { id: "m-2", level: 3, name: "홍운 게임기", price: 1000, urdBonus: 1200, payoutCap: 3000, accumulatedPayout: 800, purchasedAt: "2026-07-21" },
-  ]);
+  const [myMachines, setMyMachines] = useState<ActiveMachine[]>([]);
 
   // Purchase Confirmation Modal State
   const [confirmPurchaseModal, setConfirmPurchaseModal] = useState<{
@@ -485,14 +469,8 @@ export default function MobileApp() {
       setPurchaseSuccessEffect(null);
     }, 3500);
   };
-  const [directTree] = useState([
-    { id: 1, nickname: "User A", referralSeq: 1, status: "ACTIVE" },
-    { id: 2, nickname: "User B", referralSeq: 2, status: "INACTIVE" }
-  ]);
-  const [sponsorTree] = useState([
-    { id: 3, nickname: "User C", tier: 1, status: "ACTIVE" },
-    { id: 4, nickname: "User D", tier: 2, status: "ACTIVE" }
-  ]);
+  const [directTree] = useState<any[]>([]);
+  const [sponsorTree] = useState<any[]>([]);
   const [userEmail, setUserEmail] = useState("user@bao369.com");
   const [userNickname, setUserNickname] = useState("User");
   const [isEditingNickname, setIsEditingNickname] = useState(false);
@@ -500,11 +478,11 @@ export default function MobileApp() {
   const [nicknameUpdateLoading, setNicknameUpdateLoading] = useState(false);
   const [userId, setUserId] = useState("");
   const [countdown, setCountdown] = useState("");
-  const [urdBalance, setUrdBalance] = useState(3000);
-  const [hongbaoCount, setHongbaoCount] = useState(4);
-  const [baoBalance, setBaoBalance] = useState(120);
-  const [usdtBalance, setUsdtBalance] = useState(10500.00);
-  const [urcBalance, setUrcBalance] = useState(4980.00);
+  const [urdBalance, setUrdBalance] = useState(0);
+  const [hongbaoCount, setHongbaoCount] = useState(0);
+  const [baoBalance, setBaoBalance] = useState(0);
+  const [usdtBalance, setUsdtBalance] = useState(0);
+  const [urcBalance, setUrcBalance] = useState(0);
   const [fromAmount, setFromAmount] = useState("");
   const [toAmount, setToAmount] = useState("");
   const [isUsdtToUrc, setIsUsdtToUrc] = useState(true);
@@ -514,7 +492,7 @@ export default function MobileApp() {
   const [depositToken, setDepositToken] = useState<"USDT" | "URC">("USDT");
   const [loadingNetwork, setLoadingNetwork] = useState(false);
   
-  const [userDepositAddress] = useState("0x3a9B8f5C01A29D478b1E4109C2d4317e1D4A8912");
+  const [userDepositAddress] = useState("");
   const [addressCopied, setAddressCopied] = useState(false);
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
