@@ -205,10 +205,7 @@ export default function MobileApp() {
   const [referralCopied, setReferralCopied] = useState(false);
 
   // Pending Unpurchased Members List
-  const [unpaidMembers, setUnpaidMembers] = useState<UnpaidMember[]>([
-    { id: "URC10002", nickname: "User B", email: "", joinedAt: "2026-07-21" },
-    { id: "URC10005", nickname: "User E", email: "", joinedAt: "2026-07-20" },
-  ]);
+  const [unpaidMembers, setUnpaidMembers] = useState<UnpaidMember[]>([]);
 
   const handleDismissUnpaidMember = (id: string) => {
     setUnpaidMembers((prev) => prev.filter((m) => m.id !== id));
@@ -216,28 +213,7 @@ export default function MobileApp() {
 
   // Notifications Modal & List State
   const [showNotifModal, setShowNotifModal] = useState(false);
-  const [notifications, setNotifications] = useState<GameNotification[]>([
-    {
-      id: "n-1",
-      round: "1회차",
-      time: "12:30",
-      title: "🎉 1회차 AI 당첨 결과 발표",
-      resultType: "USDT_WIN",
-      rewardText: "금전 당첨! (+102.00 USDT 지불 완료)",
-      createdAt: "12:30:05",
-      read: false,
-    },
-    {
-      id: "n-2",
-      round: "2회차",
-      time: "15:30",
-      title: "🪙 2회차 AI 당첨 결과 발표",
-      resultType: "COIN_WIN",
-      rewardText: "옥보 당첨! (+80.00 USDT, +40 옥구슬 지급 완료)",
-      createdAt: "15:30:02",
-      read: false,
-    },
-  ]);
+  const [notifications, setNotifications] = useState<GameNotification[]>([]);
 
   // Scheduled Game Engine States
   const [gameBetMode, setGameBetMode] = useState<"manual" | "auto">("manual");
@@ -276,9 +252,7 @@ export default function MobileApp() {
     touchStartDist.current = null;
   };
   const [manualBetsCount, setManualBetsCount] = useState<number>(1);
-  const [myBets, setMyBets] = useState<GameBetRecord[]>([
-    { id: "b-1", round: 1, betsCount: 2, urdSpent: 2, status: "WAITING", betAt: "11:45" },
-  ]);
+  const [myBets, setMyBets] = useState<GameBetRecord[]>([]);
 
   // Auto Betting Settings State
   const [autoSettings, setAutoSettings] = useState({
@@ -770,7 +744,7 @@ export default function MobileApp() {
               </h2>
               <div className="flex items-center space-x-1.5 text-[#0ECB81] text-xs font-bold mt-1.5">
                 <TrendingUp size={12} />
-                <span>+12.4% (24h)</span>
+                <span>0.00% (24h)</span>
               </div>
               <div className="grid grid-cols-3 gap-4 mt-5 pt-4 border-t border-[#2B3139]">
                 <div>
@@ -1027,15 +1001,15 @@ export default function MobileApp() {
               <div className="grid grid-cols-3 gap-2 pt-1 border-t border-[#2B3139]/60">
                 <div>
                   <p className="text-[10px] font-bold text-[#848E9C]">{t.initialBalance}</p>
-                  <p className="text-xs font-bold text-[#EAECEF] mt-1">$10,000.00</p>
+                  <p className="text-xs font-bold text-[#EAECEF] mt-1">$0.00</p>
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-[#848E9C]">{t.totalProfit}</p>
-                  <p className="text-xs font-bold text-[#0ECB81] mt-1">+$500.00</p>
+                  <p className="text-xs font-bold text-[#0ECB81] mt-1">$0.00</p>
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-[#848E9C]">{t.yieldRate}</p>
-                  <p className="text-xs font-bold text-[#0ECB81] mt-1">+5.00%</p>
+                  <p className="text-xs font-bold text-[#0ECB81] mt-1">0.00%</p>
                 </div>
               </div>
 
@@ -1371,14 +1345,7 @@ export default function MobileApp() {
 
                 {/* ── 입출금 탭 ── */}
                 {walletHistoryTab === "tx" && (() => {
-                  const txList = [
-                    { id: "h1",  type: lang === "ko" ? "입금 완료"      : "Deposit",   amount: "+500.00 USDT",   time: "2026-07-21 14:20", status: lang === "ko" ? "성공" : "Success",   isPlus: true },
-                    { id: "h6",  type: lang === "ko" ? "게임기 구매"    : "Machine Purchase", amount: "-500.00 USDT", time: "2026-07-20 18:10", status: lang === "ko" ? "완료" : "Done",    isPlus: false },
-                    { id: "h8",  type: lang === "ko" ? "1회차 게임 당첨": "Round 1 Win", amount: "+102.00 USDT", time: "2026-07-18 12:30", status: lang === "ko" ? "지급완료" : "Paid",    isPlus: true },
-                    { id: "h9",  type: lang === "ko" ? "게임기 구매"    : "Machine Purchase", amount: "-100.00 USDT", time: "2026-07-17 09:15", status: lang === "ko" ? "완료" : "Done",    isPlus: false },
-                    { id: "h10", type: lang === "ko" ? "입금 완료"      : "Deposit",   amount: "+1,000.00 USDT", time: "2026-07-16 16:40", status: lang === "ko" ? "성공" : "Success",   isPlus: true },
-                    { id: "h12", type: lang === "ko" ? "3회차 게임 당첨": "Round 3 Win", amount: "+50.00 USDT",   time: "2026-07-14 18:30", status: lang === "ko" ? "지급완료" : "Paid",    isPlus: true },
-                  ];
+                  const txList: any[] = [];
                   const pp = 10;
                   const tp = Math.ceil(txList.length / pp);
                   const items = txList.slice((historyPage - 1) * pp, historyPage * pp);
@@ -1424,20 +1391,7 @@ export default function MobileApp() {
                     mother: lang === "ko" ? "엄마 보너스"   : lang === "en" ? "Mother Bonus" : "母体奖",
                     rank:   lang === "ko" ? "직급 보너스"   : lang === "en" ? "Rank Bonus" : "平级奖",
                   };
-                  const bonusList: { id: string; type: BonusTypeKey; fromName: string; fromId: string; reason: string; amount: string; time: string; }[] = [
-                    { id: "b1",  type: "direct", fromName: "User A", fromId: "URC883921", reason: lang === "ko" ? "홍운 게임기 구매" : "HongYun Machine Purchase",  amount: "+200.00", time: "2026-07-21 12:30" },
-                    { id: "b2",  type: "mentor", fromName: "User B", fromId: "URC883922", reason: lang === "ko" ? "자광 게임기 구매" : "ZiGuang Machine Purchase",  amount: "+50.00",  time: "2026-07-21 12:30" },
-                    { id: "b3",  type: "mother", fromName: "User C", fromId: "URC883923", reason: lang === "ko" ? "상운 게임기 구매" : "ShangYun Machine Purchase", amount: "+50.00",  time: "2026-07-21 12:30" },
-                    { id: "b4",  type: "rank",   fromName: "User D", fromId: "URC883924", reason: lang === "ko" ? "직급 승급 달성"   : "Rank Promotion Achieved",   amount: "+50.00",  time: "2026-07-21 12:30" },
-                    { id: "b5",  type: "direct", fromName: "User E", fromId: "URC883925", reason: lang === "ko" ? "홍운 게임기 구매" : "HongYun Machine Purchase",  amount: "+100.00", time: "2026-07-15 11:20" },
-                    { id: "b6",  type: "mentor", fromName: "User F", fromId: "URC883926", reason: lang === "ko" ? "자광 게임기 구매" : "ZiGuang Machine Purchase",  amount: "+30.00",  time: "2026-07-14 09:45" },
-                    { id: "b7",  type: "direct", fromName: "User G", fromId: "URC883927", reason: lang === "ko" ? "상운 게임기 구매" : "ShangYun Machine Purchase", amount: "+20.00",  time: "2026-07-12 17:10" },
-                    { id: "b8",  type: "mother", fromName: "User H", fromId: "URC883928", reason: lang === "ko" ? "홍운 게임기 구매" : "HongYun Machine Purchase",  amount: "+100.00", time: "2026-07-10 14:22" },
-                    { id: "b9",  type: "rank",   fromName: "User I", fromId: "URC883929", reason: lang === "ko" ? "직급 승급 달성"   : "Rank Promotion Achieved",   amount: "+75.00",  time: "2026-07-08 08:55" },
-                    { id: "b10", type: "direct", fromName: "User J", fromId: "URC883930", reason: lang === "ko" ? "자광 게임기 구매" : "ZiGuang Machine Purchase",  amount: "+100.00", time: "2026-07-05 20:40" },
-                    { id: "b11", type: "mentor", fromName: "User K", fromId: "URC883931", reason: lang === "ko" ? "상운 게임기 구매" : "ShangYun Machine Purchase", amount: "+20.00",  time: "2026-07-03 11:30" },
-                    { id: "b12", type: "direct", fromName: "User L", fromId: "URC883932", reason: lang === "ko" ? "홍운 게임기 구매" : "HongYun Machine Purchase",  amount: "+200.00", time: "2026-07-01 16:15" },
-                  ];
+                  const bonusList: { id: string; type: BonusTypeKey; fromName: string; fromId: string; reason: string; amount: string; time: string; }[] = [];
                   const pp = 8;
                   const tp = Math.ceil(bonusList.length / pp);
                   const items = bonusList.slice((bonusHistoryPage - 1) * pp, bonusHistoryPage * pp);
@@ -1500,10 +1454,7 @@ export default function MobileApp() {
                 {/* ── 스왑 탭 ── */}
                 {walletHistoryTab === "swap" && (
                   <div className="space-y-2">
-                    {[
-                      { id: "s1", from: "100.00 USDT", to: "99.50 URC",  rate: "1 USDT = 0.995 URC", time: "2026-07-19 11:05", status: lang === "ko" ? "성공" : "Success" },
-                      { id: "s2", from: "50.00 USDT",  to: "49.75 URC",  rate: "1 USDT = 0.995 URC", time: "2026-07-10 15:30", status: lang === "ko" ? "성공" : "Success" },
-                    ].map((s) => (
+                    {([] as { id: string, from: string, to: string, rate: string, time: string, status: string }[]).map((s) => (
                       <div key={s.id} className="bg-[#0B0E11] p-3 rounded-xl border border-[#2B3139]">
                         <div className="flex justify-between items-center">
                           <div className="flex items-center space-x-2">
@@ -2202,10 +2153,7 @@ export default function MobileApp() {
                 const activeGames = [
                   ...myBets.filter(b => b.status === "WAITING"),
                   // 샘플 진행중 데이터 (실서버 연동 전)
-                  ...(myBets.length === 0 ? [
-                    { id: "demo-a1", round: 2, betsCount: 3, urdSpent: 3, status: "WAITING" as const, betAt: "14:05" },
-                    { id: "demo-a2", round: 2, betsCount: 1, urdSpent: 1, status: "WAITING" as const, betAt: "14:12" },
-                  ] : []),
+                  ...(myBets.length === 0 ? [] : []),
                 ];
                 return (
                   <div className="space-y-2">
@@ -2243,11 +2191,7 @@ export default function MobileApp() {
 
               {/* ── 대기 탭 ── */}
               {gameStatusTab === "waiting" && (() => {
-                const waitingGames = [
-                  { id: "w1", round: 3, betsCount: 2, urdSpent: 2, drawTime: "18:30", betAt: "17:05" },
-                  { id: "w2", round: 3, betsCount: 5, urdSpent: 5, drawTime: "18:30", betAt: "17:22" },
-                  { id: "w3", round: 1, betsCount: 1, urdSpent: 1, drawTime: "12:30", betAt: "11:10" },
-                ];
+                const waitingGames: { id: string; round: number; betsCount: number; urdSpent: number; drawTime: string; betAt: string; }[] = [];
                 return (
                   <div className="space-y-2">
                     {waitingGames.map((g) => (
@@ -2280,13 +2224,7 @@ export default function MobileApp() {
 
               {/* ── 종료 탭 ── */}
               {gameStatusTab === "ended" && (() => {
-                const endedGames = [
-                  { id: "e1", round: 1, betsCount: 3, urdSpent: 3, betAt: "11:15", result: "WIN",  reward: "+306.00 USDT", date: "2026-07-21" },
-                  { id: "e2", round: 2, betsCount: 1, urdSpent: 1, betAt: "14:08", result: "LOSE", reward: "-",            date: "2026-07-21" },
-                  { id: "e3", round: 3, betsCount: 5, urdSpent: 5, betAt: "17:30", result: "WIN",  reward: "+510.00 USDT", date: "2026-07-20" },
-                  { id: "e4", round: 1, betsCount: 2, urdSpent: 2, betAt: "11:05", result: "LOSE", reward: "-",            date: "2026-07-20" },
-                  { id: "e5", round: 3, betsCount: 10,urdSpent: 10,betAt: "17:45", result: "WIN",  reward: "+1,020.00 USDT",date: "2026-07-18" },
-                ];
+                const endedGames: { id: string; round: number; betsCount: number; urdSpent: number; betAt: string; result: string; reward: string; date: string; }[] = [];
                 return (
                   <div className="space-y-2">
                     {endedGames.map((g) => (
@@ -2416,96 +2354,14 @@ export default function MobileApp() {
 
                   {/* Level 1 Horizontal Branch Bar */}
                   {networkTab === "referral" ? (
-                    /* ── 1. 추천 계보 (Direct Referral Tree): 내(Root) 직추천회원 User A, User B, User E 3명이 1대 가지에 나란히 배치 ── */
-                    <div className="relative w-full flex justify-center">
-                      <div className="absolute top-0 w-5/6 h-0.5 bg-[#2B3139]" />
-                      
-                      <div className="w-full grid grid-cols-3 gap-2 pt-4">
-                        {/* 1대 직추천 1: User A */}
-                        <div className="flex flex-col items-center">
-                          <div className="w-0.5 h-4 bg-[#2B3139] -mt-4 mb-1" />
-                          <div className="bg-[#1E2329] border border-[#0ECB81] rounded-xl p-3 text-center w-full max-w-[130px] shadow-md">
-                            <p className="text-xs font-bold text-[#EAECEF]">User A</p>
-                            <span className="text-[10px] font-mono text-[#0ECB81] font-bold mt-0.5 block">$500</span>
-                          </div>
-
-                          {/* User A가 추천한 2대 회원들 (User C, User D) */}
-                          <div className="w-0.5 h-4 bg-[#2B3139] my-1" />
-                          <div className="flex space-x-1.5">
-                            <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[75px]">
-                              <p className="text-[10px] font-bold text-[#EAECEF]">User C</p>
-                              <span className="text-[9px] font-mono text-[#0ECB81]">$100</span>
-                            </div>
-                            <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[75px]">
-                              <p className="text-[10px] font-bold text-[#EAECEF]">User D</p>
-                              <span className="text-[9px] font-mono text-[#0ECB81]">$1,000</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* 1대 직추천 2: User B */}
-                        <div className="flex flex-col items-center">
-                          <div className="w-0.5 h-4 bg-[#2B3139] -mt-4 mb-1" />
-                          <div className="bg-[#1E2329] border border-[#2B3139] rounded-xl p-3 text-center w-full max-w-[130px] shadow-md">
-                            <p className="text-xs font-bold text-[#EAECEF]">User B</p>
-                            <span className="text-[10px] text-[#848E9C] mt-0.5 block">URC10002</span>
-                          </div>
-                        </div>
-
-                        {/* 1대 직추천 3: User E */}
-                        <div className="flex flex-col items-center">
-                          <div className="w-0.5 h-4 bg-[#2B3139] -mt-4 mb-1" />
-                          <div className="bg-[#1E2329] border border-[#2B3139] rounded-xl p-3 text-center w-full max-w-[130px] shadow-md">
-                            <p className="text-xs font-bold text-[#EAECEF]">User E</p>
-                            <span className="text-[10px] text-[#848E9C] mt-0.5 block">URC10005</span>
-                          </div>
-                        </div>
-                      </div>
+                    /* ── 1. 추천 계보 (Direct Referral Tree) ── */
+                    <div className="relative w-full flex justify-center pt-8 pb-4">
+                      <p className="text-sm font-bold text-[#848E9C]">{lang === "ko" ? "아직 추천 회원이 없습니다" : lang === "en" ? "No referral members yet" : "暂无推荐会员"}</p>
                     </div>
                   ) : (
-                    /* ── 2. 후원 계보 (Sponsor Placement Tree): 지정된 후원 배치 위치로 표시 ── */
-                    <div className="relative w-full flex justify-center">
-                      <div className="absolute top-0 w-3/4 h-0.5 bg-[#2B3139]" />
-                      
-                      <div className="w-full flex justify-between pt-4">
-                        {/* Left Leg: User A */}
-                        <div className="flex flex-col items-center w-1/2">
-                          <div className="w-0.5 h-4 bg-[#2B3139] -mt-4 mb-1" />
-                          <div className="bg-[#1E2329] border border-[#0ECB81] rounded-xl p-3 text-center min-w-[135px] shadow-md">
-                            <p className="text-xs font-bold text-[#EAECEF]">User A</p>
-                            <span className="text-[10px] font-mono text-[#0ECB81] font-bold mt-0.5 block">$500</span>
-                          </div>
-
-                          {/* Level 2 Sub-Legs */}
-                          <div className="w-0.5 h-5 bg-[#2B3139] my-1" />
-                          <div className="flex space-x-2">
-                            <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[85px]">
-                              <p className="text-[10px] font-bold text-[#EAECEF]">User C</p>
-                              <span className="text-[9px] font-mono text-[#0ECB81]">$100</span>
-                            </div>
-                            <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[85px]">
-                              <p className="text-[10px] font-bold text-[#EAECEF]">User D</p>
-                              <span className="text-[9px] font-mono text-[#0ECB81]">$1,000</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Right Leg: User B */}
-                        <div className="flex flex-col items-center w-1/2">
-                          <div className="w-0.5 h-4 bg-[#2B3139] -mt-4 mb-1" />
-                          <div className="bg-[#1E2329] border border-[#2B3139] rounded-xl p-3 text-center min-w-[135px] shadow-md">
-                            <p className="text-xs font-bold text-[#EAECEF]">User B</p>
-                            <span className="text-[10px] text-[#848E9C] mt-0.5 block">URC10002</span>
-                          </div>
-
-                          {/* Level 2 Sub-Leg: User E (Placement under User B) */}
-                          <div className="w-0.5 h-5 bg-[#2B3139] my-1" />
-                          <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-2 text-center min-w-[100px]">
-                            <p className="text-[10px] font-bold text-[#EAECEF]">User E</p>
-                            <span className="text-[9px] text-[#848E9C] block">URC10005</span>
-                          </div>
-                        </div>
-                      </div>
+                    /* ── 2. 후원 계보 (Sponsor Placement Tree) ── */
+                    <div className="relative w-full flex justify-center pt-8 pb-4">
+                      <p className="text-sm font-bold text-[#848E9C]">{lang === "ko" ? "아직 후원 회원이 없습니다" : lang === "en" ? "No sponsor members yet" : "暂无赞助会员"}</p>
                     </div>
                   )}
 
