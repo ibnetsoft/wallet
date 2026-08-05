@@ -961,10 +961,10 @@ export default function MobileApp() {
               </div>
               <div className="space-y-2">
                 {[
-                  { label: lang === "ko" ? "직추천 보너스" : lang === "en" ? "Direct Bonus" : "直推奖", value: "+$200.00" },
-                  { label: lang === "ko" ? "육성 보너스" : lang === "en" ? "Mentoring Bonus" : "育人奖", value: "+$50.00" },
-                  { label: lang === "ko" ? "엄마 보너스" : lang === "en" ? "Mother Bonus" : "母体奖", value: "+$50.00" },
-                  { label: lang === "ko" ? "직급 보너스" : lang === "en" ? "Rank Bonus" : "平级奖", value: "+$50.00" },
+                  { label: lang === "ko" ? "직추천 보너스" : lang === "en" ? "Direct Bonus" : "直推奖", value: "$0.00" },
+                  { label: lang === "ko" ? "육성 보너스" : lang === "en" ? "Mentoring Bonus" : "育人奖", value: "$0.00" },
+                  { label: lang === "ko" ? "엄마 보너스" : lang === "en" ? "Mother Bonus" : "母体奖", value: "$0.00" },
+                  { label: lang === "ko" ? "직급 보너스" : lang === "en" ? "Rank Bonus" : "平级奖", value: "$0.00" },
                 ].map((b) => (
                   <div key={b.label} className="flex justify-between text-xs">
                     <span className="text-[#848E9C]">{b.label}</span>
@@ -973,7 +973,7 @@ export default function MobileApp() {
                 ))}
                 <div className="border-t border-[#2B3139] pt-2 flex justify-between text-xs font-bold">
                   <span>{lang === "ko" ? "오늘 총 보너스" : lang === "en" ? "Today's Total" : "今日总计"}</span>
-                  <span className="text-[#FCD535]">+$350.00</span>
+                  <span className="text-[#FCD535]">$0.00</span>
                 </div>
               </div>
             </div>
