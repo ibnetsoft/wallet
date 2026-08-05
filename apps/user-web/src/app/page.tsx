@@ -1502,12 +1502,32 @@ export default function MobileApp() {
                   notifications.map((n) => (
                     <div key={n.id} className="bg-[#0B0E11] p-3 rounded-xl border border-[#2B3139] space-y-1">
                       <div className="flex justify-between items-center text-[10px]">
-                        <span className="font-extrabold text-[#FCD535] bg-[#FCD535]/10 px-2 py-0.5 rounded">{n.round}</span>
+                        <span className="font-extrabold text-[#FCD535] bg-[#FCD535]/10 px-2 py-0.5 rounded">
+                          {n.round === "자동 게임" 
+                            ? (lang === "ko" ? "자동 게임" : lang === "en" ? "Auto Game" : "自动游戏") 
+                            : `${n.round.replace(/[^0-9]/g, "")}${lang === "ko" ? "회차" : lang === "en" ? " Round" : "轮"}`}
+                        </span>
                         <span className="text-[#848E9C] font-mono">{n.time} ({n.createdAt})</span>
                       </div>
-                      <p className="text-xs font-bold text-[#EAECEF] pt-0.5">{n.title}</p>
+                      <p className="text-xs font-bold text-[#EAECEF] pt-0.5">
+                        {n.title.includes("당첨 결과 발표")
+                          ? `${n.title.startsWith("🎉") ? "🎉" : "🪙"} ${n.title.match(/\d+/)?.[0] || ""}${lang === "ko" ? "회차 AI 당첨 결과 발표" : lang === "en" ? " Round AI Draw Result" : "轮 AI 抽奖公布"}`
+                          : n.title.includes("게임 참여 불가")
+                            ? (lang === "ko" ? "⚠️ 옥구슬 부족 — 게임 참여 불가" : lang === "en" ? "⚠️ Insufficient Beads — Cannot Join" : "⚠️ 玉珠不足 — 无法参与")
+                            : n.title.includes("자동 게임 중단")
+                              ? (lang === "ko" ? "⚠️ 옥구슬 소진으로 자동 게임 중단" : lang === "en" ? "⚠️ Auto Game Stopped (No Beads)" : "⚠️ 因玉珠耗尽自动游戏停止")
+                              : n.title}
+                      </p>
                       <p className={`text-[11px] font-semibold ${n.resultType === "USDT_WIN" ? "text-[#0ECB81]" : "text-[#FCD535]"}`}>
-                        {n.rewardText}
+                        {n.rewardText.includes("금전 당첨!")
+                          ? (lang === "ko" ? "금전 당첨! (+102.00 USDT 지불 완료)" : lang === "en" ? "Cash Win! (+102.00 USDT Paid)" : "现金中奖！(+102.00 USDT 已支付)")
+                          : n.rewardText.includes("옥보 당첨!")
+                            ? (lang === "ko" ? "옥보 당첨! (+80.00 USDT, +40 옥구슬 지급 완료)" : lang === "en" ? "Jade Win! (+80.00 USDT, +40 Beads Paid)" : "玉宝中奖！(+80.00 USDT, +40 玉珠已支付)")
+                            : n.rewardText.includes("보유 옥구슬")
+                              ? (lang === "ko" ? n.rewardText : lang === "en" ? `Insufficient beads. Need: ${n.rewardText.match(/\d+/g)?.[1] || 0}` : `玉珠不足。需要: ${n.rewardText.match(/\d+/g)?.[1] || 0}`)
+                              : n.rewardText.includes("자동 게임 참여가 중단")
+                                ? (lang === "ko" ? n.rewardText : lang === "en" ? `Auto game stopped due to depleted beads.` : `因玉珠耗尽，自动游戏已停止。`)
+                                : n.rewardText}
                       </p>
                     </div>
                   ))
