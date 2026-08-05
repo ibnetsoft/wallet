@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Universal Wallet PWA",
+  title: "U彩宝369",
   description: "Secure multi-token mobile wallet client",
   manifest: "/manifest.json",
   appleWebApp: {
