@@ -14,6 +14,7 @@ import {
   PlusCircle,
   Activity
 } from "lucide-react";
+import LogoutButton from "@/components/LogoutButton";
 
 export const metadata: Metadata = {
   title: "369어드민 관리자 시스템",
@@ -74,8 +75,10 @@ export default function RootLayout({
               <span>게임 회차 설정</span>
             </Link>
           </nav>
-
-
+          
+          <div className="p-4 mt-auto border-t border-[#26262B]">
+            <LogoutButton />
+          </div>
         </aside>
 
         {/* Main Content Area */}
