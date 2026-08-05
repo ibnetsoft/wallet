@@ -24,15 +24,19 @@ export function createClient() {
         },
         getSession: async () => {
           let email = null;
+          let metadata = {};
           if (typeof window !== "undefined") {
             email = localStorage.getItem("mock_user_email");
+            try {
+              metadata = JSON.parse(localStorage.getItem("mock_user_metadata") || "{}");
+            } catch (e) {}
           }
           if (email) {
             return {
               data: {
                 session: {
                   access_token: "mock-token",
-                  user: { id: "f0e5d88f-3496-4415-8933-4a7359ba6232", email: email }
+                  user: { id: "f0e5d88f-3496-4415-8933-4a7359ba6232", email: email, user_metadata: metadata }
                 }
               },
               error: null
@@ -42,13 +46,30 @@ export function createClient() {
         },
         getUser: async () => {
           let email = null;
+          let metadata = {};
           if (typeof window !== "undefined") {
             email = localStorage.getItem("mock_user_email");
+            try {
+              metadata = JSON.parse(localStorage.getItem("mock_user_metadata") || "{}");
+            } catch (e) {}
           }
           if (email) {
-            return { data: { user: { id: "f0e5d88f-3496-4415-8933-4a7359ba6232", email: email } }, error: null };
+            return { data: { user: { id: "f0e5d88f-3496-4415-8933-4a7359ba6232", email: email, user_metadata: metadata } }, error: null };
           }
           return { data: { user: null }, error: null };
+        },
+        updateUser: async ({ data }: { data: any }) => {
+          console.log("Mock updating user:", data);
+          let metadata = {};
+          if (typeof window !== "undefined") {
+            try {
+              metadata = JSON.parse(localStorage.getItem("mock_user_metadata") || "{}");
+            } catch (e) {}
+            const newMeta = { ...metadata, ...data };
+            localStorage.setItem("mock_user_metadata", JSON.stringify(newMeta));
+            metadata = newMeta;
+          }
+          return { data: { user: { id: "f0e5d88f-3496-4415-8933-4a7359ba6232", user_metadata: metadata } }, error: null };
         },
         signOut: async () => {
           if (typeof window !== "undefined") {
