@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     }
     const usdtContractAddress = assetRes.rows[0].contract_address;
 
-    let totalSwept = 0n;
+    let totalSwept = BigInt(0);
 
     // Process each user sequentially
     for (const user of users) {
