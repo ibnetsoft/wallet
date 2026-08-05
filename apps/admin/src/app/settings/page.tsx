@@ -29,6 +29,7 @@ export default function SettingsPage() {
   const [showHotPk, setShowHotPk] = useState(false);
   const [showCold, setShowCold] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(true);
+  const [walletHistory, setWalletHistory] = useState<{address: string; privateKey: string; date: string}[]>([]);
 
   // ── 자체 지갑 생성 모달 관련 ──
   const [generatedWallet, setGeneratedWallet] = useState<{ address: string; privateKey: string } | null>(null);
@@ -58,6 +59,14 @@ export default function SettingsPage() {
         setColdVault(map["cold_vault_address"] ?? "");
         setHotBalanceUSDT(map["hot_balance_usdt"] ?? "0");
         setColdBalanceUSDT(map["cold_balance_usdt"] ?? "0");
+        
+        try {
+          if (map["hot_wallet_history"]) {
+            setWalletHistory(JSON.parse(map["hot_wallet_history"]));
+          }
+        } catch (e) {
+          console.error("History parse error", e);
+        }
       }
     } catch (e) {
       console.error(e);
@@ -82,12 +91,40 @@ export default function SettingsPage() {
     }
   };
 
-  const applyGeneratedWallet = () => {
+  const applyGeneratedWallet = async () => {
     if (!generatedWallet) return;
-    setHotWallet(generatedWallet.address);
-    setHotPrivateKey(generatedWallet.privateKey);
+    const newAddress = generatedWallet.address;
+    const newPk = generatedWallet.privateKey;
+    const newHistory = [{
+      address: newAddress,
+      privateKey: newPk,
+      date: new Date().toLocaleString()
+    }, ...walletHistory].slice(0, 5); // 최근 5개만 보관
+
+    setHotWallet(newAddress);
+    setHotPrivateKey(newPk);
+    setWalletHistory(newHistory);
     setGeneratedWallet(null);
-    setWalletMsg({ type: "ok", text: "자체 생성된 지갑 주소와 개인키가 입력란에 적용되었습니다. 하단의 저장 버튼을 꼭 눌러주세요." });
+    setWalletMsg({ type: "ok", text: "저장 중..." });
+    
+    try {
+      const rows = [
+        { key: "master_hot_wallet", value: newAddress, description: "마스터 핫 지갑 주소" },
+        { key: "master_hot_wallet_private_key", value: newPk, description: "마스터 핫 지갑 개인키" },
+        { key: "hot_wallet_history", value: JSON.stringify(newHistory), description: "핫 지갑 생성 이력" }
+      ];
+      const saveRes = await fetch("/api/settings/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rows })
+      });
+      const saveData = await saveRes.json();
+      if (!saveData.success) throw new Error(saveData.error);
+      
+      setWalletMsg({ type: "ok", text: "신규 지갑이 생성되고 즉시 DB에 적용 및 자동 저장되었습니다! 지갑 모으기 페이지에도 즉각 반영됩니다." });
+    } catch (err: any) {
+      setWalletMsg({ type: "err", text: "DB 자동 저장 실패: " + err.message });
+    }
   };
 
   // ── 수수료 저장 ──
@@ -344,6 +381,27 @@ export default function SettingsPage() {
                   <p className="text-[10px] text-[#8E8E93]">※ 실제 온체인 잔액을 수동으로 입력합니다. 자동 조회 기능은 추후 연동 예정</p>
                 </div>
               </div>
+
+              {/* 생성 이력 표시 (최근 5개) */}
+              {walletHistory.length > 0 && (
+                <div className="p-4 bg-[#121215] border border-[#26262B] rounded-xl space-y-2 mt-2">
+                  <label className="text-[10px] text-[#FF9F0A] uppercase font-bold flex items-center space-x-1">
+                    <span>⚠️ 마스터 핫 지갑 자체 생성 이력 (최근 5건)</span>
+                  </label>
+                  <p className="text-[10px] text-[#8E8E93]">만약의 분실을 대비하여 이전에 자체 생성했던 지갑들의 주소와 개인키를 백업 용도로 임시 표시합니다. 외부 노출에 각별히 주의하세요.</p>
+                  <div className="space-y-3 mt-3">
+                    {walletHistory.map((h, i) => (
+                      <div key={i} className="p-2 bg-[#0C0C0E] border border-[#26262B] rounded">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-[9px] text-[#0ECB81] font-bold">생성 일시: {h.date}</span>
+                        </div>
+                        <div className="text-[10px] text-white font-mono break-all leading-tight"><span className="text-[#8E8E93]">주소:</span> {h.address}</div>
+                        <div className="text-[10px] text-[#BF5AF2] font-mono break-all leading-tight mt-1"><span className="text-[#8E8E93]">개인키:</span> {h.privateKey}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* 콜드 금고 주소 */}
               <div className="p-4 bg-[#0C0C0E] border border-[#26262B] rounded-xl space-y-3">
