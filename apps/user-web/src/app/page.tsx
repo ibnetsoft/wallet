@@ -722,7 +722,7 @@ export default function MobileApp() {
                 </div>
                 <div className="min-w-0">
                   <h1 className="text-base font-extrabold text-[#EAECEF] truncate max-w-[120px]">{userNickname}</h1>
-                  <StarBadge level={2} />
+                  <StarBadge level={0} />
                 </div>
               </div>
               <div className="text-right">
@@ -2369,10 +2369,10 @@ export default function MobileApp() {
                     <div className="bg-[#FCD535] text-[#0B0E11] rounded-2xl px-6 py-3 shadow-[0_0_25px_rgba(252,213,53,0.35)] text-center">
                       <div className="flex items-center justify-center space-x-1.5">
                         <span className="text-sm font-black">👑 User ({lang === "ko" ? "나" : lang === "en" ? "Me" : "我"})</span>
-                        <StarBadge level={2} />
+                        <StarBadge level={0} />
                       </div>
                       <p className="text-[10px] font-bold opacity-80 mt-0.5">
-                        {lang === "ko" ? "본인 계정 • 활성 (V2)" : lang === "en" ? "My Account • Active (V2)" : "本人账号 • 活跃 (V2)"}
+                        {lang === "ko" ? "본인 계정" : lang === "en" ? "My Account" : "本人账号"}
                       </p>
                     </div>
                     {/* Down Branch Line */}
