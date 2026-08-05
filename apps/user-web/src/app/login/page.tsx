@@ -8,7 +8,7 @@ import Link from "next/link";
 
 export default function LoginPage() {
   const supabase = createClient();
-  const [email, setEmail] = useState("");
+  const [nickname, setNickname] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,13 +29,14 @@ export default function LoginPage() {
 
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    console.log("handleLogin triggered on client side for:", email);
+    console.log("handleLogin triggered on client side for:", nickname);
     setError("");
     setLoading(true);
 
     try {
+      const proxyEmail = `${nickname.trim().toLowerCase()}@sys.hongbou.com`;
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: proxyEmail,
         password,
       });
 
@@ -97,18 +98,18 @@ export default function LoginPage() {
 
         <div className="space-y-1">
           <label className="text-[10px] text-[#8E8E93] uppercase font-bold ml-1">
-            {lang === "ko" ? "이메일 주소" : lang === "en" ? "Email Address" : "邮箱地址"}
+            {lang === "ko" ? "닉네임 (ID)" : lang === "en" ? "Nickname (ID)" : "昵称 (ID)"}
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#8E8E93]">
               <Mail size={16} />
             </div>
             <input 
-              type="email" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text" 
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
               required
-              placeholder="name@example.com"
+              placeholder={lang === "ko" ? "닉네임을 입력하세요" : lang === "en" ? "Enter Nickname" : "请输入昵称"}
               className="w-full bg-[#141418] border border-[#26262B] focus:border-[#00D2FF] pl-11 pr-4 py-3.5 rounded-xl text-sm text-white font-semibold focus:outline-none transition-colors"
             />
           </div>
