@@ -492,18 +492,44 @@ export default function MobileApp() {
   const [depositToken, setDepositToken] = useState<"USDT" | "URC">("USDT");
   const [loadingNetwork, setLoadingNetwork] = useState(false);
   
-  const [userDepositAddress] = useState("");
+  const [userDepositAddress, setUserDepositAddress] = useState("");
   const [addressCopied, setAddressCopied] = useState(false);
   const [showDepositModal, setShowDepositModal] = useState(false);
-  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
-  const [showSwapModal, setShowSwapModal] = useState(false);
-  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [walletLoading, setWalletLoading] = useState(false);
+
+  const openDepositModal = async () => {
+    setShowDepositModal(true);
+    if (!userDepositAddress && userId) {
+      setWalletLoading(true);
+      try {
+        const res = await fetch("/api/wallet/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: userId }),
+        });
+        const data = await res.json();
+        if (res.ok && data.address) {
+          setUserDepositAddress(data.address);
+        } else {
+          console.error("Wallet generation failed:", data.error);
+        }
+      } catch (err) {
+        console.error("Wallet generation error:", err);
+      } finally {
+        setWalletLoading(false);
+      }
+    }
+  };
 
   const copyDepositAddress = () => {
     navigator.clipboard.writeText(userDepositAddress);
     setAddressCopied(true);
     setTimeout(() => setAddressCopied(false), 2000);
   };
+
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [showSwapModal, setShowSwapModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   // Game Play Modal Result State
   const [gameResultModal, setGameResultModal] = useState<{
@@ -1016,7 +1042,7 @@ export default function MobileApp() {
               {/* 3 Action Buttons: Deposit, Withdraw, History */}
               <div className="grid grid-cols-3 gap-2 pt-2">
                 <button
-                  onClick={() => setShowDepositModal(true)}
+                  onClick={() => openDepositModal()}
                   className="bg-[#0B0E11] hover:bg-[#2B3139] border border-[#2B3139] hover:border-[#FCD535] py-3 rounded-xl flex flex-col items-center justify-center space-y-2 transition-all group"
                 >
                   <ArrowDownLeft size={24} strokeWidth={2.5} className="text-[#0ECB81] group-hover:scale-110 transition-transform" />
@@ -1126,12 +1152,21 @@ export default function MobileApp() {
 
               {/* Dynamic QR Code Image */}
               <div className="w-40 h-40 bg-white rounded-xl mx-auto p-2.5 flex items-center justify-center shadow-lg">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img 
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${userDepositAddress}`}
-                  alt={`${depositToken} BSC Deposit QR Code`}
-                  className="w-full h-full object-contain"
-                />
+                {walletLoading ? (
+                  <div className="flex flex-col items-center space-y-2">
+                    <RefreshCw size={24} className="text-[#848E9C] animate-spin" />
+                    <span className="text-[10px] text-[#848E9C] font-bold">{lang === "ko" ? "지갑 생성 중..." : lang === "en" ? "Generating..." : "生成中..."}</span>
+                  </div>
+                ) : userDepositAddress ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${userDepositAddress}`}
+                    alt={`${depositToken} BSC Deposit QR Code`}
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <span className="text-[10px] text-[#848E9C] font-bold text-center">{lang === "ko" ? "지갑 생성 실패.\n다시 시도하세요." : "Failed. Try again."}</span>
+                )}
               </div>
 
               {/* Deposit Address Display */}
@@ -1139,7 +1174,7 @@ export default function MobileApp() {
 
                 <div className="bg-[#0B0E11] p-3 rounded-lg border border-[#2B3139] flex justify-between items-center space-x-2">
                   <span className="text-[10px] font-mono text-[#EAECEF] break-all select-all">
-                    {userDepositAddress}
+                    {walletLoading ? (lang === "ko" ? "지갑 주소 생성 중..." : "Generating address...") : userDepositAddress || (lang === "ko" ? "주소 없음" : "No address")}
                   </span>
                   <button 
                     onClick={copyDepositAddress} 
@@ -1632,7 +1667,7 @@ export default function MobileApp() {
                 </h2>
               </div>
               <button 
-                onClick={() => { setActiveTab("wallet"); setShowDepositModal(true); }}
+                onClick={() => { setActiveTab("wallet"); openDepositModal(); }}
                 className="px-3.5 py-2 bg-[#FCD535] text-[#0B0E11] font-bold rounded-lg text-xs hover:opacity-90 transition-opacity flex items-center space-x-1"
               >
                 <Wallet size={14} />
