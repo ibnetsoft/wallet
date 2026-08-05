@@ -6,12 +6,26 @@ export const dynamic = "force-dynamic";
 const BSC_RPC_URL = process.env.NEXT_PUBLIC_BSC_RPC_URL || "https://data-seed-prebsc-1-s1.binance.org:8545";
 const provider = new JsonRpcProvider(BSC_RPC_URL);
 
+import { Pool } from "pg";
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
+
 export async function GET() {
+  const dbClient = await pool.connect();
   try {
-    const feeWalletPk = process.env.MASTER_HOT_WALLET_PRIVATE_KEY;
+    // DB에서 마스터 개인키 조회 시도
+    let feeWalletPk = process.env.MASTER_HOT_WALLET_PRIVATE_KEY;
+    
+    const pkRes = await dbClient.query("SELECT value FROM public.system_settings WHERE key = 'master_hot_wallet_private_key'");
+    if (pkRes.rows.length > 0 && pkRes.rows[0].value) {
+      feeWalletPk = pkRes.rows[0].value;
+    }
     
     if (!feeWalletPk) {
-      return NextResponse.json({ success: false, error: "MASTER_HOT_WALLET_PRIVATE_KEY is not configured" }, { status: 500 });
+      return NextResponse.json({ success: false, error: "MASTER_HOT_WALLET_PRIVATE_KEY가 DB설정 및 환경변수 둘 다 누락되었습니다." }, { status: 500 });
     }
 
     const feeWallet = new Wallet(feeWalletPk, provider);
@@ -26,5 +40,7 @@ export async function GET() {
   } catch (err: any) {
     console.error("GET api/wallet/fee-status error:", err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } finally {
+    dbClient.release();
   }
 }

@@ -111,12 +111,17 @@ export async function POST(request: Request) {
       }
 
       const rpcUrl = process.env.NEXT_PUBLIC_BSC_RPC_URL;
-      const privateKey = process.env.MASTER_HOT_WALLET_PRIVATE_KEY;
+      let privateKey = process.env.MASTER_HOT_WALLET_PRIVATE_KEY;
+      
+      const pkRes = await client.query("SELECT value FROM public.system_settings WHERE key = 'master_hot_wallet_private_key'");
+      if (pkRes.rows.length > 0 && pkRes.rows[0].value) {
+        privateKey = pkRes.rows[0].value;
+      }
       
       if (!rpcUrl || !privateKey) {
         await client.query("ROLLBACK");
         return NextResponse.json(
-          { success: false, error: "RPC URL or Private Key is not configured" },
+          { success: false, error: "RPC URL 또는 마스터 개인키(DB설정/환경변수)가 누락되었습니다." },
           { status: 500 }
         );
       }

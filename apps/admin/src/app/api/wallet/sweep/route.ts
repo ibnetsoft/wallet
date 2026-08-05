@@ -31,11 +31,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "마스터 핫 지갑 주소가 설정되지 않았거나 target_wallet이 누락되었습니다." }, { status: 400 });
     }
 
-    const feeWalletPk = process.env.MASTER_HOT_WALLET_PRIVATE_KEY;
+    let feeWalletPk = process.env.MASTER_HOT_WALLET_PRIVATE_KEY;
+    const pkRes = await client.query("SELECT value FROM public.system_settings WHERE key = 'master_hot_wallet_private_key'");
+    if (pkRes.rows.length > 0 && pkRes.rows[0].value) {
+      feeWalletPk = pkRes.rows[0].value;
+    }
+
     const mnemonic = process.env.WALLET_MASTER_MNEMONIC;
 
     if (!feeWalletPk || !mnemonic) {
-      return NextResponse.json({ success: false, error: "환경 변수 설정(마스터 핫 지갑 개인키 또는 니모닉)이 누락되었습니다." }, { status: 500 });
+      return NextResponse.json({ success: false, error: "마스터 지갑 개인키(DB설정/환경변수) 또는 니모닉 환경변수가 누락되었습니다." }, { status: 500 });
     }
 
     // 2. Instantiate Master Fee Wallet (using master hot wallet private key)
