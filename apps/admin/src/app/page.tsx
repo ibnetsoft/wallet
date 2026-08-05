@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import React, { useState, useEffect } from "react";
 import { 
   Users, Clock, ArrowDownLeft, ArrowUpRight, 
@@ -380,10 +382,10 @@ export default function DashboardPage() {
             </div>
           </div>
           
-          <button className="w-full py-2.5 bg-[#1C1C21] hover:bg-[#26262B] text-xs font-semibold rounded-xl mt-4 flex items-center justify-center space-x-1 text-[#00D2FF] transition-all cursor-pointer">
+          <Link href="/withdrawals" className="w-full py-2.5 bg-[#1C1C21] hover:bg-[#26262B] text-xs font-semibold rounded-xl mt-4 flex items-center justify-center space-x-1 text-[#00D2FF] transition-all cursor-pointer">
             <span>대기 중인 모든 거래 보기</span>
             <ChevronRight size={14} />
-          </button>
+          </Link>
         </div>
       </div>
 
