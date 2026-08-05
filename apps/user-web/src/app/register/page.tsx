@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { ArrowRight, Lock, Mail, User, Shield, AlertCircle, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 
@@ -19,7 +18,6 @@ function validateNickname(value: string, lang: string): string {
 }
 
 function RegisterForm() {
-  const supabase = createClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -32,9 +30,14 @@ function RegisterForm() {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // 이메일 선인증 관련 상태
+  const [verified, setVerified] = useState(false);
+  const [token, setToken] = useState("");
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [emailSuccessMsg, setEmailSuccessMsg] = useState("");
+
   const router = useRouter();
   const searchParams = useSearchParams();
-
   const [lang, setLang] = useState<"zh" | "en" | "ko">("zh");
 
   useEffect(() => {
@@ -44,10 +47,63 @@ function RegisterForm() {
     }
   }, []);
 
+  // 이메일 인증 링크로 이동해서 가입창으로 돌아온 경우의 파라미터 감지
   useEffect(() => {
     const ref = searchParams.get("ref");
     if (ref) setReferralCode(ref);
+
+    const verifiedParam = searchParams.get("verified");
+    const emailParam = searchParams.get("email");
+    const tokenParam = searchParams.get("token");
+
+    if (verifiedParam === "true" && emailParam && tokenParam) {
+      setVerified(true);
+      setEmail(emailParam);
+      setToken(tokenParam);
+    }
   }, [searchParams]);
+
+  // 이메일 인증 메일 발송
+  const handleSendVerification = async () => {
+    if (!email || !email.includes("@")) {
+      setError(
+        lang === "ko"
+          ? "올바른 이메일 주소를 입력해 주세요."
+          : lang === "en"
+          ? "Please enter a valid email address."
+          : "请输入有效的邮箱地址。"
+      );
+      return;
+    }
+
+    setEmailLoading(true);
+    setError("");
+    setEmailSuccessMsg("");
+
+    try {
+      const res = await fetch("/api/auth/send-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setEmailSuccessMsg(
+          lang === "ko"
+            ? "인증 이메일이 성공적으로 발송되었습니다! 메일함을 확인하여 링크를 클릭해 주세요."
+            : lang === "en"
+            ? "Verification email sent successfully! Please check your inbox and click the link."
+            : "验证邮件已成功发送！请检查您的收件箱并点击链接。"
+        );
+      } else {
+        setError(data.error || "이메일 인증 링크 전송에 실패했습니다.");
+      }
+    } catch (err: any) {
+      setError(err.message || "오류가 발생했습니다.");
+    } finally {
+      setEmailLoading(false);
+    }
+  };
 
   const handleNicknameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -62,9 +118,15 @@ function RegisterForm() {
 
   const isNicknameValid = NICKNAME_REGEX.test(nickname);
 
+  // 최종 가입 제출
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (!verified || !token) {
+      setError(lang === "ko" ? "이메일 인증을 먼저 완료해 주세요." : "Please verify your email first.");
+      return;
+    }
 
     // 닉네임 최종 검증
     const nickErr = validateNickname(nickname, lang);
@@ -79,8 +141,6 @@ function RegisterForm() {
       return;
     }
 
-
-
     if (!referralCode.trim()) {
       setError(lang === "ko" ? "추천코드는 필수 입력 항목입니다!" : lang === "en" ? "Referral code is required!" : "邀请码是必填项，没有邀请码无法注册！");
       return;
@@ -91,7 +151,7 @@ function RegisterForm() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, nickname, referralCode }),
+        body: JSON.stringify({ token, password, nickname, referralCode }),
       });
 
       const data = await res.json();
@@ -141,7 +201,7 @@ function RegisterForm() {
         </p>
       </div>
 
-      <form onSubmit={handleRegister} className="space-y-4 relative z-10">
+      <div className="space-y-4 relative z-10">
         {error && (
           <div className="p-3 bg-[#F6465D]/10 border border-[#F6465D]/30 rounded flex items-start space-x-2 text-[#F6465D]">
             <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
@@ -149,186 +209,219 @@ function RegisterForm() {
           </div>
         )}
 
-        {/* 이메일 */}
+        {emailSuccessMsg && (
+          <div className="p-3 bg-[#0ECB81]/10 border border-[#0ECB81]/30 rounded flex items-start space-x-2 text-[#0ECB81]">
+            <CheckCircle2 size={16} className="mt-0.5 flex-shrink-0" />
+            <span className="text-xs font-semibold">{emailSuccessMsg}</span>
+          </div>
+        )}
+
+        {/* 1단계: 이메일 인증 */}
         <div className="space-y-1">
           <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1 flex items-center gap-1.5">
             {lang === "ko" ? "이메일 주소" : lang === "en" ? "Email Address" : "邮箱地址"}
             <span className="text-[#F6465D] font-black">*</span>
           </label>
-          <div className="relative w-full">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#848E9C]">
-              <Mail size={16} />
-            </div>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              placeholder="name@example.com"
-              className="w-full bg-[#1E2329] border border-[#2B3139] focus:border-[#FCD535] pl-11 pr-4 py-3 rounded text-sm text-[#EAECEF] font-semibold outline-none transition-colors"
-            />
-          </div>
-        </div>
-
-        {/* 닉네임(ID) */}
-        <div className="space-y-1">
-          <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1 flex items-center gap-1.5">
-            {lang === "ko" ? "닉네임 (ID)" : lang === "en" ? "Nickname (ID)" : "昵称 · ID"}
-            <span className="text-[#F6465D] font-black">*</span>
-          </label>
-          <div className="relative">
-            {/* 왼쪽 아이콘 — 상태에 따라 색상 변경 */}
-            <div
-              className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${
-                nicknameTouched
-                  ? isNicknameValid
-                    ? "text-[#0ECB81]"
-                    : "text-[#F6465D]"
-                  : "text-[#848E9C]"
-              }`}
-            >
-              <User size={16} />
-            </div>
-            <input
-              type="text"
-              value={nickname}
-              onChange={handleNicknameChange}
-              onBlur={handleNicknameBlur}
-              required
-              maxLength={21}
-              autoComplete="username"
-              placeholder={lang === "ko" ? "예: JohnDoe123 (영문으로 시작)" : lang === "en" ? "e.g. JohnDoe123 (Starts with letter)" : "例如: JohnDoe123 (以英文字母开头)"}
-              className={`w-full bg-[#1E2329] border pl-11 pr-10 py-3 rounded text-sm text-[#EAECEF] font-semibold outline-none transition-colors ${
-                nicknameTouched
-                  ? isNicknameValid
-                    ? "border-[#0ECB81] focus:border-[#0ECB81]"
-                    : "border-[#F6465D] focus:border-[#F6465D]"
-                  : "border-[#2B3139] focus:border-[#FCD535]"
-              }`}
-            />
-            {/* 오른쪽 상태 아이콘 */}
-            {nicknameTouched && nickname && (
-              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                {isNicknameValid ? (
-                  <CheckCircle2 size={16} className="text-[#0ECB81]" />
-                ) : (
-                  <AlertCircle size={16} className="text-[#F6465D]" />
-                )}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#848E9C]">
+                <Mail size={16} />
               </div>
+              <input
+                type="email"
+                value={email}
+                disabled={verified}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@example.com"
+                className="w-full bg-[#1E2329] border border-[#2B3139] focus:border-[#FCD535] pl-11 pr-4 py-3 rounded text-sm text-[#EAECEF] font-semibold outline-none transition-colors disabled:opacity-50 disabled:border-[#0ECB81]"
+              />
+            </div>
+            {!verified && (
+              <button
+                type="button"
+                onClick={handleSendVerification}
+                disabled={emailLoading}
+                className="px-4 py-3 bg-[#FCD535] text-[#0B0E11] font-bold rounded text-xs active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center min-w-[100px]"
+              >
+                {emailLoading ? (
+                  <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                ) : (
+                  <span>{lang === "ko" ? "인증메일 발송" : lang === "en" ? "Verify Email" : "发送验证"}</span>
+                )}
+              </button>
             )}
           </div>
-
-          {/* 인라인 에러 메시지 */}
-          {nicknameTouched && nicknameError && (
-            <p className="text-[11px] text-[#F6465D] font-semibold ml-1 flex items-center gap-1">
-              <AlertCircle size={11} className="flex-shrink-0" />
-              {nicknameError}
+          {verified && (
+            <p className="text-[10px] text-[#0ECB81] font-bold ml-1 flex items-center gap-1">
+              <CheckCircle2 size={12} />
+              {lang === "ko" ? "이메일 인증이 완료되었습니다." : "Email verified successfully."}
             </p>
           )}
+        </div>
 
-          {/* 조건 안내 — 에러 없을 때만 */}
-          {!nicknameError && (
-            <p className="text-[10px] text-[#848E9C] ml-1">
-              {lang === "ko" ? "영문으로 시작 · 영문+숫자 · 3~20자 · 특수문자 불가" : lang === "en" ? "Starts with letter · Alphanumeric · 3~20 chars" : "以英文字母开头 · 仅限英文字母和数字 · 3~20个字符"}
-            </p>
-          )}
+        {/* 2단계: 이메일 인증이 완료되면 나머지 가입 양식 표시 */}
+        {verified ? (
+          <form onSubmit={handleRegister} className="space-y-4">
+            {/* 닉네임(ID) */}
+            <div className="space-y-1">
+              <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1 flex items-center gap-1.5">
+                {lang === "ko" ? "닉네임 (ID)" : lang === "en" ? "Nickname (ID)" : "昵称 · ID"}
+                <span className="text-[#F6465D] font-black">*</span>
+              </label>
+              <div className="relative">
+                <div
+                  className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${
+                    nicknameTouched
+                      ? isNicknameValid
+                        ? "text-[#0ECB81]"
+                        : "text-[#F6465D]"
+                      : "text-[#848E9C]"
+                  }`}
+                >
+                  <User size={16} />
+                </div>
+                <input
+                  type="text"
+                  value={nickname}
+                  onChange={handleNicknameChange}
+                  onBlur={handleNicknameBlur}
+                  required
+                  maxLength={21}
+                  autoComplete="username"
+                  placeholder={lang === "ko" ? "예: JohnDoe123 (영문으로 시작)" : lang === "en" ? "e.g. JohnDoe123 (Starts with letter)" : "例如: JohnDoe123 (以英文字母开头)"}
+                  className={`w-full bg-[#1E2329] border pl-11 pr-10 py-3 rounded text-sm text-[#EAECEF] font-semibold outline-none transition-colors ${
+                    nicknameTouched
+                      ? isNicknameValid
+                        ? "border-[#0ECB81] focus:border-[#0ECB81]"
+                        : "border-[#F6465D] focus:border-[#F6465D]"
+                      : "border-[#2B3139] focus:border-[#FCD535]"
+                  }`}
+                />
+                {nicknameTouched && nickname && (
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    {isNicknameValid ? (
+                      <CheckCircle2 size={16} className="text-[#0ECB81]" />
+                    ) : (
+                      <AlertCircle size={16} className="text-[#F6465D]" />
+                    )}
+                  </div>
+                )}
+              </div>
 
-          {/* 글자 수 카운터 */}
-          {nickname.length > 0 && (
-            <p
-              className={`text-[10px] ml-1 text-right font-mono ${
-                nickname.length > 20 ? "text-[#F6465D]" : "text-[#848E9C]"
-              }`}
+              {nicknameTouched && nicknameError && (
+                <p className="text-[11px] text-[#F6465D] font-semibold ml-1 flex items-center gap-1">
+                  <AlertCircle size={11} className="flex-shrink-0" />
+                  {nicknameError}
+                </p>
+              )}
+
+              {!nicknameError && (
+                <p className="text-[10px] text-[#848E9C] ml-1">
+                  {lang === "ko" ? "영문으로 시작 · 영문+숫자 · 3~20자 · 특수문자 불가" : lang === "en" ? "Starts with letter · Alphanumeric · 3~20 chars" : "以英文字母开头 · 仅限英文字母和数字 · 3~20个字符"}
+                </p>
+              )}
+
+              {nickname.length > 0 && (
+                <p className={`text-[10px] ml-1 text-right font-mono ${nickname.length > 20 ? "text-[#F6465D]" : "text-[#848E9C]"}`}>
+                  {nickname.length} / 20
+                </p>
+              )}
+            </div>
+
+            {/* 비밀번호 */}
+            <div className="space-y-1">
+              <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1 flex items-center gap-1.5">
+                {lang === "ko" ? "비밀번호" : lang === "en" ? "Password" : "密码"}
+                <span className="text-[#F6465D] font-black">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#848E9C]">
+                  <Lock size={16} />
+                </div>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  placeholder={lang === "ko" ? "8자리 이상" : lang === "en" ? "Min 8 characters" : "最少 8 个字符"}
+                  minLength={8}
+                  className="w-full bg-[#1E2329] border border-[#2B3139] focus:border-[#FCD535] pl-11 pr-4 py-3 rounded text-sm text-[#EAECEF] font-semibold outline-none transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* 비밀번호 확인 */}
+            <div className="space-y-1">
+              <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1 flex items-center gap-1.5">
+                {lang === "ko" ? "비밀번호 확인" : lang === "en" ? "Confirm Password" : "确认密码"}
+                <span className="text-[#F6465D] font-black">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#848E9C]">
+                  <Lock size={16} />
+                </div>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  placeholder={lang === "ko" ? "비밀번호를 다시 입력해주세요" : lang === "en" ? "Enter password again" : "请再次输入密码"}
+                  minLength={8}
+                  className={`w-full bg-[#1E2329] border pl-11 pr-4 py-3 rounded text-sm text-[#EAECEF] font-semibold outline-none transition-colors ${
+                    confirmPassword && password !== confirmPassword
+                      ? "border-[#F6465D] focus:border-[#F6465D]"
+                      : "border-[#2B3139] focus:border-[#FCD535]"
+                  }`}
+                />
+              </div>
+            </div>
+
+            {/* 추천코드 */}
+            <div className="space-y-1">
+              <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1 flex items-center gap-1.5">
+                {lang === "ko" ? "추천코드" : lang === "en" ? "Referral Code" : "邀请码"}
+                <span className="text-[#F6465D] font-black">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#848E9C]">
+                  <Shield size={16} />
+                </div>
+                <input
+                  type="text"
+                  value={referralCode}
+                  onChange={(e) => setReferralCode(e.target.value)}
+                  required
+                  placeholder={lang === "ko" ? "추천코드 입력" : lang === "en" ? "Enter Referral Code" : "邀请码"}
+                  className="w-full bg-[#1E2329] border border-[#2B3139] focus:border-[#FCD535] pl-11 pr-4 py-3 rounded text-sm text-[#EAECEF] font-semibold outline-none transition-colors"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 mt-4 bg-[#FCD535] text-[#0B0E11] font-bold rounded-lg text-sm flex items-center justify-center space-x-2 active:scale-95 transition-all disabled:opacity-50"
             >
-              {nickname.length} / 20
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-[#0B0E11]/20 border-t-[#0B0E11] rounded-full animate-spin" />
+              ) : (
+                <>
+                  <span>{lang === "ko" ? "회원가입 완료" : lang === "en" ? "Complete Registration" : "完成注册"}</span>
+                  <ArrowRight size={16} />
+                </>
+              )}
+            </button>
+          </form>
+        ) : (
+          <div className="p-4 bg-[#1E2329]/50 border border-[#2B3139] rounded-xl text-center">
+            <p className="text-xs text-[#848E9C]">
+              {lang === "ko"
+                ? "이메일 인증을 완료한 후에 가입 정보(닉네임, 비밀번호)를 입력하실 수 있습니다."
+                : "You can enter details after verifying your email address."}
             </p>
-          )}
-        </div>
-
-        {/* 비밀번호 */}
-        <div className="space-y-1">
-          <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1 flex items-center gap-1.5">
-            {lang === "ko" ? "비밀번호" : lang === "en" ? "Password" : "密码"}
-            <span className="text-[#F6465D] font-black">*</span>
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#848E9C]">
-              <Lock size={16} />
-            </div>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              placeholder={lang === "ko" ? "8자리 이상" : lang === "en" ? "Min 8 characters" : "最少 8 个字符"}
-              minLength={8}
-              className="w-full bg-[#1E2329] border border-[#2B3139] focus:border-[#FCD535] pl-11 pr-4 py-3 rounded text-sm text-[#EAECEF] font-semibold outline-none transition-colors"
-            />
           </div>
-        </div>
-
-        {/* 비밀번호 확인 */}
-        <div className="space-y-1">
-          <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1 flex items-center gap-1.5">
-            {lang === "ko" ? "비밀번호 확인" : lang === "en" ? "Confirm Password" : "确认密码"}
-            <span className="text-[#F6465D] font-black">*</span>
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#848E9C]">
-              <Lock size={16} />
-            </div>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              placeholder={lang === "ko" ? "비밀번호를 다시 입력해주세요" : lang === "en" ? "Enter password again" : "请再次输入密码"}
-              minLength={8}
-              className={`w-full bg-[#1E2329] border pl-11 pr-4 py-3 rounded text-sm text-[#EAECEF] font-semibold outline-none transition-colors ${
-                confirmPassword && password !== confirmPassword
-                  ? "border-[#F6465D] focus:border-[#F6465D]"
-                  : "border-[#2B3139] focus:border-[#FCD535]"
-              }`}
-            />
-          </div>
-        </div>
-
-        {/* 추천코드 */}
-        <div className="space-y-1">
-          <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1 flex items-center gap-1.5">
-            {lang === "ko" ? "추천코드" : lang === "en" ? "Referral Code" : "邀请码"}
-            <span className="text-[#F6465D] font-black">*</span>
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#848E9C]">
-              <Shield size={16} />
-            </div>
-            <input
-              type="text"
-              value={referralCode}
-              onChange={(e) => setReferralCode(e.target.value)}
-              required
-              placeholder={lang === "ko" ? "추천코드 입력" : lang === "en" ? "Enter Referral Code" : "邀请码"}
-              className="w-full bg-[#1E2329] border border-[#2B3139] focus:border-[#FCD535] pl-11 pr-4 py-3 rounded text-sm text-[#EAECEF] font-semibold outline-none transition-colors"
-            />
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3.5 mt-4 bg-[#FCD535] text-[#0B0E11] font-bold rounded-lg text-sm flex items-center justify-center space-x-2 active:scale-95 transition-all disabled:opacity-50"
-        >
-          {loading ? (
-            <div className="w-5 h-5 border-2 border-[#0B0E11]/20 border-t-[#0B0E11] rounded-full animate-spin" />
-          ) : (
-            <>
-              <span>{lang === "ko" ? "회원가입" : lang === "en" ? "Register" : "注册"}</span>
-              <ArrowRight size={16} />
-            </>
-          )}
-        </button>
-      </form>
+        )}
+      </div>
 
       <div className="mt-8 text-center text-xs text-[#848E9C] relative z-10 pb-6">
         {lang === "ko" ? "이미 계정이 있으신가요?" : lang === "en" ? "Already have an account?" : "已有账号？"}{" "}
