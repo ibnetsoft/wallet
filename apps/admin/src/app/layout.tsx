@@ -18,7 +18,7 @@ import LogoutButton from "@/components/LogoutButton";
 
 export const metadata: Metadata = {
   title: "369어드민 관리자 시스템",
-  description: "URC369 바이낸스 스마트 체인 모노레포 관리자 콘솔",
+  description: "BAO369 바이낸스 스마트 체인 모노레포 관리자 콘솔",
 };
 
 export default function RootLayout({
@@ -86,7 +86,7 @@ export default function RootLayout({
           {/* Header */}
           <header className="h-16 border-b border-[#26262B] bg-[#16161A]/80 backdrop-blur-md flex items-center justify-between px-8 sticky top-0 z-20">
             <div className="flex items-center space-x-4">
-              <h1 className="text-base font-bold text-white">URC369 바이낸스 체인 통합 관리 시스템</h1>
+              <h1 className="text-base font-bold text-white">BAO369 바이낸스 체인 통합 관리 시스템</h1>
             </div>
             
             <div className="flex items-center space-x-4">

@@ -1,5 +1,5 @@
 "use client";
-// URC369 Wallet App - Production Vercel Build Trigger
+// BAO369 Wallet App - Production Vercel Build Trigger
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -493,7 +493,7 @@ export default function MobileApp() {
     { id: 3, nickname: "User C", tier: 1, status: "ACTIVE" },
     { id: 4, nickname: "User D", tier: 2, status: "ACTIVE" }
   ]);
-  const [userEmail, setUserEmail] = useState("user@urc369.com");
+  const [userEmail, setUserEmail] = useState("user@bao369.com");
   const [userNickname, setUserNickname] = useState("User");
   const [isEditingNickname, setIsEditingNickname] = useState(false);
   const [editNicknameValue, setEditNicknameValue] = useState("");
