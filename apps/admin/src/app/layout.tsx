@@ -46,7 +46,7 @@ export default function RootLayout({
             </Link>
             <Link href="/withdrawals" className="flex items-center space-x-3 px-4 py-3 rounded-xl text-[#FF9F0A] bg-[#FF9F0A]/10 border border-[#FF9F0A]/20 font-bold hover:bg-[#FF9F0A]/20 transition-all">
               <ArrowUpRight size={18} />
-              <span>출금 승인 관리</span>
+              <span>출금 승인 심사 관리</span>
             </Link>
             <Link href="/recharge" className="flex items-center space-x-3 px-4 py-3 rounded-xl text-[#30D5C8] bg-[#30D5C8]/10 border border-[#30D5C8]/20 font-bold hover:bg-[#30D5C8]/20 transition-all">
               <PlusCircle size={18} />
@@ -70,30 +70,7 @@ export default function RootLayout({
             </Link>
           </nav>
 
-          {/* Sidebar Footer (Wallet Monitors) */}
-          <div className="p-4 border-t border-[#26262B] bg-[#121215]/50 space-y-3">
-            <div className="flex items-center justify-between text-xs text-[#8E8E93] font-semibold uppercase tracking-wider mb-1">
-              <span>블록체인 실시간 잔액</span>
-            </div>
-            {/* Master Vault */}
-            <div className="p-2.5 bg-[#1C1C21] rounded-lg border border-[#26262B]">
-              <div className="flex items-center space-x-2 text-[11px] text-[#8E8E93] mb-1">
-                <Wallet size={12} color="#00D2FF" />
-                <span className="font-medium text-[#F2F2F7]">오프라인 콜드 금고</span>
-              </div>
-              <p className="text-xs font-mono font-bold text-white">10,500.00 USDT</p>
-              <p className="text-[10px] text-[#8E8E93] mt-0.5">유저 예치금 통합 보관</p>
-            </div>
-            {/* Hot Wallet */}
-            <div className="p-2.5 bg-[#1C1C21] rounded-lg border border-[#26262B]">
-              <div className="flex items-center space-x-2 text-[11px] text-[#8E8E93] mb-1">
-                <ShieldAlert size={12} color="#FF9F0A" />
-                <span className="font-medium text-[#F2F2F7]">출금용 핫 지갑 (BSC)</span>
-              </div>
-              <p className="text-xs font-mono font-bold text-[#30D5C8]">1,000.00 USDT</p>
-              <p className="text-[10px] text-[#FF9F0A] mt-0.5 font-mono">가스비 잔액: 0.15 BNB</p>
-            </div>
-          </div>
+
         </aside>
 
         {/* Main Content Area */}
