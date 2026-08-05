@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Users, Search, Activity, PowerOff, Copy, Check } from "lucide-react";
+import { Users, Search, Activity, PowerOff, Copy, Check, FileText, X, Gamepad2, Ticket, Gift } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 interface UserProfile {
@@ -29,6 +29,28 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
+  
+  // Modal states
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const [detailsTab, setDetailsTab] = useState<"machines" | "games" | "bonuses">("machines");
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [userDetails, setUserDetails] = useState<any>(null);
+
+  const fetchUserDetails = async (user: UserProfile) => {
+    setSelectedUser(user);
+    setDetailsLoading(true);
+    try {
+      const res = await fetch(`/api/users/${user.id}/details`);
+      const data = await res.json();
+      if (data.success) {
+        setUserDetails(data.details);
+      }
+    } catch (e) {
+      console.error("Failed to fetch user details", e);
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
 
   const handleCopy = (address: string) => {
     navigator.clipboard.writeText(address);
@@ -216,11 +238,18 @@ export default function UsersPage() {
                   </td>
 
                   {/* 관리 */}
-                  <td className="py-3 px-4 text-center flex items-center justify-center space-x-2 h-[80px]">
-                    <button className="px-2.5 py-1 bg-[#1C1C21] border border-[#26262B] hover:border-[#00D2FF] hover:text-[#00D2FF] text-[#EAECEF] text-[10px] font-bold rounded transition-colors">
+                  <td className="py-3 px-4 text-center flex items-center justify-center space-x-1.5 h-[80px]">
+                    <button 
+                      onClick={() => fetchUserDetails(user)}
+                      className="px-2 py-1 bg-[#1C1C21] border border-[#26262B] hover:border-[#BF5AF2] hover:text-[#BF5AF2] text-[#EAECEF] text-[10px] font-bold rounded transition-colors flex items-center space-x-1"
+                    >
+                      <FileText size={10} />
+                      <span>상세</span>
+                    </button>
+                    <button className="px-2 py-1 bg-[#1C1C21] border border-[#26262B] hover:border-[#00D2FF] hover:text-[#00D2FF] text-[#EAECEF] text-[10px] font-bold rounded transition-colors">
                       조직도
                     </button>
-                    <button onClick={() => handleDeleteUser(user.id, user.nickname)} className="px-2.5 py-1 bg-[#F6465D]/10 hover:bg-[#F6465D] hover:text-white text-[#F6465D] text-[10px] font-bold rounded transition-colors">
+                    <button onClick={() => handleDeleteUser(user.id, user.nickname)} className="px-2 py-1 bg-[#F6465D]/10 hover:bg-[#F6465D] hover:text-white text-[#F6465D] text-[10px] font-bold rounded transition-colors">
                       삭제
                     </button>
                   </td>
@@ -235,6 +264,191 @@ export default function UsersPage() {
           </table>
         </div>
       </div>
+
+      {/* User Details Modal */}
+      {selectedUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-[#16161A] border border-[#26262B] rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-5 border-b border-[#26262B]">
+              <div>
+                <h3 className="text-lg font-bold text-white flex items-center space-x-2">
+                  <span>{selectedUser.nickname}</span>
+                  <span className="text-[#8E8E93] text-sm font-normal">({selectedUser.email})</span>
+                  <span className="bg-[#BF5AF2]/20 text-[#BF5AF2] text-[10px] px-2 py-0.5 rounded border border-[#BF5AF2]/30 uppercase font-mono">
+                    {selectedUser.code}
+                  </span>
+                </h3>
+                <p className="text-xs text-[#8E8E93] mt-1">상세 활동 내역 및 이력 조회</p>
+              </div>
+              <button 
+                onClick={() => setSelectedUser(null)}
+                className="p-2 hover:bg-[#26262B] rounded-lg text-[#8E8E93] hover:text-white transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Tabs */}
+            <div className="flex px-5 pt-3 border-b border-[#26262B] space-x-6">
+              <button 
+                onClick={() => setDetailsTab("machines")}
+                className={`pb-3 text-sm font-bold flex items-center space-x-2 transition-colors relative ${detailsTab === 'machines' ? 'text-white' : 'text-[#8E8E93] hover:text-white'}`}
+              >
+                <Gamepad2 size={16} className={detailsTab === 'machines' ? 'text-[#0ECB81]' : ''} />
+                <span>게임기 구매 현황</span>
+                {detailsTab === 'machines' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0ECB81] rounded-t-full" />}
+              </button>
+              <button 
+                onClick={() => setDetailsTab("games")}
+                className={`pb-3 text-sm font-bold flex items-center space-x-2 transition-colors relative ${detailsTab === 'games' ? 'text-white' : 'text-[#8E8E93] hover:text-white'}`}
+              >
+                <Ticket size={16} className={detailsTab === 'games' ? 'text-[#00D2FF]' : ''} />
+                <span>게임 참여 내역</span>
+                {detailsTab === 'games' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#00D2FF] rounded-t-full" />}
+              </button>
+              <button 
+                onClick={() => setDetailsTab("bonuses")}
+                className={`pb-3 text-sm font-bold flex items-center space-x-2 transition-colors relative ${detailsTab === 'bonuses' ? 'text-white' : 'text-[#8E8E93] hover:text-white'}`}
+              >
+                <Gift size={16} className={detailsTab === 'bonuses' ? 'text-[#BF5AF2]' : ''} />
+                <span>수당/보너스 수령액</span>
+                {detailsTab === 'bonuses' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#BF5AF2] rounded-t-full" />}
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 overflow-y-auto flex-1 bg-[#0B0E11]/50 min-h-[300px]">
+              {detailsLoading ? (
+                <div className="flex h-full items-center justify-center text-[#8E8E93] animate-pulse text-sm">
+                  데이터를 불러오는 중...
+                </div>
+              ) : !userDetails ? (
+                <div className="flex h-full items-center justify-center text-[#8E8E93] text-sm">
+                  데이터가 없습니다.
+                </div>
+              ) : (
+                <>
+                  {/* Tab 1: Machines */}
+                  {detailsTab === "machines" && (
+                    <div className="space-y-4">
+                      {userDetails.machines.length === 0 ? (
+                        <div className="text-center text-[#8E8E93] py-10 text-sm">구매한 게임기가 없습니다.</div>
+                      ) : (
+                        userDetails.machines.map((machine: any) => (
+                          <div key={machine.id} className="bg-[#1C1C21] p-4 rounded-xl border border-[#26262B] flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                              <div className="flex items-center space-x-2">
+                                <h4 className="text-white font-bold text-sm">
+                                  {machine.package_level === 1 ? "$100 Package" : machine.package_level === 2 ? "$500 Package" : "$1,000 Package"}
+                                </h4>
+                                <span className="text-[10px] text-[#8E8E93] font-mono">{new Date(machine.created_at).toLocaleDateString()}</span>
+                              </div>
+                              <div className="text-xs text-[#8E8E93] mt-1">
+                                총 티켓: {machine.total_entry_limit}장 (사용: {machine.used_entries}장)
+                              </div>
+                            </div>
+                            
+                            <div className="flex-1 max-w-sm w-full bg-[#0B0E11] rounded-lg p-3 border border-[#26262B]/50">
+                              <div className="flex justify-between text-xs mb-1.5">
+                                <span className="text-[#8E8E93]">수당 캡 (Payout Cap)</span>
+                                <span className="font-mono text-[#0ECB81] font-bold">
+                                  ${machine.accumulated_payout_usd.toLocaleString()} / ${machine.payout_limit_usd.toLocaleString()}
+                                </span>
+                              </div>
+                              <div className="h-1.5 w-full bg-[#26262B] rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-gradient-to-r from-[#0ECB81] to-[#30D5C8]" 
+                                  style={{ width: `${Math.min(machine.payoutPercentage, 100)}%` }}
+                                />
+                              </div>
+                              <div className="text-right mt-1 text-[10px] text-[#8E8E93]">
+                                {machine.payoutPercentage.toFixed(1)}% 달성
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                  {/* Tab 2: Games */}
+                  {detailsTab === "games" && (
+                    <div className="overflow-hidden rounded-xl border border-[#26262B]">
+                      <table className="w-full text-left text-xs border-collapse bg-[#1C1C21]">
+                        <thead>
+                          <tr className="border-b border-[#26262B] text-[#8E8E93] font-semibold bg-[#26262B]/30">
+                            <th className="py-2.5 px-4">참여 일시</th>
+                            <th className="py-2.5 px-4">회차 (Round ID)</th>
+                            <th className="py-2.5 px-4 text-center">배팅 티켓수</th>
+                            <th className="py-2.5 px-4 text-center">당첨 티켓</th>
+                            <th className="py-2.5 px-4 text-center">낙첨 티켓</th>
+                            <th className="py-2.5 px-4 text-center">상태</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {userDetails.games.length === 0 ? (
+                            <tr><td colSpan={6} className="text-center py-8 text-[#8E8E93]">게임 참여 내역이 없습니다.</td></tr>
+                          ) : (
+                            userDetails.games.map((g: any) => (
+                              <tr key={g.id} className="border-b border-[#26262B]/40 hover:bg-[#26262B]/40">
+                                <td className="py-2.5 px-4 text-[#8E8E93]">{new Date(g.created_at).toLocaleString()}</td>
+                                <td className="py-2.5 px-4 text-white font-mono font-bold">Round #{g.round_id}</td>
+                                <td className="py-2.5 px-4 text-center text-[#00D2FF] font-mono font-bold">{g.tickets_count}장</td>
+                                <td className="py-2.5 px-4 text-center text-[#0ECB81] font-mono">{g.won_tickets > 0 ? `${g.won_tickets}장` : '-'}</td>
+                                <td className="py-2.5 px-4 text-center text-[#FF453A] font-mono">{g.lost_tickets > 0 ? `${g.lost_tickets}장` : '-'}</td>
+                                <td className="py-2.5 px-4 text-center">
+                                  {g.ticket_status === 'COMPLETED' ? <span className="text-[#30D5C8]">종료</span> : <span className="text-[#FF9F0A]">대기중</span>}
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* Tab 3: Bonuses */}
+                  {detailsTab === "bonuses" && (
+                    <div className="overflow-hidden rounded-xl border border-[#26262B]">
+                      <table className="w-full text-left text-xs border-collapse bg-[#1C1C21]">
+                        <thead>
+                          <tr className="border-b border-[#26262B] text-[#8E8E93] font-semibold bg-[#26262B]/30">
+                            <th className="py-2.5 px-4">지급 일시</th>
+                            <th className="py-2.5 px-4">보너스 유형</th>
+                            <th className="py-2.5 px-4 text-right">지급 수량</th>
+                            <th className="py-2.5 px-4">관련 정보</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {userDetails.bonuses.length === 0 ? (
+                            <tr><td colSpan={4} className="text-center py-8 text-[#8E8E93]">보너스 수령 내역이 없습니다.</td></tr>
+                          ) : (
+                            userDetails.bonuses.map((b: any) => (
+                              <tr key={b.id} className="border-b border-[#26262B]/40 hover:bg-[#26262B]/40">
+                                <td className="py-2.5 px-4 text-[#8E8E93]">{new Date(b.created_at).toLocaleString()}</td>
+                                <td className="py-2.5 px-4 text-[#EAECEF] font-bold">{b.tx_type}</td>
+                                <td className={`py-2.5 px-4 text-right font-mono font-bold ${b.asset === 'USDT' ? 'text-[#0ECB81]' : 'text-[#30D5C8]'}`}>
+                                  +{b.amount.toLocaleString()} <span className="text-[10px] font-normal text-[#8E8E93]">{b.asset}</span>
+                                </td>
+                                <td className="py-2.5 px-4 text-[#8E8E93] text-[10px] truncate max-w-[200px]" title={JSON.stringify(b.details)}>
+                                  {b.details ? JSON.stringify(b.details) : "-"}
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }
