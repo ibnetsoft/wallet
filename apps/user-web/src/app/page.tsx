@@ -53,15 +53,12 @@ function StarBadge({ level }: { level: number }) {
 }
 
 const TetherLogo = () => (
-  <svg className="w-10 h-10 flex-shrink-0" viewBox="0 0 2000 2000" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="1000" cy="1000" r="1000" fill="#26A17B"/>
-    <path fillRule="evenodd" clipRule="evenodd" d="M1286.7 608.2h-573.4v132.8h221.7v492.3c-232.7-7.7-407-52.6-407-107.5 0-61.9 221.8-112.3 495.4-112.3 273.7 0 495.5 50.4 495.5 112.3 0 54.9-174.4 99.8-407.1 107.5v329.8h-132.8v-329.8c-255-8.5-446-59.5-446-121.7 0-77.9 261.3-141.1 583.7-141.1 322.4 0 583.7 63.2 583.7 141.1 0 62.2-191 113.2-446 121.7v101.4h232.2V608.2z" fill="#FFFFFF"/>
-  </svg>
+  <img src="/tether.png" alt="USDT" className="w-10 h-10 object-contain rounded-full flex-shrink-0" />
 );
 
-const JadeLogo = () => (
-  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#2ECC71] to-[#27AE60] flex items-center justify-center font-black text-white text-[10px] shadow-md border border-[#2ECC71]/40 flex-shrink-0">
-    JADE
+const BaoLogo = () => (
+  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#F5A623] to-[#F39C12] flex items-center justify-center font-black text-white text-[12px] shadow-md border border-[#F5A623]/40 flex-shrink-0">
+    BAO
   </div>
 );
 
@@ -487,6 +484,7 @@ export default function MobileApp() {
   const [userId, setUserId] = useState("");
   const [countdown, setCountdown] = useState("");
   const [urdBalance, setUrdBalance] = useState(3000);
+  const [baoBalance, setBaoBalance] = useState(120);
   const [usdtBalance, setUsdtBalance] = useState(10500.00);
   const [urcBalance, setUrcBalance] = useState(4980.00);
   const [fromAmount, setFromAmount] = useState("");
@@ -1050,19 +1048,19 @@ export default function MobileApp() {
                   </div>
                 </div>
 
-                {/* Token 2: Jade Beads */}
-                <div className="bg-[#1E2329] border border-[#2B3139] hover:border-[#2ECC71]/60 rounded-2xl p-4 flex justify-between items-center transition-all">
+                {/* Token 2: BAO Token */}
+                <div className="bg-[#1E2329] border border-[#2B3139] hover:border-[#F5A623]/60 rounded-2xl p-4 flex justify-between items-center transition-all">
                   <div className="flex items-center space-x-3">
-                    <JadeLogo />
+                    <BaoLogo />
                     <div>
                       <div className="flex items-center space-x-1.5">
-                        <span className="text-sm font-extrabold text-[#EAECEF]">JADE</span>
-                        <span className="text-[9px] font-extrabold text-[#2ECC71] bg-[#2ECC71]/10 border border-[#2ECC71]/30 px-1.5 py-0.5 rounded">
-                          BEADS
+                        <span className="text-sm font-extrabold text-[#EAECEF]">BAO</span>
+                        <span className="text-[9px] font-extrabold text-[#F5A623] bg-[#F5A623]/10 border border-[#F5A623]/30 px-1.5 py-0.5 rounded">
+                          TOKEN
                         </span>
                       </div>
                       <p className="text-xs font-mono text-[#848E9C] mt-0.5">
-                        {urdBalance.toLocaleString()} {lang === "ko" ? "개" : lang === "en" ? "Bead(s)" : "个"}
+                        {baoBalance.toLocaleString()} {lang === "ko" ? "개" : lang === "en" ? "Token(s)" : "个"}
                       </p>
                     </div>
                   </div>
