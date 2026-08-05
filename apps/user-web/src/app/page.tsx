@@ -538,10 +538,6 @@ export default function MobileApp() {
 
   const [isPlayingGame, setIsPlayingGame] = useState(false);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push("/login");
-  };
 
   const handleUpdateNickname = async () => {
     if (!editNicknameValue.trim()) return;
