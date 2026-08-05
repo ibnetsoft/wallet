@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { ArrowRight, Lock, Mail, AlertCircle } from "lucide-react";
+import { ArrowRight, Lock, Mail, AlertCircle, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 
 export default function LoginPage() {
@@ -15,12 +15,29 @@ export default function LoginPage() {
   const [lang, setLang] = useState<"zh" | "en" | "ko">("zh");
   const router = useRouter();
 
+  const [verifiedMsg, setVerifiedMsg] = useState("");
+
   useEffect(() => {
     const saved = localStorage.getItem("urc_lang");
     if (saved === "zh" || saved === "en" || saved === "ko") {
       setLang(saved);
     }
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("verified") === "true") {
+        setVerifiedMsg(
+          lang === "ko"
+            ? "이메일 인증이 완료되었습니다! 로그인해 주세요."
+            : lang === "en"
+            ? "Email verified successfully! Please log in."
+            : "邮箱验证已完成！请登录。"
+        );
+      }
+    }
+  }, [lang]);
 
   const changeLang = (l: "zh" | "en" | "ko") => {
     setLang(l);
@@ -31,6 +48,7 @@ export default function LoginPage() {
     if (e) e.preventDefault();
     console.log("handleLogin triggered on client side for:", nickname);
     setError("");
+    setVerifiedMsg("");
     setLoading(true);
 
     try {
@@ -89,6 +107,13 @@ export default function LoginPage() {
       </div>
 
       <div className="space-y-4 relative z-10">
+        {verifiedMsg && (
+          <div className="p-3 bg-[#0ECB81]/10 border border-[#0ECB81]/30 rounded-xl flex items-start space-x-2 text-[#0ECB81]">
+            <CheckCircle2 size={16} className="mt-0.5 flex-shrink-0" />
+            <span className="text-xs font-semibold">{verifiedMsg}</span>
+          </div>
+        )}
+
         {error && (
           <div className="p-3 bg-[#FF453A]/10 border border-[#FF453A]/30 rounded-xl flex items-start space-x-2 text-[#FF453A]">
             <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import crypto from "crypto";
 
 export async function POST(req: Request) {
   try {
@@ -70,7 +71,7 @@ export async function POST(req: Request) {
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: proxyEmail,
       password: password,
-      email_confirm: true, // 이메일 인증 우회
+      email_confirm: false, // 이메일 인증 활성화 (인증 링크 클릭 후 로그인 가능)
       user_metadata: {
         nickname: nickname,
         real_email: email,
@@ -110,9 +111,74 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: `유저 저장 실패: ${dbError.message || JSON.stringify(dbError)}` }, { status: 500 });
     }
 
+    // 6. 이메일 인증 링크 생성 및 발송 (Resend API 사용)
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (!resendApiKey) {
+      // 롤백 (DB 유저 및 Auth 유저 삭제)
+      await supabase.from("users").delete().eq("id", userId);
+      await supabase.auth.admin.deleteUser(userId);
+      return NextResponse.json({ error: "서버의 이메일 전송 API Key(RESEND_API_KEY) 설정이 되어 있지 않습니다." }, { status: 500 });
+    }
+
+    const secret = process.env.SUPABASE_SERVICE_ROLE_KEY || "default-secret-key";
+    const payload = { userId, email, expiresAt: Date.now() + 24 * 60 * 60 * 1000 };
+    const dataStr = Buffer.from(JSON.stringify(payload)).toString("base64url");
+    const signature = crypto
+      .createHmac("sha256", secret)
+      .update(dataStr)
+      .digest("base64url");
+    const token = `${dataStr}.${signature}`;
+
+    const proto = req.headers.get("x-forwarded-proto") || "http";
+    const host = req.headers.get("host") || "localhost:3000";
+    const confirmLink = `${proto}://${host}/api/auth/confirm-email?token=${token}`;
+
+    const fromEmail = process.env.EMAIL_FROM || "BAO369 <onboarding@resend.dev>";
+
+    try {
+      const resendRes = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${resendApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: fromEmail,
+          to: email,
+          subject: "[BAO369] 회원가입 이메일 인증 안내",
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+              <h2 style="color: #FCD535; background-color: #0B0E11; padding: 15px; text-align: center; border-radius: 8px;">BAO369 이메일 인증</h2>
+              <p>안녕하세요, <strong>${nickname}</strong>님!</p>
+              <p>BAO369 서비스 가입을 환영합니다. 아래 버튼을 클릭하여 이메일 주소 인증을 완료해 주세요.</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${confirmLink}" style="background-color: #FCD535; color: #0B0E11; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 6px; display: inline-block;">이메일 인증 완료하기</a>
+              </div>
+              <p style="color: #666; font-size: 12px;">이 링크는 24시간 동안 유효합니다. 가입 요청을 하지 않으셨다면 이 메일을 무시하셔도 됩니다.</p>
+            </div>
+          `,
+        }),
+      });
+
+      if (!resendRes.ok) {
+        const errData = await resendRes.json();
+        console.error("Resend API error:", errData);
+        // 롤백 (DB 유저 및 Auth 유저 삭제)
+        await supabase.from("users").delete().eq("id", userId);
+        await supabase.auth.admin.deleteUser(userId);
+        return NextResponse.json({ error: `인증 메일 전송 실패: ${errData.message || JSON.stringify(errData)}` }, { status: 500 });
+      }
+    } catch (emailErr: any) {
+      console.error("Resend fetch error:", emailErr);
+      // 롤백 (DB 유저 및 Auth 유저 삭제)
+      await supabase.from("users").delete().eq("id", userId);
+      await supabase.auth.admin.deleteUser(userId);
+      return NextResponse.json({ error: `인증 메일 전송 중 오류 발생: ${emailErr.message}` }, { status: 500 });
+    }
+
     return NextResponse.json({ 
       success: true, 
-      message: "가입이 완료되었습니다.",
+      message: "가입이 완료되었습니다. 이메일로 인증 메일이 발송되었으니 확인해 주세요.",
       user: {
         id: userId,
         nickname: nickname
