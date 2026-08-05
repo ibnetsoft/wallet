@@ -300,7 +300,7 @@ export default function WalletSweepPage() {
             
             <div className="pt-3 border-t border-[#26262B]">
               <div className="flex justify-between items-center">
-                <p className="text-[10px] text-[#8E8E93] uppercase font-bold">가스비 대납 지갑 (마스터 수수료 지갑)</p>
+                <p className="text-[10px] text-[#8E8E93] uppercase font-bold">가스비 대납 지갑 (마스터 핫 지갑)</p>
                 <p className="text-xs font-bold text-[#30D5C8] font-mono">{feeWalletBalance.toFixed(4)} BNB 보유</p>
               </div>
               <div className="flex items-center space-x-2 mt-1">
@@ -308,7 +308,7 @@ export default function WalletSweepPage() {
                 <span className="text-[#EAECEF] font-mono text-xs break-all">{feeWalletAddress || "불러오는 중..."}</span>
               </div>
               {feeWalletBalance < (userWallets.length * 0.0005) && userWallets.length > 0 && (
-                <p className="text-[10px] text-[#FF453A] mt-1 font-bold">⚠️ 경고: 수수료 지갑의 BNB 잔액이 부족하여 스윕이 실패할 수 있습니다. 위 주소로 BNB를 입금하세요.</p>
+                <p className="text-[10px] text-[#FF453A] mt-1 font-bold">⚠️ 경고: 마스터 지갑의 BNB 잔액이 부족하여 스윕이 실패할 수 있습니다. 위 주소로 BNB를 입금하세요.</p>
               )}
             </div>
           </div>
