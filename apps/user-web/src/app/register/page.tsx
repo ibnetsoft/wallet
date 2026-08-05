@@ -28,9 +28,6 @@ function RegisterForm() {
   const [nicknameTouched, setNicknameTouched] = useState(false);
   const [referralCode, setReferralCode] = useState("URC883920");
 
-  const [verifyCode, setVerifyCode] = useState("");
-  const [codeSent, setCodeSent] = useState(false);
-
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -82,10 +79,7 @@ function RegisterForm() {
       return;
     }
 
-    if (!codeSent || verifyCode.length !== 6) {
-      setError(lang === "ko" ? "인증번호 6자리를 전송하고 입력해주세요!" : lang === "en" ? "Please send and enter 6-digit code!" : "请先发送并输入6位邮箱验证码！");
-      return;
-    }
+
 
     if (!referralCode.trim()) {
       setError(lang === "ko" ? "추천코드는 필수 입력 항목입니다!" : lang === "en" ? "Referral code is required!" : "邀请码是必填项，没有邀请码无法注册！");
@@ -127,7 +121,7 @@ function RegisterForm() {
           {lang === "ko" ? "가입 완료" : lang === "en" ? "Registration Successful" : "注册成功"}
         </h2>
         <p className="text-sm text-[#848E9C] mb-8">
-          {lang === "ko" ? "이메일 주소를 확인하여 인증을 완료한 후 로그인해주세요." : lang === "en" ? "Please check your email to verify your account, then log in." : "请检查您的邮箱进行验证，然后登录。"}
+          {lang === "ko" ? "회원가입이 완료되었습니다! 로그인해 주세요." : lang === "en" ? "Registration completed! Please log in." : "注册成功！请登录。"}
         </p>
         <Link
           href="/login"
@@ -164,53 +158,20 @@ function RegisterForm() {
             {lang === "ko" ? "이메일 주소" : lang === "en" ? "Email Address" : "邮箱地址"}
             <span className="text-[#F6465D] font-black">*</span>
           </label>
-          <div className="flex space-x-2">
-            <div className="relative flex-1">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#848E9C]">
-                <Mail size={16} />
-              </div>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                placeholder="name@example.com"
-                className="w-full bg-[#1E2329] border border-[#2B3139] focus:border-[#FCD535] pl-11 pr-4 py-3 rounded text-sm text-[#EAECEF] font-semibold outline-none transition-colors"
-              />
+          <div className="relative w-full">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#848E9C]">
+              <Mail size={16} />
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                if(!email) return alert(lang === "ko" ? "이메일 주소를 입력해주세요!" : lang === "en" ? "Please enter an email address!" : "请输入邮箱地址！");
-                alert((lang === "ko" ? "인증번호가 다음 주소로 발송되었습니다: " : lang === "en" ? "Verification code sent to " : "验证码已发送至 ") + email);
-                setCodeSent(true);
-              }}
-              className="px-4 bg-[#2B3139] hover:bg-[#3B424B] text-[#EAECEF] text-xs font-bold rounded transition-colors whitespace-nowrap"
-            >
-              {lang === "ko" ? "인증번호 발송" : lang === "en" ? "Send Code" : "发送验证码"}
-            </button>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              placeholder="name@example.com"
+              className="w-full bg-[#1E2329] border border-[#2B3139] focus:border-[#FCD535] pl-11 pr-4 py-3 rounded text-sm text-[#EAECEF] font-semibold outline-none transition-colors"
+            />
           </div>
         </div>
-
-        {/* 인증번호 입력 */}
-        {codeSent && (
-          <div className="space-y-1">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#848E9C]">
-                <CheckCircle2 size={16} />
-              </div>
-              <input
-                type="text"
-                value={verifyCode}
-                onChange={(e) => setVerifyCode(e.target.value)}
-                required
-                maxLength={6}
-                placeholder={lang === "ko" ? "6자리 인증번호 (예: 123456)" : lang === "en" ? "6-digit Code (e.g. 123456)" : "请输入6位验证码 (예: 123456)"}
-                className="w-full bg-[#1E2329] border border-[#2B3139] focus:border-[#0ECB81] pl-11 pr-4 py-3 rounded text-sm text-[#0ECB81] font-semibold outline-none transition-colors tracking-widest"
-              />
-            </div>
-          </div>
-        )}
 
         {/* 닉네임(ID) */}
         <div className="space-y-1">
