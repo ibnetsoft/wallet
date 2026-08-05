@@ -1,10 +1,6 @@
 import { NextResponse } from 'next/server';
-import { Pool } from 'pg';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { ethers } from 'ethers';
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
-});
 
 export async function POST(req: Request) {
   try {
@@ -17,48 +13,67 @@ export async function POST(req: Request) {
 
     const mnemonic = process.env.WALLET_MASTER_MNEMONIC;
     if (!mnemonic) {
-      return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 });
+      return NextResponse.json({ error: 'Server misconfiguration: no mnemonic' }, { status: 500 });
     }
 
-    // 1. Query the next available derivation_index atomically
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-      
-      const indexResult = await client.query(`
-        SELECT COALESCE(MAX(derivation_index), -1) + 1 AS next_index
-        FROM public.user_wallets
-      `);
-      
-      const nextIndex = parseInt(indexResult.rows[0].next_index, 10);
-      
-      // 2. Use ethers to derive the BSC child wallet
-      const hdNode = ethers.HDNodeWallet.fromPhrase(mnemonic);
-      const childWallet = hdNode.derivePath(`m/44'/60'/0'/0/${nextIndex}`);
-      const address = childWallet.address;
-      
-      // 3. Insert the new address
-      await client.query(`
-        INSERT INTO public.user_wallets (user_id, address, derivation_index, chain_type)
-        VALUES ($1, $2, $3, 'BSC')
-      `, [user_id, address, nextIndex]);
-      
-      await client.query('COMMIT');
-      
+    const supabase = createAdminClient();
+
+    // 1. Check if user already has a wallet
+    const { data: existingWallet } = await supabase
+      .from('user_wallets')
+      .select('address')
+      .eq('user_id', user_id)
+      .eq('chain_type', 'BSC')
+      .limit(1)
+      .single();
+
+    if (existingWallet?.address) {
       return NextResponse.json({
         success: true,
+        address: existingWallet.address,
+        chain_type: 'BSC',
+        existing: true
+      });
+    }
+
+    // 2. Get next derivation index
+    const { data: maxIndexData } = await supabase
+      .from('user_wallets')
+      .select('derivation_index')
+      .order('derivation_index', { ascending: false })
+      .limit(1)
+      .single();
+
+    const nextIndex = maxIndexData ? maxIndexData.derivation_index + 1 : 0;
+
+    // 3. Derive BSC wallet from mnemonic
+    const hdNode = ethers.HDNodeWallet.fromPhrase(mnemonic);
+    const childWallet = hdNode.derivePath(`m/44'/60'/0'/0/${nextIndex}`);
+    const address = childWallet.address;
+
+    // 4. Insert into user_wallets
+    const { error: insertError } = await supabase
+      .from('user_wallets')
+      .insert({
+        user_id,
         address,
         derivation_index: nextIndex,
-        chain_type: 'BSC'
+        chain_type: 'BSC',
       });
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
+
+    if (insertError) {
+      console.error('Wallet insert error:', insertError);
+      return NextResponse.json({ error: `DB insert failed: ${insertError.message}` }, { status: 500 });
     }
+
+    return NextResponse.json({
+      success: true,
+      address,
+      derivation_index: nextIndex,
+      chain_type: 'BSC'
+    });
   } catch (error: any) {
     console.error('Wallet generation error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: `Internal Error: ${error.message}` }, { status: 500 });
   }
 }
