@@ -46,9 +46,10 @@ export async function POST(req: Request) {
 
     const nextIndex = maxIndexData ? maxIndexData.derivation_index + 1 : 0;
 
-    // 3. Derive BSC wallet from mnemonic
-    const hdNode = ethers.HDNodeWallet.fromPhrase(mnemonic);
-    const childWallet = hdNode.derivePath(`m/44'/60'/0'/0/${nextIndex}`);
+    // 3. Derive BSC wallet from mnemonic (ethers v6: specify base path, then relative index)
+    const basePath = "m/44'/60'/0'/0";
+    const hdNode = ethers.HDNodeWallet.fromPhrase(mnemonic, "", basePath);
+    const childWallet = hdNode.deriveChild(nextIndex);
     const address = childWallet.address;
 
     // 4. Insert into user_wallets
