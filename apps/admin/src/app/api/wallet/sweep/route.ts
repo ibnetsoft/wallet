@@ -82,7 +82,7 @@ export async function POST(request: Request) {
       // Check on-chain balance
       const onChainUsdtBalance = await usdtContract.balanceOf(userWallet.address);
 
-      if (onChainUsdtBalance === 0n) {
+      if (onChainUsdtBalance === BigInt(0)) {
         continue;
       }
 
@@ -115,7 +115,7 @@ export async function POST(request: Request) {
       await client.query("COMMIT");
     }
 
-    if (totalSwept === 0n) {
+    if (totalSwept === BigInt(0)) {
       return NextResponse.json({ success: false, error: "실제 온체인 잔고가 있는 유저가 없습니다." }, { status: 400 });
     }
 
