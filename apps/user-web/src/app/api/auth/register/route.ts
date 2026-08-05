@@ -103,7 +103,7 @@ export async function POST(req: Request) {
       // 롤백 (Auth 유저 삭제)
       await supabase.auth.admin.deleteUser(userId);
       console.error("DB Insert Error:", dbError);
-      return NextResponse.json({ error: "유저 정보 저장 중 오류가 발생했습니다. 다시 시도해주세요." }, { status: 500 });
+      return NextResponse.json({ error: `유저 저장 실패: ${dbError.message || JSON.stringify(dbError)}` }, { status: 500 });
     }
 
     return NextResponse.json({ 
