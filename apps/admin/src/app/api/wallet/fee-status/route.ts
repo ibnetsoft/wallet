@@ -8,10 +8,10 @@ const provider = new JsonRpcProvider(BSC_RPC_URL);
 
 export async function GET() {
   try {
-    const feeWalletPk = process.env.MASTER_FEE_WALLET_PRIVATE_KEY;
+    const feeWalletPk = process.env.MASTER_HOT_WALLET_PRIVATE_KEY;
     
     if (!feeWalletPk) {
-      return NextResponse.json({ success: false, error: "MASTER_FEE_WALLET_PRIVATE_KEY is not configured" }, { status: 500 });
+      return NextResponse.json({ success: false, error: "MASTER_HOT_WALLET_PRIVATE_KEY is not configured" }, { status: 500 });
     }
 
     const feeWallet = new Wallet(feeWalletPk, provider);

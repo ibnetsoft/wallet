@@ -31,14 +31,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "마스터 핫 지갑 주소가 설정되지 않았거나 target_wallet이 누락되었습니다." }, { status: 400 });
     }
 
-    const feeWalletPk = process.env.MASTER_FEE_WALLET_PRIVATE_KEY;
+    const feeWalletPk = process.env.MASTER_HOT_WALLET_PRIVATE_KEY;
     const mnemonic = process.env.WALLET_MASTER_MNEMONIC;
 
     if (!feeWalletPk || !mnemonic) {
-      return NextResponse.json({ success: false, error: "환경 변수 설정(마스터 지갑)이 누락되었습니다." }, { status: 500 });
+      return NextResponse.json({ success: false, error: "환경 변수 설정(마스터 핫 지갑 개인키 또는 니모닉)이 누락되었습니다." }, { status: 500 });
     }
 
-    // 2. Instantiate Master Fee Wallet
+    // 2. Instantiate Master Fee Wallet (using master hot wallet private key)
     const masterFeeWallet = new Wallet(feeWalletPk, provider);
 
     // 3. Fetch user wallets and balances where USDT (asset_id = 2) available_balance > 0
