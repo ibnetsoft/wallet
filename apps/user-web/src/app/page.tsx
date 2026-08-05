@@ -484,6 +484,7 @@ export default function MobileApp() {
   const [userId, setUserId] = useState("");
   const [countdown, setCountdown] = useState("");
   const [urdBalance, setUrdBalance] = useState(3000);
+  const [hongbaoCount, setHongbaoCount] = useState(4);
   const [baoBalance, setBaoBalance] = useState(120);
   const [usdtBalance, setUsdtBalance] = useState(10500.00);
   const [urcBalance, setUrcBalance] = useState(4980.00);
@@ -727,7 +728,7 @@ export default function MobileApp() {
                 <TrendingUp size={12} />
                 <span>+12.4% (24h)</span>
               </div>
-              <div className="grid grid-cols-2 gap-4 mt-5 pt-4 border-t border-[#2B3139]">
+              <div className="grid grid-cols-3 gap-4 mt-5 pt-4 border-t border-[#2B3139]">
                 <div>
                   <p className="text-[10px] text-[#848E9C]">USDT</p>
                   <p className="text-sm font-bold font-mono text-[#EAECEF] mt-0.5">
@@ -738,6 +739,12 @@ export default function MobileApp() {
                   <p className="text-[10px] text-[#848E9C]">{lang === "ko" ? "옥구슬" : lang === "en" ? "Jade Beads" : "玉珠"}</p>
                   <p className="text-sm font-bold font-mono text-[#FCD535] mt-0.5">
                     {urdBalance.toLocaleString()} {lang === "ko" ? "개" : lang === "en" ? "Bead(s)" : "个"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-[#848E9C]">{lang === "ko" ? "홍바오" : lang === "en" ? "Hongbao" : "红包"}</p>
+                  <p className="text-sm font-bold font-mono text-[#F6465D] mt-0.5">
+                    {hongbaoCount.toLocaleString()} {lang === "ko" ? "개" : lang === "en" ? "Env(s)" : "个"}
                   </p>
                 </div>
               </div>
