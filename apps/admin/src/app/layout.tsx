@@ -11,7 +11,8 @@ import {
   Wallet, 
   ShieldAlert,
   Bell,
-  PlusCircle
+  PlusCircle,
+  Activity
 } from "lucide-react";
 
 export const metadata: Metadata = {
