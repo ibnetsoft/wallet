@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Users, Search, Activity, PowerOff } from "lucide-react";
+import { Users, Search, Activity, PowerOff, Copy, Check } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 interface UserProfile {
@@ -10,7 +10,13 @@ interface UserProfile {
   nickname: string;
   code: string;
   joinedAt: string;
+  lastLoginAt: string;
+  starLevel: number;
+  walletAddress: string;
   assets: number;
+  baoBalance: number;
+  jadeBalance: number;
+  hongbaoBalance: number;
   active: boolean;
   totalReferrals: number;
   usedEntries: number;
@@ -22,6 +28,13 @@ export default function UsersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
+
+  const handleCopy = (address: string) => {
+    navigator.clipboard.writeText(address);
+    setCopiedAddress(address);
+    setTimeout(() => setCopiedAddress(null), 2000);
+  };
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -102,12 +115,11 @@ export default function UsersPage() {
             <thead>
               <tr className="border-b border-[#26262B] text-[#8E8E93] font-semibold uppercase tracking-wider pb-3">
                 <th className="py-3 px-2 text-center w-10">No.</th>
-                <th className="py-3 px-4">유저 회원 정보</th>
-                <th className="py-3 px-4 text-center">게임 횟수</th>
-                <th className="py-3 px-4 text-center">총추천인</th>
-                <th className="py-3 px-4">스폰서</th>
-                <th className="py-3 px-4">가입 날짜</th>
-                <th className="py-3 px-4 text-right">보유 자산 (USDT)</th>
+                <th className="py-3 px-4">회원 정보 (닉네임/직급)</th>
+                <th className="py-3 px-4">BSC 지갑 주소</th>
+                <th className="py-3 px-4 text-right">보유 자산</th>
+                <th className="py-3 px-4 text-center">네트워크 (스폰서/추천/게임)</th>
+                <th className="py-3 px-4 text-center">활동 기록 (가입/접속)</th>
                 <th className="py-3 px-4 text-center">상태</th>
                 <th className="py-3 px-4 text-center">관리</th>
               </tr>
@@ -115,23 +127,80 @@ export default function UsersPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-[#8E8E93]">회원 데이터를 불러오는 중...</td>
+                  <td colSpan={8} className="py-8 text-center text-[#8E8E93]">회원 데이터를 불러오는 중...</td>
                 </tr>
               ) : filteredUsers.map((user, index) => (
                 <tr key={user.id} className="border-b border-[#26262B]/40 hover:bg-[#1C1C21]/30 transition-all">
                   <td className="py-3 px-2 text-center text-[#8E8E93] font-mono">{index + 1}</td>
+                  
+                  {/* 회원 정보 */}
                   <td className="py-3 px-4">
-                    <div className="font-semibold text-white">{user.nickname} <span className="font-mono text-[#BF5AF2] text-[10px] ml-1">({user.code})</span></div>
-                    <div className="text-[10px] text-[#8E8E93]">{user.email}</div>
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                        user.starLevel >= 3 ? 'bg-[#FF9F0A]/20 text-[#FF9F0A] border border-[#FF9F0A]/30' : 
+                        user.starLevel >= 1 ? 'bg-[#0ECB81]/20 text-[#0ECB81] border border-[#0ECB81]/30' :
+                        'bg-[#8E8E93]/20 text-[#8E8E93] border border-[#8E8E93]/30'
+                      }`}>
+                        {user.starLevel > 0 ? `${user.starLevel}성` : '일반'}
+                      </span>
+                      <span className="font-semibold text-white">{user.nickname}</span>
+                      <span className="font-mono text-[#BF5AF2] text-[10px]">({user.code})</span>
+                    </div>
+                    <div className="text-[10px] text-[#8E8E93] mt-1">{user.email}</div>
                   </td>
-                  <td className="py-3 px-4 text-center font-mono font-bold text-white">{user.usedEntries}회</td>
-                  <td className="py-3 px-4 text-center font-mono text-[#00D2FF]">{user.totalReferrals}명</td>
+
+                  {/* 지갑 주소 */}
                   <td className="py-3 px-4">
-                    <div className="text-xs text-[#EAECEF]">{user.sponsorNickname || "없음"}</div>
-                    <div className="text-[10px] text-[#8E8E93]">{user.sponsorEmail !== "없음" ? user.sponsorEmail : ""}</div>
+                    {user.walletAddress !== "미발급" ? (
+                      <div className="flex items-center space-x-2">
+                        <span className="text-[10px] font-mono text-[#00D2FF] truncate w-24">
+                          {user.walletAddress.slice(0, 6)}...{user.walletAddress.slice(-4)}
+                        </span>
+                        <button 
+                          onClick={() => handleCopy(user.walletAddress)}
+                          className="p-1 hover:bg-[#26262B] rounded text-[#8E8E93] hover:text-white transition-colors"
+                          title="주소 복사"
+                        >
+                          {copiedAddress === user.walletAddress ? <Check size={12} className="text-[#0ECB81]" /> : <Copy size={12} />}
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-[#8E8E93]">미발급</span>
+                    )}
                   </td>
-                  <td className="py-3 px-4 text-[#8E8E93]">{user.joinedAt}</td>
-                  <td className="py-3 px-4 text-right font-bold text-white font-mono">${user.assets.toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
+
+                  {/* 보유 자산 */}
+                  <td className="py-3 px-4 text-right">
+                    <div className="flex flex-col items-end space-y-1">
+                      <div className="text-[11px] font-bold text-white font-mono flex items-center justify-end w-full">
+                        <span className="text-[9px] text-[#8E8E93] mr-2">USDT</span>
+                        ${user.assets.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                      </div>
+                      <div className="text-[10px] font-bold text-[#0ECB81] font-mono flex items-center justify-end w-full">
+                        <span className="text-[9px] text-[#8E8E93] mr-2">BAO</span>
+                        {user.baoBalance.toLocaleString()}
+                      </div>
+                      <div className="flex justify-end space-x-2 w-full mt-0.5">
+                        <span className="text-[9px] text-[#30D5C8] bg-[#30D5C8]/10 px-1 rounded border border-[#30D5C8]/20">옥구슬: {user.jadeBalance.toLocaleString()}</span>
+                        <span className="text-[9px] text-[#FF453A] bg-[#FF453A]/10 px-1 rounded border border-[#FF453A]/20">홍바오: {user.hongbaoBalance.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </td>
+
+                  {/* 네트워크 */}
+                  <td className="py-3 px-4 text-center">
+                    <div className="text-[10px] text-[#EAECEF]"><span className="text-[#8E8E93]">스폰서:</span> {user.sponsorNickname || "없음"}</div>
+                    <div className="text-[10px] text-[#00D2FF] mt-0.5"><span className="text-[#8E8E93]">산하추천:</span> {user.totalReferrals}명</div>
+                    <div className="text-[10px] text-[#BF5AF2] mt-0.5"><span className="text-[#8E8E93]">게임진행:</span> {user.usedEntries}회</div>
+                  </td>
+
+                  {/* 활동 기록 */}
+                  <td className="py-3 px-4 text-center">
+                    <div className="text-[10px] text-[#8E8E93]">가입: {user.joinedAt}</div>
+                    <div className="text-[10px] text-[#F2F2F7] mt-0.5">접속: {user.lastLoginAt}</div>
+                  </td>
+
+                  {/* 상태 */}
                   <td className="py-3 px-4 text-center">
                     {user.active ? (
                       <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-bold bg-[#30D5C8]/10 text-[#30D5C8]">
@@ -145,11 +214,13 @@ export default function UsersPage() {
                       </span>
                     )}
                   </td>
-                  <td className="py-3 px-4 text-center flex items-center justify-center space-x-2">
-                    <button className="px-3 py-1 bg-[#1C1C21] hover:bg-[#00D2FF] hover:text-[#0B0E11] text-[#00D2FF] text-[10px] font-bold rounded transition-colors">
+
+                  {/* 관리 */}
+                  <td className="py-3 px-4 text-center flex items-center justify-center space-x-2 h-[80px]">
+                    <button className="px-2.5 py-1 bg-[#1C1C21] border border-[#26262B] hover:border-[#00D2FF] hover:text-[#00D2FF] text-[#EAECEF] text-[10px] font-bold rounded transition-colors">
                       조직도
                     </button>
-                    <button onClick={() => handleDeleteUser(user.id, user.nickname)} className="px-3 py-1 bg-[#F6465D]/10 hover:bg-[#F6465D] hover:text-white text-[#F6465D] text-[10px] font-bold rounded transition-colors">
+                    <button onClick={() => handleDeleteUser(user.id, user.nickname)} className="px-2.5 py-1 bg-[#F6465D]/10 hover:bg-[#F6465D] hover:text-white text-[#F6465D] text-[10px] font-bold rounded transition-colors">
                       삭제
                     </button>
                   </td>
@@ -157,7 +228,7 @@ export default function UsersPage() {
               ))}
               {!loading && filteredUsers.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-[#8E8E93]">검색 결과가 없습니다.</td>
+                  <td colSpan={8} className="py-8 text-center text-[#8E8E93]">검색 결과가 없습니다.</td>
                 </tr>
               )}
             </tbody>

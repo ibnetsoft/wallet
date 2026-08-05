@@ -17,13 +17,27 @@ export async function GET() {
         u.nickname,
         u.status,
         u.created_at,
-        COALESCE(b.available_balance::numeric, 0) as usdt_balance,
+        u.last_login_at,
+        u.star_level,
+        uw.address AS wallet_address,
+        COALESCE(b_usdt.available_balance::numeric, 0) as usdt_balance,
+        COALESCE(b_bao.available_balance::numeric, 0) as bao_balance,
+        COALESCE(b_jade.available_balance::numeric, 0) as jade_balance,
+        COALESCE(b_hongbao.available_balance::numeric, 0) as hongbao_balance,
         (SELECT COUNT(*) FROM public.users WHERE recommender_id = u.id) as total_referrals,
         COALESCE(ga.total_used_entries, 0) as used_entries,
         s.email as sponsor_email,
         s.nickname as sponsor_nickname
       FROM public.users u
-      LEFT JOIN public.user_balances b ON u.id = b.user_id AND b.asset_id = 2
+      LEFT JOIN public.user_wallets uw ON u.id = uw.user_id
+      LEFT JOIN public.assets a_usdt ON a_usdt.symbol = 'USDT'
+      LEFT JOIN public.user_balances b_usdt ON u.id = b_usdt.user_id AND b_usdt.asset_id = a_usdt.id
+      LEFT JOIN public.assets a_bao ON a_bao.symbol = 'BAO'
+      LEFT JOIN public.user_balances b_bao ON u.id = b_bao.user_id AND b_bao.asset_id = a_bao.id
+      LEFT JOIN public.assets a_jade ON a_jade.symbol = 'JADE'
+      LEFT JOIN public.user_balances b_jade ON u.id = b_jade.user_id AND b_jade.asset_id = a_jade.id
+      LEFT JOIN public.assets a_hongbao ON a_hongbao.symbol = 'HONGBAO'
+      LEFT JOIN public.user_balances b_hongbao ON u.id = b_hongbao.user_id AND b_hongbao.asset_id = a_hongbao.id
       LEFT JOIN public.v_user_game_allowance ga ON u.id = ga.user_id
       LEFT JOIN public.users s ON u.sponsor_id = s.id
       ORDER BY u.created_at DESC
@@ -38,7 +52,13 @@ export async function GET() {
         nickname: u.nickname || "유저",
         code: `URC-${u.id.substring(0, 8).toUpperCase()}`,
         joinedAt: new Date(u.created_at).toISOString().split("T")[0],
+        lastLoginAt: u.last_login_at ? new Date(u.last_login_at).toLocaleString() : "기록없음",
+        starLevel: u.star_level || 0,
+        walletAddress: u.wallet_address || "미발급",
         assets: parseFloat(u.usdt_balance),
+        baoBalance: parseFloat(u.bao_balance),
+        jadeBalance: parseFloat(u.jade_balance),
+        hongbaoBalance: parseFloat(u.hongbao_balance),
         active: u.status === "ACTIVE",
         totalReferrals: parseInt(u.total_referrals || 0),
         usedEntries: parseInt(u.used_entries || 0),
