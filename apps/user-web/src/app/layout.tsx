@@ -4,7 +4,6 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "U彩宝369",
   description: "Secure multi-token mobile wallet client",
-  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

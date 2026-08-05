@@ -734,14 +734,16 @@ export default function MobileApp() {
             
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className="relative">
-                  <div className="w-11 h-11 rounded-full bg-[#1E2329] flex items-center justify-center font-black text-[#FCD535]">C</div>
+                <div className="relative flex-shrink-0">
+                  <div className="w-11 h-11 rounded-full bg-[#1E2329] flex items-center justify-center font-black text-[#FCD535]">
+                    {userNickname.charAt(0).toUpperCase()}
+                  </div>
                   <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#0ECB81] rounded-full border-2 border-[#0B0E11] flex items-center justify-center">
                     <Check size={8} className="text-[#0B0E11]" />
                   </div>
                 </div>
-                <div>
-                  <h1 className="text-base font-extrabold text-[#EAECEF]">User (我)</h1>
+                <div className="min-w-0">
+                  <h1 className="text-base font-extrabold text-[#EAECEF] truncate max-w-[120px]">{userNickname}</h1>
                   <StarBadge level={2} />
                 </div>
               </div>
