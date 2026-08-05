@@ -66,7 +66,7 @@ type Language = "ko" | "en" | "zh";
 
 const I18N = {
   ko: {
-    home: "홈", wallet: "지갑", products: "상품몰", game: "경기장", network: "조직도", settings: "설정",
+    home: "홈", wallet: "지갑", products: "게임기", game: "게임", network: "조직도", settings: "설정",
     miningStatus: "게임기 구동 현황", dailyYield: "일일 수익률", gaugeTitle: "보너스 한도 달성률 (200% ~ 300%)",
     usdtBalance: "USDT 잔액", urcBalance: "URC 잔액", urdBalance: "옥구슬 잔액",
     instantSwap: "실시간 스왑", pay: "지불", receive: "수령 (예상)", confirmSwap: "실시간 스왑 실행",
@@ -85,7 +85,7 @@ const I18N = {
     unpaidMembersTitle: "상품 미구매 추천 회원", unpaidMembersSub: "",
     directTreeSub: "직추천 조직", sponsorTreeSub: "후원 계보 조직",
     bet1minLimit: "마감 1분 전 게임 마감", round: "회차", round1: "1회차", round2: "2회차", round3: "3회차",
-    betTime: "참여 가능 시간", aiDraw: "AI 당첨 발표", drawTime: "발표 시각", selectRound: "참여 회차 선택",
+    betTime: "참여 가능 시간", aiDraw: "AI 당첨 발표", drawTime: "발표 시각", selectRound: "참여 회차 선택", selectPlayCount: "참여 횟수 선택",
     selectBetCount: "게임 횟수 선택 (회당 옥구슬 1개)", totalCost: "총 소모", manualBetBtn: "게임 참여하기",
     autoBetRounds: "자동 참여 회차 (다중 선택)", dailyRepeat: "매일 반복 자동 참여",
     dailyRepeatSub: "매일 지정 시각에 자동으로 게임 참여",
@@ -115,7 +115,7 @@ const I18N = {
     unpaidMembersTitle: "Unpurchased Referral Members", unpaidMembersSub: "",
     directTreeSub: "Direct Referral Tree", sponsorTreeSub: "Sponsor Tree",
     bet1minLimit: "Game closes 1 min before deadline", round: "Round", round1: "Round 1", round2: "Round 2", round3: "Round 3",
-    betTime: "Playable Time", aiDraw: "AI Draw Announcement", drawTime: "Draw Time", selectRound: "Select Round",
+    betTime: "Playable Time", aiDraw: "AI Draw Announcement", drawTime: "Draw Time", selectRound: "Select Round", selectPlayCount: "Select Play Count",
     selectBetCount: "Select Game Play Count (1 Jade Bead each)", totalCost: "Total Cost", manualBetBtn: "Join Game",
     autoBetRounds: "Auto Rounds (Multi-select)", dailyRepeat: "Daily Auto Repeat",
     dailyRepeatSub: "Automatically play game at scheduled times daily",
@@ -1789,23 +1789,50 @@ export default function MobileApp() {
 
                   <div className="space-y-2">
                     <div className="flex justify-between items-center text-xs">
-                      <span className="text-[#848E9C] font-bold">{t.selectRound}</span>
+                      <span className="text-[#848E9C] font-bold">{t.selectPlayCount}</span>
                       <span className="text-[#FCD535] font-bold">{t.totalCost}: {manualBetsCount * 1} {lang === "ko" ? "옥구슬" : lang === "en" ? "Bead(s)" : "个玉珠"}</span>
                     </div>
-                    <div className="grid grid-cols-4 gap-2">
-                      {[1, 2, 5, 10].map((cnt) => (
-                        <button
-                          key={cnt}
-                          onClick={() => setManualBetsCount(cnt)}
-                          className={`py-2 rounded-lg text-xs font-bold border ${
-                            manualBetsCount === cnt
-                              ? "bg-[#FCD535] text-[#0B0E11] border-[#FCD535]"
-                              : "bg-[#0B0E11] border-[#2B3139] text-[#848E9C]"
-                          }`}
-                        >
-                          {cnt}{lang === "ko" ? "회" : lang === "en" ? " Times" : "次"} ({cnt * 1} {lang === "ko" ? "옥구슬" : lang === "en" ? "Jade" : "玉"})
-                        </button>
-                      ))}
+                    
+                    <div className="flex items-center space-x-2">
+                      {/* 감소 버튼 */}
+                      <button
+                        type="button"
+                        onClick={() => setManualBetsCount((prev) => Math.max(1, prev - 1))}
+                        className="w-10 h-10 flex-shrink-0 rounded-xl bg-[#0B0E11] border border-[#2B3139] text-[#EAECEF] font-black text-lg hover:border-[#FCD535] hover:text-[#FCD535] transition-all active:scale-90 flex items-center justify-center"
+                      >
+                        −
+                      </button>
+
+                      {/* 숫자 입력 */}
+                      <div className="relative flex-1">
+                        <input
+                          type="number"
+                          min={1}
+                          max={100}
+                          value={manualBetsCount}
+                          onChange={(e) => {
+                            const v = parseInt(e.target.value, 10);
+                            if (!isNaN(v) && v >= 1 && v <= 100) {
+                              setManualBetsCount(v);
+                            } else if (e.target.value === "") {
+                              setManualBetsCount(1);
+                            }
+                          }}
+                          className="w-full bg-[#0B0E11] border border-[#2B3139] focus:border-[#FCD535] rounded-xl py-2.5 text-center text-lg font-black text-[#FCD535] outline-none transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                        <span className="absolute right-3 inset-y-0 flex items-center text-[10px] text-[#848E9C] font-bold pointer-events-none">
+                          {lang === "ko" ? "회" : lang === "en" ? "×" : "次"}
+                        </span>
+                      </div>
+
+                      {/* 증가 버튼 */}
+                      <button
+                        type="button"
+                        onClick={() => setManualBetsCount((prev) => Math.min(100, prev + 1))}
+                        className="w-10 h-10 flex-shrink-0 rounded-xl bg-[#0B0E11] border border-[#2B3139] text-[#EAECEF] font-black text-lg hover:border-[#FCD535] hover:text-[#FCD535] transition-all active:scale-90 flex items-center justify-center"
+                      >
+                        +
+                      </button>
                     </div>
                   </div>
 
