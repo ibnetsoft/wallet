@@ -32,7 +32,11 @@ export async function POST(req: Request) {
     // 2. 추천인 체크 (선택)
     let recommenderId = null;
     let parentId = null;
-    if (referralCode) {
+    
+    // 최초 최상위 계정 생성을 위한 마스터 코드 예외 처리
+    const masterCodes = ["URC883920", "BAO369", "MASTER"];
+    
+    if (referralCode && !masterCodes.includes(referralCode.toUpperCase())) {
       const { data: recommender, error: recError } = await supabase
         .from("users")
         .select("id")
@@ -51,7 +55,7 @@ export async function POST(req: Request) {
           recommenderId = recByEmail.id;
           parentId = recByEmail.id;
         } else {
-          return NextResponse.json({ error: "유효하지 않은 추천인 코드입니다." }, { status: 400 });
+          return NextResponse.json({ error: "유효하지 않은 추천인 코드입니다. (마스터 코드를 사용하거나 정확한 닉네임을 입력하세요)" }, { status: 400 });
         }
       } else {
         recommenderId = recommender.id;
