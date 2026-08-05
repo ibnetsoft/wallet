@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ArrowRight, Lock, Mail, AlertCircle } from "lucide-react";
@@ -12,7 +12,20 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [lang, setLang] = useState<"zh" | "en" | "ko">("zh");
   const router = useRouter();
+
+  useEffect(() => {
+    const saved = localStorage.getItem("urc_lang");
+    if (saved === "zh" || saved === "en" || saved === "ko") {
+      setLang(saved);
+    }
+  }, []);
+
+  const changeLang = (l: "zh" | "en" | "ko") => {
+    setLang(l);
+    localStorage.setItem("urc_lang", l);
+  };
 
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -55,8 +68,12 @@ export default function LoginPage() {
           className="w-32 h-auto mx-auto mb-4 object-contain"
           style={{ mixBlendMode: "lighten" }}
         />
-        <h1 className="text-2xl font-black text-white tracking-tight">Welcome to URC369</h1>
-        <p className="text-sm text-[#8E8E93] mt-2">Log in to manage your assets & 369 games</p>
+        <h1 className="text-2xl font-black text-white tracking-tight">
+          {lang === "ko" ? "URC369 환영합니다" : lang === "en" ? "Welcome to URC369" : "欢迎来到 URC369"}
+        </h1>
+        <p className="text-sm text-[#8E8E93] mt-2">
+          {lang === "ko" ? "자산과 369 게임을 관리하려면 로그인하세요" : lang === "en" ? "Log in to manage your assets & 369 games" : "登录以管理您的资产和 369 游戏"}
+        </p>
       </div>
 
       <div className="space-y-4 relative z-10">
@@ -68,7 +85,9 @@ export default function LoginPage() {
         )}
 
         <div className="space-y-1">
-          <label className="text-[10px] text-[#8E8E93] uppercase font-bold ml-1">Email Address</label>
+          <label className="text-[10px] text-[#8E8E93] uppercase font-bold ml-1">
+            {lang === "ko" ? "이메일 주소" : lang === "en" ? "Email Address" : "邮箱地址"}
+          </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#8E8E93]">
               <Mail size={16} />
@@ -85,7 +104,9 @@ export default function LoginPage() {
         </div>
 
         <div className="space-y-1">
-          <label className="text-[10px] text-[#8E8E93] uppercase font-bold ml-1">Password</label>
+          <label className="text-[10px] text-[#8E8E93] uppercase font-bold ml-1">
+            {lang === "ko" ? "비밀번호" : lang === "en" ? "Password" : "密码"}
+          </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#8E8E93]">
               <Lock size={16} />
@@ -111,7 +132,7 @@ export default function LoginPage() {
             <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
           ) : (
             <>
-              <span>Log In</span>
+              <span>{lang === "ko" ? "로그인" : lang === "en" ? "Log In" : "登录"}</span>
               <ArrowRight size={16} />
             </>
           )}
@@ -119,10 +140,23 @@ export default function LoginPage() {
       </div>
 
       <div className="mt-8 text-center text-xs text-[#8E8E93] relative z-10">
-        Don't have an account?{" "}
+        {lang === "ko" ? "계정이 없으신가요?" : lang === "en" ? "Don't have an account?" : "还没有账号？"}{" "}
         <Link href="/register" className="text-[#FCD535] font-bold hover:underline">
-          Register here
+          {lang === "ko" ? "회원가입" : lang === "en" ? "Register here" : "立即注册"}
         </Link>
+      </div>
+
+      {/* 언어 선택 */}
+      <div className="mt-8 flex justify-center items-center space-x-6 relative z-10">
+        <button onClick={() => changeLang("zh")} className={`text-2xl transition-all ${lang === "zh" ? "scale-125 grayscale-0" : "grayscale opacity-50 hover:grayscale-0 hover:opacity-100"}`} title="中文">
+          🇨🇳
+        </button>
+        <button onClick={() => changeLang("en")} className={`text-2xl transition-all ${lang === "en" ? "scale-125 grayscale-0" : "grayscale opacity-50 hover:grayscale-0 hover:opacity-100"}`} title="English">
+          🇺🇸
+        </button>
+        <button onClick={() => changeLang("ko")} className={`text-2xl transition-all ${lang === "ko" ? "scale-125 grayscale-0" : "grayscale opacity-50 hover:grayscale-0 hover:opacity-100"}`} title="한국어">
+          🇰🇷
+        </button>
       </div>
     </div>
   );
