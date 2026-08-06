@@ -383,12 +383,12 @@ export default function SettingsPage() {
               </div>
 
               {/* 생성 이력 표시 (최근 5개) */}
-              {walletHistory.length > 0 && (
-                <div className="p-4 bg-[#121215] border border-[#26262B] rounded-xl space-y-2 mt-2">
-                  <label className="text-[10px] text-[#FF9F0A] uppercase font-bold flex items-center space-x-1">
-                    <span>⚠️ 마스터 핫 지갑 자체 생성 이력 (최근 5건)</span>
-                  </label>
-                  <p className="text-[10px] text-[#8E8E93]">만약의 분실을 대비하여 이전에 자체 생성했던 지갑들의 주소와 개인키를 백업 용도로 임시 표시합니다. 외부 노출에 각별히 주의하세요.</p>
+              <div className="p-4 bg-[#121215] border border-[#26262B] rounded-xl space-y-2 mt-2">
+                <label className="text-[10px] text-[#FF9F0A] uppercase font-bold flex items-center space-x-1">
+                  <span>⚠️ 마스터 핫 지갑 자체 생성 이력 (최근 5건)</span>
+                </label>
+                <p className="text-[10px] text-[#8E8E93]">만약의 분실을 대비하여 이전에 자체 생성했던 지갑들의 주소와 개인키를 백업 용도로 임시 표시합니다. 외부 노출에 각별히 주의하세요.</p>
+                {walletHistory.length > 0 ? (
                   <div className="space-y-3 mt-3">
                     {walletHistory.map((h, i) => (
                       <div key={i} className="p-2 bg-[#0C0C0E] border border-[#26262B] rounded">
@@ -400,8 +400,12 @@ export default function SettingsPage() {
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="p-4 bg-[#0C0C0E] border border-[#26262B] border-dashed rounded text-center mt-3">
+                    <p className="text-xs text-[#8E8E93]">생성된 지갑 이력이 없습니다. 지갑을 새로 생성하면 여기에 기록됩니다.</p>
+                  </div>
+                )}
+              </div>
 
               {/* 콜드 금고 주소 */}
               <div className="p-4 bg-[#0C0C0E] border border-[#26262B] rounded-xl space-y-3">
