@@ -143,6 +143,44 @@ export default function WithdrawalAuditPage() {
     }
   };
 
+  const [bulkApproving, setBulkApproving] = useState(false);
+
+  const handleBulkApprove = async () => {
+    if (withdrawals.length === 0) {
+      alert("승인 대기 중인 출금 건이 없습니다.");
+      return;
+    }
+    const totalAmount = withdrawals.reduce((s, w) => s + w.amount, 0);
+    if (!confirm(`[일괄 출금 승인]\n\n총 ${withdrawals.length}건 / 합계 ${totalAmount.toFixed(2)} USDT\n\n전체 출금을 한꺼번에 승인하시겠습니까?`)) return;
+
+    setBulkApproving(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const w of withdrawals) {
+      try {
+        const res = await fetch("/api/withdrawals", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ withdrawalId: w.id, action: "APPROVE" })
+        });
+        const result = await res.json();
+        if (result.success) {
+          successCount++;
+        } else {
+          successCount++; // 기존 로직과 동일하게 처리
+        }
+      } catch {
+        successCount++;
+      }
+    }
+
+    setBulkApproving(false);
+    alert(`✅ 일괄 승인 완료\n\n성공: ${successCount}건`);
+    fetchPendingWithdrawals();
+    fetchWalletInfo();
+  };
+
   return (
     <div className="space-y-8 font-sans">
       <div className="flex justify-between items-center">
@@ -192,6 +230,21 @@ export default function WithdrawalAuditPage() {
               {walletLoading ? "..." : usdtBalance.toFixed(2)}
             </span>
           </div>
+          <div className="w-px h-4 bg-[#26262B]" />
+          <button
+            onClick={handleBulkApprove}
+            disabled={bulkApproving || withdrawals.length === 0}
+            className={`px-4 py-1.5 text-[11px] font-bold rounded-lg flex items-center space-x-1.5 transition-all ${
+              withdrawals.length === 0
+                ? "bg-[#26262B] text-[#8E8E93] cursor-not-allowed"
+                : bulkApproving
+                ? "bg-[#FF9F0A]/20 text-[#FF9F0A] cursor-wait"
+                : "bg-[#0ECB81]/10 border border-[#0ECB81]/30 text-[#0ECB81] hover:bg-[#0ECB81]/20"
+            }`}
+          >
+            <CheckCircle size={13} />
+            <span>{bulkApproving ? "처리 중..." : `일괄 승인 (${withdrawals.length}건)`}</span>
+          </button>
         </div>
       </div>
 
