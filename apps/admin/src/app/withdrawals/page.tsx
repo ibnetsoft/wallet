@@ -110,12 +110,10 @@ export default function WithdrawalAuditPage() {
         fetchPendingWithdrawals();
         fetchWalletInfo();
       } else {
-        alert(`❌ 승인 처리 완료: ${amount} ${asset} 온체인 출금 승인이 전송되었습니다.`);
-        setWithdrawals(prev => prev.filter(w => w.id !== id));
+        alert(`❌ 출금 승인 실패: ${result.error || '온체인 전송 중 오류가 발생했습니다.'}`);
       }
-    } catch (err) {
-      alert("✅ 수동 출금 승인이 완료되었습니다.");
-      setWithdrawals(prev => prev.filter(w => w.id !== id));
+    } catch (err: any) {
+      alert(`❌ 수동 출금 승인 중 오류가 발생했습니다: ${err.message}`);
     }
   };
 
@@ -168,15 +166,17 @@ export default function WithdrawalAuditPage() {
         if (result.success) {
           successCount++;
         } else {
-          successCount++; // 기존 로직과 동일하게 처리
+          failCount++;
+          console.error(`Withdrawal ${w.id} failed:`, result.error);
         }
-      } catch {
-        successCount++;
+      } catch (err) {
+        failCount++;
+        console.error(`Withdrawal ${w.id} request failed:`, err);
       }
     }
 
     setBulkApproving(false);
-    alert(`✅ 일괄 승인 완료\n\n성공: ${successCount}건`);
+    alert(`✅ 일괄 승인 결과\n\n성공: ${successCount}건\n실패: ${failCount}건 (가스비 부족 등)`);
     fetchPendingWithdrawals();
     fetchWalletInfo();
   };
