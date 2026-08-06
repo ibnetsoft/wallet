@@ -455,7 +455,7 @@ export default function MobileApp() {
         setTimeout(() => {
           setPurchaseSuccessEffect(null);
         }, 3500);
-        fetchUser(); // 최신 잔고 동기화
+        loadBalances(userId); // 최신 잔고 동기화
       } else {
         alert(data.error || "Purchase failed");
       }
