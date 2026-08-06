@@ -20,11 +20,11 @@ export async function POST(request: Request) {
 
     await client.query("BEGIN");
 
-    // 1. Get user id by email
-    const userRes = await client.query("SELECT id FROM public.users WHERE email = $1", [email]);
+    // 1. Get user id by email or nickname
+    const userRes = await client.query("SELECT id FROM public.users WHERE email = $1 OR nickname = $1", [email.trim()]);
     if (userRes.rows.length === 0) {
       await client.query("ROLLBACK");
-      return NextResponse.json({ success: false, error: "해당 이메일의 회원을 찾을 수 없습니다." }, { status: 404 });
+      return NextResponse.json({ success: false, error: "해당 이메일 또는 닉네임의 회원을 찾을 수 없습니다." }, { status: 404 });
     }
     const userId = userRes.rows[0].id;
 

@@ -55,7 +55,7 @@ export default function RechargePage() {
     const rechargeValue = parseFloat(amount);
     
     if (!targetEmail) {
-      alert("충전 대상 회원을 선택하거나 이메일을 직접 입력해주세요.");
+      alert("충전 대상 회원을 선택하거나 이메일/닉네임을 직접 입력해주세요.");
       return;
     }
 
@@ -161,8 +161,8 @@ export default function RechargePage() {
 
               <div className="pt-1">
                 <input
-                  type="email"
-                  placeholder="또는 직접 유저 이메일 입력..."
+                  type="text"
+                  placeholder="또는 직접 유저 이메일 또는 닉네임(ID) 입력..."
                   value={customEmail}
                   onChange={(e) => setCustomEmail(e.target.value)}
                   className="w-full bg-[#1C1C21] border border-[#26262B] focus:border-[#30D5C8] rounded-xl px-4 py-2.5 text-xs text-white outline-none font-mono placeholder:text-[#555]"
