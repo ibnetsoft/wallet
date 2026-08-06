@@ -263,22 +263,48 @@ export default function WalletSweepPage() {
             <span className="text-[10px] font-bold px-2 py-0.5 bg-[#30D5C8]/10 text-[#30D5C8] rounded border border-[#30D5C8]/20">BSC BEP-20</span>
           </div>
 
-          {/* 마스터 핫 지갑 주소 */}
-          <div className="p-3 bg-[#121215] rounded-xl border border-[#26262B] space-y-2">
-            <div className="flex justify-between items-center">
-              <label className="text-[10px] text-[#8E8E93] uppercase font-bold">마스터 핫 지갑 주소 (수신처)</label>
+          {/* 통합 마스터 핫 지갑 정보 */}
+          <div className="p-4 bg-[#121215] rounded-xl border border-[#26262B] space-y-3">
+            <div className="flex justify-between items-center border-b border-[#26262B] pb-2">
+              <label className="text-[10px] text-[#00D2FF] uppercase font-bold">통합 마스터 핫 지갑 정보</label>
+              <span className="text-[10px] px-2 py-0.5 bg-[#00D2FF]/10 text-[#00D2FF] rounded font-bold">마스터 지갑 단일화</span>
             </div>
-            <div className="flex items-center space-x-2 mt-2">
-              <Wallet size={16} className="text-[#00D2FF] flex-shrink-0" />
-              {masterHotWallet ? (
-                <span className="text-white font-mono text-xs break-all">{masterHotWallet}</span>
-              ) : (
-                <span className="text-[#FF453A] text-xs">⚠️ 설정되지 않음 (시스템 환경 설정 메뉴에서 핫 지갑을 생성 및 등록하세요)</span>
-              )}
+            
+            <div className="space-y-1">
+              <p className="text-[10px] text-[#8E8E93] uppercase font-bold flex items-center space-x-1">
+                <span>마스터 지갑 주소 (USDT 수집 및 BNB 가스비 대납)</span>
+              </p>
+              <div className="flex items-center space-x-2 mt-1">
+                <Wallet size={16} className="text-[#00D2FF] flex-shrink-0" />
+                <span className="text-white font-mono text-xs break-all">
+                  {masterHotWallet || feeWalletAddress || "⚠️ 미등록 (시스템 설정에서 생성/등록 필요)"}
+                </span>
+              </div>
             </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="p-2.5 bg-[#1C1C21] rounded-lg border border-[#26262B]">
+                <p className="text-[9px] text-[#8E8E93] uppercase font-bold">보유 BNB (가스비 잔액)</p>
+                <p className="text-sm font-bold text-[#30D5C8] font-mono mt-1">
+                  {feeWalletBalance.toFixed(4)} BNB
+                </p>
+              </div>
+              <div className="p-2.5 bg-[#1C1C21] rounded-lg border border-[#26262B]">
+                <p className="text-[9px] text-[#8E8E93] uppercase font-bold">보유 USDT (회사 자산)</p>
+                <p className="text-sm font-bold text-white font-mono mt-1">
+                  {hotBalanceUSDT !== null ? hotBalanceUSDT.toLocaleString() : "0"} USDT
+                </p>
+              </div>
+            </div>
+
+            {feeWalletBalance < (userWallets.length * 0.0005) && userWallets.length > 0 && (
+              <p className="text-[10px] text-[#FF453A] font-semibold mt-2 flex items-start gap-1">
+                <span>⚠️ 경고: 마스터 핫 지갑의 BNB 잔액이 부족하여 스윕이 실패할 수 있습니다. 위 주소로 BNB를 입금하세요.</span>
+              </p>
+            )}
           </div>
 
-          {/* 모으기 가능 잔액 및 가스비 지갑 정보 */}
+          {/* 모으기 가능 잔액 정보 */}
           <div className="p-4 bg-[#1C1C21] rounded-xl border border-[#FF9F0A]/30 space-y-4">
             <div className="flex justify-between items-center">
               <div>
@@ -296,20 +322,6 @@ export default function WalletSweepPage() {
                 <p className="text-sm font-bold text-[#FF9F0A] mt-1 font-mono">~{(userWallets.length * 0.0005).toFixed(4)} BNB</p>
                 <p className="text-[10px] text-[#8E8E93] mt-0.5">{userWallets.length} x 0.0005 BNB</p>
               </div>
-            </div>
-            
-            <div className="pt-3 border-t border-[#26262B]">
-              <div className="flex justify-between items-center">
-                <p className="text-[10px] text-[#8E8E93] uppercase font-bold">가스비 대납 지갑 (마스터 핫 지갑)</p>
-                <p className="text-xs font-bold text-[#30D5C8] font-mono">{feeWalletBalance.toFixed(4)} BNB 보유</p>
-              </div>
-              <div className="flex items-center space-x-2 mt-1">
-                <Wallet size={14} className="text-[#8E8E93] flex-shrink-0" />
-                <span className="text-[#EAECEF] font-mono text-xs break-all">{feeWalletAddress || "불러오는 중..."}</span>
-              </div>
-              {feeWalletBalance < (userWallets.length * 0.0005) && userWallets.length > 0 && (
-                <p className="text-[10px] text-[#FF453A] mt-1 font-bold">⚠️ 경고: 마스터 지갑의 BNB 잔액이 부족하여 스윕이 실패할 수 있습니다. 위 주소로 BNB를 입금하세요.</p>
-              )}
             </div>
           </div>
 
