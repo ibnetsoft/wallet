@@ -17,14 +17,14 @@ export async function GET() {
         u.nickname,
         u.status,
         u.created_at,
-        u.last_login_at,
+        NULL as last_login_at,
         u.star_level,
         uw.address AS wallet_address,
         COALESCE(b_usdt.available_balance::numeric, 0) as usdt_balance,
         COALESCE(b_bao.available_balance::numeric, 0) as bao_balance,
         COALESCE(b_jade.available_balance::numeric, 0) as jade_balance,
         COALESCE(b_hongbao.available_balance::numeric, 0) as hongbao_balance,
-        (SELECT COUNT(*) FROM public.users WHERE recommender_id = u.id) as total_referrals,
+        (SELECT COUNT(*) FROM public.users WHERE parent_id = u.id) as total_referrals,
         COALESCE(ga.total_used_entries, 0) as used_entries,
         s.email as sponsor_email,
         s.nickname as sponsor_nickname
@@ -39,7 +39,7 @@ export async function GET() {
       LEFT JOIN public.assets a_hongbao ON a_hongbao.symbol = 'HONGBAO'
       LEFT JOIN public.user_balances b_hongbao ON u.id = b_hongbao.user_id AND b_hongbao.asset_id = a_hongbao.id
       LEFT JOIN public.v_user_game_allowance ga ON u.id = ga.user_id
-      LEFT JOIN public.users s ON u.sponsor_id = s.id
+      LEFT JOIN public.users s ON u.parent_id = s.id
       ORDER BY u.created_at DESC
     `;
     const res = await pool.query(query);
