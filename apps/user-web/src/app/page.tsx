@@ -504,6 +504,19 @@ export default function MobileApp() {
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [showSwapModal, setShowSwapModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [txHistory, setTxHistory] = useState<any[]>([]);
+  const [txHistoryLoading, setTxHistoryLoading] = useState(false);
+
+  const loadTxHistory = async () => {
+    if (!userId) return;
+    setTxHistoryLoading(true);
+    try {
+      const res = await fetch(`/api/user/history?userId=${userId}`);
+      const data = await res.json();
+      if (data.success) setTxHistory(data.entries || []);
+    } catch (e) { console.error(e); }
+    setTxHistoryLoading(false);
+  };
 
   // Game Play Modal Result State
   const [gameResultModal, setGameResultModal] = useState<{
@@ -828,7 +841,7 @@ export default function MobileApp() {
                   label: lang === "ko" ? "보너스내역" : lang === "en" ? "Bonus History" : "奖金记录",
                   icon: "🎁",
                   tab: "wallet" as TabType,
-                  action: () => { setWalletHistoryTab("bonus"); setShowHistoryModal(true); }
+                  action: () => { setWalletHistoryTab("bonus"); setShowHistoryModal(true); loadTxHistory(); }
                 },
                 {
                   label: lang === "ko" ? "조직도" : lang === "en" ? "Network" : "组织图",
@@ -986,7 +999,7 @@ export default function MobileApp() {
                   <span className="text-xs font-bold text-[#EAECEF]">{lang === "ko" ? "오늘의 보너스" : lang === "en" ? "Today's Bonus" : "今日奖金"}</span>
                 </div>
                 <button 
-                  onClick={() => { setWalletHistoryTab("bonus"); setShowHistoryModal(true); }}
+                  onClick={() => { setWalletHistoryTab("bonus"); setShowHistoryModal(true); loadTxHistory(); }}
                   className="text-[10px] text-[#848E9C] hover:text-[#EAECEF] font-bold bg-[#2B3139] hover:bg-[#3A424D] px-2 py-1 rounded transition-colors"
                 >
                   {lang === "ko" ? "내역" : lang === "en" ? "History" : "记录"}
@@ -1065,7 +1078,7 @@ export default function MobileApp() {
                 </button>
 
                 <button
-                  onClick={() => setShowHistoryModal(true)}
+                  onClick={() => { setShowHistoryModal(true); loadTxHistory(); }}
                   className="bg-[#0B0E11] hover:bg-[#2B3139] border border-[#2B3139] hover:border-[#FCD535] py-3 rounded-xl flex flex-col items-center justify-center space-y-2 transition-all group"
                 >
                   <FileText size={24} strokeWidth={2.5} className="text-[#848E9C] group-hover:scale-110 transition-transform" />
@@ -1402,32 +1415,71 @@ export default function MobileApp() {
 
                 {/* ── 입출금 탭 ── */}
                 {walletHistoryTab === "tx" && (() => {
-                  const txList: any[] = [];
+                  const getTxLabel = (txType: string, status: string) => {
+                    if (txType === "WITHDRAW") {
+                      if (status === "PENDING") return lang === "ko" ? "⏳ 출금준비중" : lang === "en" ? "⏳ Pending Withdrawal" : "⏳ 提现准备中";
+                      if (status === "COMPLETED" || status === "APPROVED") return lang === "ko" ? "✅ 출금완료" : lang === "en" ? "✅ Withdrawn" : "✅ 已提现";
+                      if (status === "REJECTED") return lang === "ko" ? "❌ 출금거절" : lang === "en" ? "❌ Rejected" : "❌ 已拒绝";
+                      return lang === "ko" ? "출금" : "Withdraw";
+                    }
+                    if (txType === "DEPOSIT" || txType === "RECHARGE") return lang === "ko" ? "💰 충전" : lang === "en" ? "💰 Deposit" : "💰 充值";
+                    if (txType === "GAME_WIN") return lang === "ko" ? "🎮 게임 당첨" : "🎮 Game Win";
+                    if (txType === "GAME_BET") return lang === "ko" ? "🎮 게임 참여" : "🎮 Game Bet";
+                    if (txType === "REFUND") return lang === "ko" ? "🔄 환불" : "🔄 Refund";
+                    return txType;
+                  };
+                  const getStatusBadge = (txType: string, status: string) => {
+                    if (txType === "WITHDRAW" && status === "PENDING") return { text: lang === "ko" ? "심사중" : "Pending", color: "text-[#F0B90B] bg-[#F0B90B]/10 border-[#F0B90B]/30" };
+                    if (txType === "WITHDRAW" && (status === "COMPLETED" || status === "APPROVED")) return { text: lang === "ko" ? "완료" : "Done", color: "text-[#0ECB81] bg-[#0ECB81]/10 border-[#0ECB81]/30" };
+                    if (txType === "WITHDRAW" && status === "REJECTED") return { text: lang === "ko" ? "거절" : "Rejected", color: "text-[#F6465D] bg-[#F6465D]/10 border-[#F6465D]/30" };
+                    if (status === "COMPLETED") return { text: lang === "ko" ? "완료" : "Done", color: "text-[#0ECB81] bg-[#0ECB81]/10 border-[#0ECB81]/30" };
+                    return { text: status, color: "text-[#848E9C] bg-[#848E9C]/10 border-[#848E9C]/30" };
+                  };
                   const pp = 10;
-                  const tp = Math.ceil(txList.length / pp);
-                  const items = txList.slice((historyPage - 1) * pp, historyPage * pp);
+                  const tp = Math.max(1, Math.ceil(txHistory.length / pp));
+                  const items = txHistory.slice((historyPage - 1) * pp, historyPage * pp);
                   return (
                     <div className="space-y-3">
-                      <div className="space-y-2">
-                        {items.map((tx) => (
-                          <div key={tx.id} className="bg-[#0B0E11] p-3 rounded-xl border border-[#2B3139] flex justify-between items-center">
-                            <div>
-                              <p className="text-xs font-bold text-[#EAECEF]">{tx.type}</p>
-                              <p className="text-[10px] text-[#848E9C] mt-0.5 font-mono">{tx.time}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className={`text-xs font-mono font-bold ${tx.isPlus ? "text-[#0ECB81]" : "text-[#F6465D]"}`}>{tx.amount}</p>
-                              <span className="text-[9px] text-[#848E9C] font-bold">{tx.status}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      {tp > 1 && (
-                        <div className="flex justify-between items-center pt-2 border-t border-[#2B3139]">
-                          <button disabled={historyPage === 1} onClick={() => setHistoryPage((p) => Math.max(1, p - 1))} className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition-all ${historyPage === 1 ? "opacity-40 cursor-not-allowed bg-[#0B0E11] border-[#2B3139] text-[#848E9C]" : "bg-[#2B3139] border-[#2B3139] text-[#EAECEF] hover:bg-[#FCD535] hover:text-[#0B0E11]"}`}>◀ {lang === "ko" ? "이전" : "Prev"}</button>
-                          <span className="text-[11px] font-mono text-[#848E9C]"><strong className="text-[#FCD535]">{historyPage}</strong> / {tp}</span>
-                          <button disabled={historyPage === tp} onClick={() => setHistoryPage((p) => Math.min(tp, p + 1))} className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition-all ${historyPage === tp ? "opacity-40 cursor-not-allowed bg-[#0B0E11] border-[#2B3139] text-[#848E9C]" : "bg-[#2B3139] border-[#2B3139] text-[#EAECEF] hover:bg-[#FCD535] hover:text-[#0B0E11]"}`}>{lang === "ko" ? "다음" : "Next"} ▶</button>
+                      {txHistoryLoading ? (
+                        <div className="text-center py-8 text-[#848E9C] text-xs">로딩 중...</div>
+                      ) : txHistory.length === 0 ? (
+                        <div className="text-center py-8 text-[#848E9C] text-xs">
+                          {lang === "ko" ? "입출금 내역이 없습니다." : "No transaction history."}
                         </div>
+                      ) : (
+                        <>
+                          <div className="space-y-2">
+                            {items.map((tx) => {
+                              const isPlus = tx.amount > 0;
+                              const badge = getStatusBadge(tx.txType, tx.status);
+                              const addr = tx.details?.address;
+                              return (
+                                <div key={tx.id} className="bg-[#0B0E11] p-3 rounded-xl border border-[#2B3139]">
+                                  <div className="flex justify-between items-start">
+                                    <div>
+                                      <p className="text-xs font-bold text-[#EAECEF]">{getTxLabel(tx.txType, tx.status)}</p>
+                                      <p className="text-[10px] text-[#848E9C] mt-0.5 font-mono">{new Date(tx.createdAt).toLocaleString()}</p>
+                                      {addr && <p className="text-[9px] text-[#848E9C] mt-0.5 font-mono truncate max-w-[180px]">→ {addr}</p>}
+                                    </div>
+                                    <div className="text-right">
+                                      <p className={`text-xs font-mono font-bold ${isPlus ? "text-[#0ECB81]" : "text-[#F6465D]"}`}>
+                                        {isPlus ? "+" : ""}{Math.abs(tx.amount).toFixed(2)} {tx.symbol}
+                                      </p>
+                                      <span className={`inline-block mt-1 text-[9px] font-bold px-1.5 py-0.5 rounded border ${badge.color}`}>{badge.text}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          {tp > 1 && (
+                            <div className="flex justify-between items-center pt-2 border-t border-[#2B3139]">
+                              <button disabled={historyPage === 1} onClick={() => setHistoryPage((p) => Math.max(1, p - 1))} className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition-all ${historyPage === 1 ? "opacity-40 cursor-not-allowed bg-[#0B0E11] border-[#2B3139] text-[#848E9C]" : "bg-[#2B3139] border-[#2B3139] text-[#EAECEF] hover:bg-[#FCD535] hover:text-[#0B0E11]"}`}>◀ {lang === "ko" ? "이전" : "Prev"}</button>
+                              <span className="text-[11px] font-mono text-[#848E9C]"><strong className="text-[#FCD535]">{historyPage}</strong> / {tp}</span>
+                              <button disabled={historyPage === tp} onClick={() => setHistoryPage((p) => Math.min(tp, p + 1))} className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition-all ${historyPage === tp ? "opacity-40 cursor-not-allowed bg-[#0B0E11] border-[#2B3139] text-[#848E9C]" : "bg-[#2B3139] border-[#2B3139] text-[#EAECEF] hover:bg-[#FCD535] hover:text-[#0B0E11]"}`}>{lang === "ko" ? "다음" : "Next"} ▶</button>
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                   );
