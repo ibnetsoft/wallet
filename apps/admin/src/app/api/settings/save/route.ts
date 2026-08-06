@@ -20,10 +20,10 @@ export async function POST(request: Request) {
       await client.query("BEGIN");
       for (const row of rows) {
         await client.query(`
-          INSERT INTO public.system_settings (key, value, description)
-          VALUES ($1, $2, $3)
+          INSERT INTO public.system_settings (key, value)
+          VALUES ($1, $2)
           ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
-        `, [row.key, row.value, row.description]);
+        `, [row.key, row.value]);
       }
       await client.query("COMMIT");
       return NextResponse.json({ success: true });

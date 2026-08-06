@@ -130,8 +130,8 @@ export async function POST(request: Request) {
     
     // Update master hot wallet balance in system_settings
     await client.query(`
-      INSERT INTO public.system_settings (key, value, description)
-      VALUES ('hot_balance_usdt', $1, '마스터 핫 지갑 USDT 잔액')
+      INSERT INTO public.system_settings (key, value)
+      VALUES ('hot_balance_usdt', $1)
       ON CONFLICT (key) 
       DO UPDATE SET value = (COALESCE(public.system_settings.value::numeric, 0) + $2)::text
     `, [sweptAmountFormatted, parseFloat(sweptAmountFormatted)]);

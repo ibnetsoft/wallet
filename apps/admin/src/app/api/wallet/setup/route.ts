@@ -17,8 +17,8 @@ export async function POST(request: Request) {
 
     // 1. Save master_hot_wallet to system_settings
     await pool.query(`
-      INSERT INTO public.system_settings (key, value, description)
-      VALUES ('master_hot_wallet', $1, '마스터 핫 지갑 주소 (수신처)')
+      INSERT INTO public.system_settings (key, value)
+      VALUES ('master_hot_wallet', $1)
       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
     `, [address]);
 
@@ -26,8 +26,8 @@ export async function POST(request: Request) {
     const checkBalance = await pool.query("SELECT * FROM public.system_settings WHERE key = 'hot_balance_usdt'");
     if (checkBalance.rows.length === 0) {
       await pool.query(`
-        INSERT INTO public.system_settings (key, value, description)
-        VALUES ('hot_balance_usdt', '0', '마스터 핫 지갑 USDT 잔액')
+        INSERT INTO public.system_settings (key, value)
+        VALUES ('hot_balance_usdt', '0')
       `);
     }
 
