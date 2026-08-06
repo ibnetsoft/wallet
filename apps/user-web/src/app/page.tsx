@@ -1307,21 +1307,45 @@ export default function MobileApp() {
                 </div>
 
                 <button
-                  onClick={() => {
-                    if (!withdrawAmount || Number(withdrawAmount) < 30) {
+                  onClick={async () => {
+                    const amountVal = Number(withdrawAmount);
+                    if (!withdrawAmount || amountVal < 30) {
                       alert(lang === "ko" ? "최소 출금 금액은 30 USDT입니다." : "Minimum withdrawal amount is 30 USDT.");
                       return;
                     }
-                    if (Number(withdrawAmount) > usdtBalance) {
+                    if (amountVal > usdtBalance) {
                       alert(lang === "ko" ? "USDT 잔액이 부족합니다." : "Insufficient USDT balance.");
                       return;
                     }
+                    if (!withdrawAddress.trim()) {
+                      alert(lang === "ko" ? "BSC 출금 지갑 주소를 입력해주세요." : "Please enter BSC withdrawal address.");
+                      return;
+                    }
 
-                    setUsdtBalance((prev) => prev - Number(withdrawAmount));
+                    try {
+                      const res = await fetch("/api/withdraw", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          userId,
+                          amount: amountVal,
+                          address: withdrawAddress.trim()
+                        })
+                      });
+                      const data = await res.json();
+                      if (!data.success) {
+                        throw new Error(data.error || "출금 신청 중 오류가 발생했습니다.");
+                      }
 
-                    setWithdrawAmount("");
-                    setShowWithdrawModal(false);
-                    alert(`✅ ${withdrawAmount} USDT ${lang === "ko" ? "출금 신청이 성공적으로 접수되었습니다. (네트워크 승인 후 지급)" : "withdrawal request submitted successfully."}`);
+                      // Update local balance and close modal
+                      setUsdtBalance((prev) => prev - amountVal);
+                      setWithdrawAmount("");
+                      setWithdrawAddress("");
+                      setShowWithdrawModal(false);
+                      alert(`✅ ${amountVal} USDT ${lang === "ko" ? "출금 신청이 성공적으로 접수되었습니다. (네트워크 승인 후 지급)" : "withdrawal request submitted successfully."}`);
+                    } catch (e: any) {
+                      alert(lang === "ko" ? `❌ 출금 신청 실패: ${e.message}` : `❌ Withdrawal failed: ${e.message}`);
+                    }
                   }}
                   className="w-full py-3 bg-[#FCD535] text-[#0B0E11] font-black rounded-xl text-sm hover:opacity-90 active:scale-95 transition-all"
                 >
