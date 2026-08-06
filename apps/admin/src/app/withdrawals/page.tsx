@@ -161,6 +161,7 @@ export default function WithdrawalAuditPage() {
               <tr className="border-b border-[#26262B] text-[#8E8E93] font-semibold uppercase tracking-wider">
                 <th className="py-3 px-4">출금 요청 ID</th>
                 <th className="py-3 px-4">신청 회원 이메일</th>
+                <th className="py-3 px-4">닉네임</th>
                 <th className="py-3 px-4">출금 자산</th>
                 <th className="py-3 px-4">신청 금액</th>
                 <th className="py-3 px-4">수수료 (3%)</th>
@@ -172,11 +173,11 @@ export default function WithdrawalAuditPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-[#8E8E93]">대기 중인 출금 내역을 불러오는 중...</td>
+                  <td colSpan={9} className="py-12 text-center text-[#8E8E93]">대기 중인 출금 내역을 불러오는 중...</td>
                 </tr>
               ) : withdrawals.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-[#8E8E93]">
+                  <td colSpan={9} className="py-12 text-center text-[#8E8E93]">
                     🎉 현재 대기 중인 출금 요청이 없습니다. (모든 승인 완료)
                   </td>
                 </tr>
@@ -187,6 +188,7 @@ export default function WithdrawalAuditPage() {
                     <tr key={w.id} className="border-b border-[#26262B]/50 hover:bg-[#1C1C21]/40 transition-colors">
                       <td className="py-4 px-4 font-mono font-bold text-[#FF9F0A]">{w.id}</td>
                       <td className="py-4 px-4 font-semibold text-white">{w.email}</td>
+                      <td className="py-4 px-4 font-bold text-[#FCD535]">{w.nickname}</td>
                       <td className="py-4 px-4">
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                           w.asset === "USDT" ? "bg-[#26A17B]/10 text-[#26A17B] border border-[#26A17B]/30" : "bg-[#FCD535]/10 text-[#FCD535] border border-[#FCD535]/30"

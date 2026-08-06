@@ -22,7 +22,8 @@ export async function GET() {
         l.tx_hash,
         l.created_at,
         l.details,
-        u.email
+        u.email,
+        u.nickname
       FROM public.ledger_entries l
       JOIN public.users u ON l.user_id = u.id
       WHERE l.tx_type = 'WITHDRAW' AND l.status = 'PENDING'
@@ -36,6 +37,7 @@ export async function GET() {
         id: w.id,
         userId: w.user_id,
         email: w.email || "unknown@user.com",
+        nickname: w.nickname || "-",
         amount: Math.abs(Number(w.amount)), // Withdraw amount is negative in double-entry ledger
         fee: Math.abs(Number(w.amount)) * 0.03, // Calculate 3% default fee
         asset: "USDT",
