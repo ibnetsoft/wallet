@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import PwaPrompt from "../components/PwaPrompt";
 
 export const metadata: Metadata = {
   title: "U彩宝369",
@@ -31,6 +32,7 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="antialiased bg-[#0C0C0E] text-[#F2F2F7] min-h-screen flex flex-col justify-between">
+        <PwaPrompt />
         {children}
       </body>
     </html>
