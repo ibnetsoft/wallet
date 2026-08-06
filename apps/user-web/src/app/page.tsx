@@ -587,6 +587,7 @@ export default function MobileApp() {
       if (data.success && data.balances) {
         setUsdtBalance(data.balances.USDT ?? 0);
         setUrcBalance(data.balances.URC ?? 0);
+        setBaoBalance(data.balances.URC ?? 0); // DB의 URC 잔고를 UI의 BAO 잔고에 매핑
         setUrdBalance(data.balances.JADE ?? 0);
       }
     } catch (e) {
