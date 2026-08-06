@@ -61,21 +61,21 @@ export async function POST(req: Request) {
       // 5. Insert Ledger Entries
       // Deduct USDT
       await client.query(
-        `INSERT INTO public.ledger_entries (user_id, asset_id, transaction_type, amount, status) 
+        `INSERT INTO public.ledger_entries (user_id, asset_id, tx_type, amount, status) 
          VALUES ($1, $2, 'PACKAGE_BUY', $3, 'COMPLETED')`,
         [user_id, assets.USDT, -price]
       );
       // Give JADE
       await client.query(
-        `INSERT INTO public.ledger_entries (user_id, asset_id, transaction_type, amount, status) 
-         VALUES ($1, $2, 'BONUS', $3, 'COMPLETED')`,
+        `INSERT INTO public.ledger_entries (user_id, asset_id, tx_type, amount, status) 
+         VALUES ($1, $2, 'PACKAGE_BONUS', $3, 'COMPLETED')`,
         [user_id, assets.JADE, urdBonus]
       );
       // Give URC
       if (urcBonus > 0 && assets.URC) {
         await client.query(
-          `INSERT INTO public.ledger_entries (user_id, asset_id, transaction_type, amount, status) 
-           VALUES ($1, $2, 'BONUS', $3, 'COMPLETED')`,
+          `INSERT INTO public.ledger_entries (user_id, asset_id, tx_type, amount, status) 
+           VALUES ($1, $2, 'PACKAGE_BONUS', $3, 'COMPLETED')`,
           [user_id, assets.URC, urcBonus]
         );
       }

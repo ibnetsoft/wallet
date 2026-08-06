@@ -49,7 +49,7 @@ export async function POST(req: Request) {
 
       // 5. Insert Ledger Entries
       await client.query(
-        `INSERT INTO public.ledger_entries (user_id, asset_id, transaction_type, amount, status) 
+        `INSERT INTO public.ledger_entries (user_id, asset_id, tx_type, amount, status) 
          VALUES ($1, $2, 'GAME_WAGER', $3, 'COMPLETED'), ($1, $4, 'GAME_WAGER', $5, 'COMPLETED')`,
         [user_id, assets.USDT, -usdtRequired, assets.JADE, -jadeRequired]
       );
