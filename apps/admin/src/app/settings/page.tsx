@@ -42,6 +42,23 @@ export default function SettingsPage() {
   const [addingAdmin, setAddingAdmin] = useState(false);
   const [adminMsg, setAdminMsg] = useState<MsgState | null>(null);
 
+  const [currentUserEmail, setCurrentUserEmail] = useState("admin@hongbou.com");
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const supabase = createClient();
+        const { data } = await supabase.auth.getUser();
+        if (data?.user?.email) {
+          setCurrentUserEmail(data.user.email);
+        }
+      } catch (err) {
+        console.error("Failed to fetch user:", err);
+      }
+    };
+    fetchUser();
+  }, []);
+
   // ── 설정값 DB 로드 ──
   const loadSettings = useCallback(async () => {
     setSettingsLoading(true);
@@ -601,7 +618,7 @@ export default function SettingsPage() {
                       <td className="py-4 px-4 font-bold text-[#30D5C8]">
                         <div className="flex items-center space-x-2">
                           <Key size={12} />
-                          <span>master@ibnetsoft.com</span>
+                          <span>{currentUserEmail}</span>
                         </div>
                       </td>
                       <td className="py-4 px-4">
