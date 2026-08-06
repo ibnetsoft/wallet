@@ -42,7 +42,7 @@ export async function updateSession(request: NextRequest) {
     user = data.user;
   }
 
-  const publicRoutes = ["/login", "/register", "/auth/callback"];
+  const publicRoutes = ["/login", "/register", "/auth/callback", "/reset-password"];
   const isPublicRoute = publicRoutes.some((route) => request.nextUrl.pathname.startsWith(route));
 
   // If user is not logged in and tries to access a protected route
