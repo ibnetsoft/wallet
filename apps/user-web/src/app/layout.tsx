@@ -3,12 +3,12 @@ import "./globals.css";
 import PwaPrompt from "../components/PwaPrompt";
 
 export const metadata: Metadata = {
-  title: "U彩宝369",
+  title: "HONGBOU",
   description: "Secure multi-token mobile wallet client",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Universal Wallet",
+    title: "HONGBOU",
   },
 };
 
