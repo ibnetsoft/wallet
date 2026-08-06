@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { Wallet as EthersWallet } from "ethers";
 import { supabaseAdmin } from "../../lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 
 interface MsgState { type: "ok" | "err"; text: string }
 
