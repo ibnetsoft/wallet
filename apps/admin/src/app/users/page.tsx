@@ -280,7 +280,30 @@ export default function UsersPage() {
                     {selectedUser.code}
                   </span>
                 </h3>
-                <p className="text-xs text-[#8E8E93] mt-1">상세 활동 내역 및 이력 조회</p>
+                <p className="text-xs text-[#8E8E93] mt-1 mb-3">상세 활동 내역 및 이력 조회</p>
+                <div className="bg-[#1C1C21] p-3 rounded-lg border border-[#26262B] space-y-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#8E8E93]">상위 스폰서</span>
+                    <span className="text-white font-semibold">
+                      {selectedUser.sponsorNickname !== "-" ? `${selectedUser.sponsorNickname} (${selectedUser.sponsorEmail})` : "없음 (최상위)"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#8E8E93]">본인 추천 가입 링크</span>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-[#00D2FF] font-mono break-all">{`https://bao369.com/register?ref=${selectedUser.code}`}</span>
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(`https://bao369.com/register?ref=${selectedUser.code}`);
+                          alert("복사되었습니다.");
+                        }}
+                        className="text-[#8E8E93] hover:text-white transition-colors"
+                      >
+                        <Copy size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
               <button 
                 onClick={() => setSelectedUser(null)}
