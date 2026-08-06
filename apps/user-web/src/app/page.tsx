@@ -576,6 +576,26 @@ export default function MobileApp() {
     }, 1200);
   };
 
+  const [balancesLoading, setBalancesLoading] = useState(false);
+
+  const loadBalances = async (uid: string) => {
+    if (!uid) return;
+    setBalancesLoading(true);
+    try {
+      const res = await fetch(`/api/user/balance?userId=${uid}`);
+      const data = await res.json();
+      if (data.success && data.balances) {
+        setUsdtBalance(data.balances.USDT ?? 0);
+        setUrcBalance(data.balances.URC ?? 0);
+        setUrdBalance(data.balances.JADE ?? 0);
+      }
+    } catch (e) {
+      console.error("Failed to load balances:", e);
+    } finally {
+      setBalancesLoading(false);
+    }
+  };
+
   useEffect(() => {
     const fetchUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -585,6 +605,7 @@ export default function MobileApp() {
         if (session.user.user_metadata?.nickname) {
           setUserNickname(session.user.user_metadata.nickname);
         }
+        loadBalances(session.user.id);
       }
     };
     const fetchGameRounds = async () => {
@@ -736,9 +757,19 @@ export default function MobileApp() {
 
             {/* Balance Card */}
             <div className="rounded-xl p-5 bg-[#1E2329] border border-[#2B3139]">
-              <p className="text-xs text-[#848E9C] font-medium">
-                {lang === "ko" ? "총 자산 평가액" : lang === "en" ? "Total Valuation" : "总资产估值"}
-              </p>
+              <div className="flex justify-between items-center">
+                <p className="text-xs text-[#848E9C] font-medium">
+                  {lang === "ko" ? "총 자산 평가액" : lang === "en" ? "Total Valuation" : "总资产估值"}
+                </p>
+                <button
+                  onClick={() => userId && loadBalances(userId)}
+                  disabled={balancesLoading}
+                  className="p-1 hover:bg-[#2B3139] rounded transition-all text-[#848E9C] hover:text-[#EAECEF] cursor-pointer disabled:opacity-50"
+                  title="새로고침"
+                >
+                  <RefreshCw size={12} className={balancesLoading ? "animate-spin text-[#FCD535]" : ""} />
+                </button>
+              </div>
               <h2 className="text-3xl font-black text-[#EAECEF] mt-1 tracking-tight font-mono">
                 ${totalAssetValuation.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </h2>
