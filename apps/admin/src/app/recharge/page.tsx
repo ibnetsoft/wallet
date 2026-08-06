@@ -176,8 +176,8 @@ export default function RechargePage() {
               <div className="relative">
                 <input
                   type="number"
-                  step="10"
-                  min="1"
+                  step="any"
+                  min="0.01"
                   required
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
