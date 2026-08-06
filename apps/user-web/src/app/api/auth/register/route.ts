@@ -71,29 +71,52 @@ export async function POST(req: Request) {
     const masterCodes = ["URC883920", "BAO369", "MASTER"];
     
     if (referralCode && !masterCodes.includes(referralCode.toUpperCase())) {
-      const { data: recommender, error: recError } = await supabase
-        .from("users")
-        .select("id")
-        .eq("nickname", referralCode)
-        .single();
-        
-      if (recError || !recommender) {
-        // Fallback: Check if referral code is an email (for legacy support during transition)
+      let resolvedUser = null;
+      
+      // 만약 추천 코드가 BAO-로 시작하는 8자리 ID 형태인 경우 (예: BAO-FF755507)
+      if (referralCode.toUpperCase().startsWith("BAO-")) {
+        const idPart = referralCode.substring(4).toLowerCase(); // 'ff755507'
+        if (idPart.length === 8) {
+          const { data: recById } = await supabase
+            .from("users")
+            .select("id")
+            .like("id", `${idPart}%`)
+            .limit(1);
+          if (recById && recById.length > 0) {
+            resolvedUser = recById[0];
+          }
+        }
+      }
+
+      // 그렇지 않은 경우 닉네임으로 직접 조회 시도
+      if (!resolvedUser) {
+        const { data: recommender } = await supabase
+          .from("users")
+          .select("id")
+          .eq("nickname", referralCode)
+          .single();
+        if (recommender) {
+          resolvedUser = recommender;
+        }
+      }
+      
+      // 최종 Fallback: 이메일로 확인
+      if (!resolvedUser) {
         const { data: recByEmail } = await supabase
           .from("users")
           .select("id")
           .eq("email", referralCode)
           .single();
-          
         if (recByEmail) {
-          recommenderId = recByEmail.id;
-          parentId = recByEmail.id;
-        } else {
-          return NextResponse.json({ error: "유효하지 않은 추천인 코드입니다. (마스터 코드를 사용하거나 정확한 닉네임을 입력하세요)" }, { status: 400 });
+          resolvedUser = recByEmail;
         }
+      }
+
+      if (!resolvedUser) {
+        return NextResponse.json({ error: "유효하지 않은 추천인 코드입니다. (마스터 코드를 사용하거나 정확한 닉네임을 입력하세요)" }, { status: 400 });
       } else {
-        recommenderId = recommender.id;
-        parentId = recommender.id;
+        recommenderId = resolvedUser.id;
+        parentId = resolvedUser.id;
       }
     }
 

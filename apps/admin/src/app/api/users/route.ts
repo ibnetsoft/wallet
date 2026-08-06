@@ -50,7 +50,7 @@ export async function GET() {
         id: u.id,
         email: u.email,
         nickname: u.nickname || "유저",
-        code: `URC-${u.id.substring(0, 8).toUpperCase()}`,
+        code: `BAO-${u.id.substring(0, 8).toUpperCase()}`,
         joinedAt: new Date(u.created_at).toISOString().split("T")[0],
         lastLoginAt: u.last_login_at ? new Date(u.last_login_at).toLocaleString() : "기록없음",
         starLevel: u.star_level || 0,
