@@ -352,7 +352,13 @@ export default function MobileApp() {
     const autoCost = autoSettings.betsCount * 1;
     if (!autoSettings.enabled) {
       if (urdBalance < autoCost) {
-        alert(`⚡ 옥구슬이 부족하여 자동 게임을 시작할 수 없습니다! (필요: ${autoCost}개, 보유: ${urdBalance}개)`);
+        alert(
+          lang === "ko" 
+            ? `⚡ 옥구슬이 부족하여 자동 게임을 시작할 수 없습니다! (필요: ${autoCost}개, 보유: ${urdBalance}개)`
+            : lang === "en"
+            ? `⚡ Insufficient Jade Beads to start Auto Game! (Required: ${autoCost}, Balance: ${urdBalance})`
+            : `⚡ 玉珠不足，无法开始自动游戏！(需要: ${autoCost}个, 拥有: ${urdBalance}个)`
+        );
         // Add Bead Depletion Notification to Bell
         const notif: GameNotification = {
           id: `n-${Date.now()}`,
@@ -370,10 +376,22 @@ export default function MobileApp() {
 
       setAutoSettings((prev) => ({ ...prev, enabled: true }));
       setUrdBalance((prev) => prev - autoCost);
-      alert(`⚡ 자동 게임 세팅이 활성화되었습니다!\n회당 ${autoSettings.betsCount}회 (옥구슬 ${autoCost}개 소모)로 매일 지정 회차에 자동으로 실행됩니다.`);
+      alert(
+        lang === "ko"
+          ? `⚡ 자동 게임 세팅이 활성화되었습니다!\n회당 ${autoSettings.betsCount}회 (옥구슬 ${autoCost}개 소모)로 매일 지정 회차에 자동으로 실행됩니다.`
+          : lang === "en"
+          ? `⚡ Auto Game settings activated!\nWill run automatically at designated rounds, ${autoSettings.betsCount} times per round (Cost: ${autoCost} Jade Beads).`
+          : `⚡ 自动游戏设置已激活！\n每天将在指定轮次自动运行，每轮参与 ${autoSettings.betsCount} 次（消耗 ${autoCost} 个玉珠）。`
+      );
     } else {
       setAutoSettings((prev) => ({ ...prev, enabled: false }));
-      alert("자동 게임 비활성화 완료");
+      alert(
+        lang === "ko" 
+          ? "자동 게임 비활성화 완료" 
+          : lang === "en" 
+          ? "Auto Game deactivated" 
+          : "自动游戏已禁用"
+      );
     }
   };
 
