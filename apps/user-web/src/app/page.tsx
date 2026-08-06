@@ -669,8 +669,9 @@ export default function MobileApp() {
     setTimeout(() => setReferralCopied(false), 2000);
   };
 
-  const withdrawFee = Number(withdrawAmount) ? Number(withdrawAmount) * 0.03 : 0;
-  const withdrawFinal = Number(withdrawAmount) ? Number(withdrawAmount) * 0.97 : 0;
+  const parsedWithdraw = parseFloat(withdrawAmount) || 0;
+  const withdrawFee = parsedWithdraw * 0.03;
+  const withdrawFinal = parsedWithdraw * 0.97;
   const totalAssetValuation = usdtBalance;
 
   const fetchNetworkData = async () => {
