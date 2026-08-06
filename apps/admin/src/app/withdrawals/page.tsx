@@ -7,6 +7,7 @@ interface WithdrawalRecord {
   id: string;
   userId: string;
   email: string;
+  nickname: string;
   amount: number;
   fee: number;
   asset: string;
@@ -19,6 +20,24 @@ interface WithdrawalRecord {
 export default function WithdrawalAuditPage() {
   const [loading, setLoading] = useState(false);
   const [withdrawals, setWithdrawals] = useState<WithdrawalRecord[]>([]);
+  const [walletAddress, setWalletAddress] = useState("");
+  const [bnbBalance, setBnbBalance] = useState(0);
+  const [usdtBalance, setUsdtBalance] = useState(0);
+  const [walletLoading, setWalletLoading] = useState(true);
+
+  const fetchWalletInfo = async () => {
+    setWalletLoading(true);
+    try {
+      const res = await fetch("/api/wallet/fee-status");
+      const data = await res.json();
+      if (data.success) {
+        setWalletAddress(data.address || "");
+        setBnbBalance(data.balance || 0);
+        setUsdtBalance(data.usdtBalance || 0);
+      }
+    } catch (e) { console.error(e); }
+    setWalletLoading(false);
+  };
 
   const fetchPendingWithdrawals = async () => {
     setLoading(true);
@@ -40,6 +59,7 @@ export default function WithdrawalAuditPage() {
 
   useEffect(() => {
     fetchPendingWithdrawals();
+    fetchWalletInfo();
 
     // Supabase Realtime Subscription setup (requires Supabase client configuration in real app)
     import('@supabase/supabase-js').then(({ createClient }) => {
@@ -88,6 +108,7 @@ export default function WithdrawalAuditPage() {
       if (result.success) {
         alert("✅ 출금이 성공적으로 승인되었습니다.");
         fetchPendingWithdrawals();
+        fetchWalletInfo();
       } else {
         alert(`❌ 승인 처리 완료: ${amount} ${asset} 온체인 출금 승인이 전송되었습니다.`);
         setWithdrawals(prev => prev.filter(w => w.id !== id));
@@ -143,6 +164,35 @@ export default function WithdrawalAuditPage() {
           <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
           <span>새로고침</span>
         </button>
+      </div>
+
+      {/* 출금 지갑 (마스터 핫지갑) 잔액 정보 */}
+      <div className="bg-[#16161A] border border-[#26262B] rounded-xl px-5 py-3 flex flex-wrap items-center gap-x-6 gap-y-2">
+        <div className="flex items-center space-x-2">
+          <span className="text-[10px] text-[#8E8E93] font-semibold uppercase tracking-wider">출금 지갑 (Master Hot Wallet)</span>
+          {walletLoading ? (
+            <span className="text-[11px] text-[#8E8E93] animate-pulse">로딩 중...</span>
+          ) : walletAddress ? (
+            <span className="text-[11px] font-mono text-[#00D2FF]">{walletAddress}</span>
+          ) : (
+            <span className="text-[11px] text-[#F6465D]">미설정</span>
+          )}
+        </div>
+        <div className="flex items-center space-x-4 ml-auto">
+          <div className="flex items-center space-x-1.5">
+            <span className="text-[10px] text-[#8E8E93] font-bold">BNB</span>
+            <span className={`text-sm font-mono font-extrabold ${bnbBalance > 0.01 ? "text-[#F0B90B]" : "text-[#F6465D]"}`}>
+              {walletLoading ? "..." : bnbBalance.toFixed(4)}
+            </span>
+          </div>
+          <div className="w-px h-4 bg-[#26262B]" />
+          <div className="flex items-center space-x-1.5">
+            <span className="text-[10px] text-[#8E8E93] font-bold">USDT</span>
+            <span className="text-sm font-mono font-extrabold text-[#26A17B]">
+              {walletLoading ? "..." : usdtBalance.toFixed(2)}
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Main Audit Table Card */}

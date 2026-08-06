@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
-import { JsonRpcProvider, Wallet, formatEther } from "ethers";
+import { JsonRpcProvider, Wallet, formatEther, formatUnits, Contract } from "ethers";
 
 export const dynamic = "force-dynamic";
 
 const BSC_RPC_URL = process.env.NEXT_PUBLIC_BSC_RPC_URL || "https://data-seed-prebsc-1-s1.binance.org:8545";
+const USDT_CONTRACT = process.env.NEXT_PUBLIC_USDT_CONTRACT || "0x337610d27c682E347C9cD60BD4b3b107C9d34dDd";
 const provider = new JsonRpcProvider(BSC_RPC_URL);
+
+const ERC20_ABI = [
+  "function balanceOf(address account) view returns (uint256)"
+];
 
 import { Pool } from "pg";
 
@@ -32,10 +37,21 @@ export async function GET() {
     const balanceWei = await provider.getBalance(feeWallet.address);
     const balanceBnb = formatEther(balanceWei);
 
+    // USDT 잔액 조회
+    let usdtBalance = 0;
+    try {
+      const usdtContract = new Contract(USDT_CONTRACT, ERC20_ABI, provider);
+      const usdtRaw = await usdtContract.balanceOf(feeWallet.address);
+      usdtBalance = parseFloat(formatUnits(usdtRaw, 18));
+    } catch (e) {
+      console.error("USDT balance query failed:", e);
+    }
+
     return NextResponse.json({
       success: true,
       address: feeWallet.address,
-      balance: parseFloat(balanceBnb)
+      balance: parseFloat(balanceBnb),
+      usdtBalance
     });
   } catch (err: any) {
     console.error("GET api/wallet/fee-status error:", err);
