@@ -406,8 +406,10 @@ export default function MobileApp() {
     setConfirmPurchaseModal({ show: true, level, price, urdBonus, capRate });
   };
 
-  const executePurchaseProduct = () => {
-    if (!confirmPurchaseModal) return;
+  const [isPurchasing, setIsPurchasing] = useState(false);
+
+  const executePurchaseProduct = async () => {
+    if (!confirmPurchaseModal || isPurchasing) return;
     const { price, urdBonus, capRate, level } = confirmPurchaseModal;
 
     if (usdtBalance < price) {
@@ -416,32 +418,53 @@ export default function MobileApp() {
       return;
     }
 
-    const payoutCap = price * capRate;
-    const nodeName = level === 1 ? t.node100Name : level === 2 ? t.node500Name : t.node1000Name;
+    setIsPurchasing(true);
+    try {
+      const res = await fetch("/api/package/purchase", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId, level, price, urdBonus, capRate })
+      });
+      const data = await res.json();
 
-    const newMachine: ActiveMachine = {
-      id: `m-${Date.now()}`,
-      level,
-      name: nodeName,
-      price,
-      urdBonus,
-      payoutCap,
-      accumulatedPayout: 0,
-      purchasedAt: new Date().toISOString().split("T")[0],
-    };
+      if (res.ok && data.success) {
+        const payoutCap = price * capRate;
+        const nodeName = level === 1 ? t.node100Name : level === 2 ? t.node500Name : t.node1000Name;
 
-    setUsdtBalance((prev) => prev - price);
-    setUrdBalance((prev) => prev + urdBonus);
-    setMyMachines((prev) => [...prev, newMachine]);
-    setConfirmPurchaseModal(null);
+        const newMachine: ActiveMachine = {
+          id: `m-${Date.now()}`,
+          level,
+          name: nodeName,
+          price,
+          urdBonus,
+          payoutCap,
+          accumulatedPayout: 0,
+          purchasedAt: new Date().toISOString().split("T")[0],
+        };
 
-    // 구매 성공 이펙트 실행 (기존 alert 대체)
-    setPurchaseSuccessEffect({ show: true, level, name: nodeName, urdBonus });
-    
-    // 3.5초 후 자동 닫기
-    setTimeout(() => {
-      setPurchaseSuccessEffect(null);
-    }, 3500);
+        setUsdtBalance((prev) => prev - price);
+        setUrdBalance((prev) => prev + urdBonus);
+        if (data.balances?.URC) {
+          setUrcBalance((prev) => prev + data.balances.URC);
+        }
+        setMyMachines((prev) => [...prev, newMachine]);
+        setConfirmPurchaseModal(null);
+
+        // 구매 성공 이펙트 실행
+        setPurchaseSuccessEffect({ show: true, level, name: nodeName, urdBonus });
+        setTimeout(() => {
+          setPurchaseSuccessEffect(null);
+        }, 3500);
+        fetchUser(); // 최신 잔고 동기화
+      } else {
+        alert(data.error || "Purchase failed");
+      }
+    } catch (e) {
+      console.error("Purchase error:", e);
+      alert("Error occurred while purchasing");
+    } finally {
+      setIsPurchasing(false);
+    }
   };
   const [directTree] = useState<any[]>([]);
   const [sponsorTree] = useState<any[]>([]);
