@@ -648,13 +648,42 @@ export default function MobileApp() {
     if (!uid) return;
     setBalancesLoading(true);
     try {
-      const res = await fetch(`/api/user/balance?userId=${uid}`);
-      const data = await res.json();
+      const [balRes, betsRes] = await Promise.all([
+        fetch(`/api/user/balance?userId=${uid}`),
+        fetch(`/api/user/bets?userId=${uid}`)
+      ]);
+      const data = await balRes.json();
+      
       if (data.success && data.balances) {
         setUsdtBalance(data.balances.USDT ?? 0);
         setUrcBalance(data.balances.URC ?? 0);
         setBaoBalance(data.balances.URC ?? 0); // DB의 URC 잔고를 UI의 BAO 잔고에 매핑
         setUrdBalance(data.balances.JADE ?? 0);
+      }
+
+      try {
+        const betsData = await betsRes.json();
+        if (betsData.success && betsData.bets) {
+          setMyBets(betsData.bets);
+          // 과거 알림 내역(게임 참여 완료)도 복구
+          const pastNotifs = betsData.bets.map((bet: any) => ({
+            id: `n-${bet.id}`,
+            round: `${bet.round}회차`,
+            time: bet.betAt,
+            title: lang === "ko" ? `🎮 ${bet.round}회차 게임 참여 완료` : lang === "en" ? `🎮 Joined Round ${bet.round}` : `🎮 已参与第 ${bet.round} 轮`,
+            resultType: "COIN_WIN",
+            rewardText: lang === "ko" 
+              ? `${bet.betsCount}회 참여 · 옥구슬 ${bet.urdSpent}개 소모 · AI 발표 대기 중`
+              : lang === "en"
+              ? `${bet.betsCount} entries · ${bet.urdSpent} Beads spent · Waiting for AI results`
+              : `参与 ${bet.betsCount} 次 · 消耗 ${bet.urdSpent} 个玉珠 · 等待 AI 开奖`,
+            createdAt: bet.betAt,
+            read: true // 복구된 과거 알림은 기본적으로 읽음 처리
+          }));
+          setNotifications(pastNotifs);
+        }
+      } catch (e) {
+        console.error("Failed to parse bets:", e);
       }
     } catch (e) {
       console.error("Failed to load balances:", e);
