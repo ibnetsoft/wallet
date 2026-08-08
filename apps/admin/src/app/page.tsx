@@ -45,6 +45,31 @@ export default function DashboardPage() {
     activeUsers: 0,
     totalFees: 0
   });
+  const [autoDrawEnabled, setAutoDrawEnabled] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/settings/auto-draw')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setAutoDrawEnabled(data.enabled);
+      })
+      .catch(console.error);
+  }, []);
+
+  const toggleAutoDraw = async () => {
+    const newVal = !autoDrawEnabled;
+    setAutoDrawEnabled(newVal);
+    try {
+      await fetch('/api/settings/auto-draw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: newVal })
+      });
+    } catch (e) {
+      console.error(e);
+      setAutoDrawEnabled(!newVal);
+    }
+  };
 
   // Fetch KST/CST Countdown
   useEffect(() => {
@@ -165,6 +190,17 @@ export default function DashboardPage() {
           <p className="text-sm text-[#8E8E93] mt-1">실시간 자산 현황 모니터링, 출금 승인 관리 및 정산 마감 시스템</p>
         </div>
         
+        {/* Auto Draw Toggle */}
+        <div className="flex items-center space-x-3 bg-[#16161A] border border-[#26262B] p-3 px-4 rounded-xl shadow-md">
+          <span className="text-xs font-semibold uppercase tracking-wider text-white">자동 추첨 (Auto Draw)</span>
+          <button 
+            onClick={toggleAutoDraw}
+            className={`w-12 h-6 rounded-full flex items-center p-1 transition-colors duration-300 ${autoDrawEnabled ? 'bg-green-500' : 'bg-gray-600'}`}
+          >
+            <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${autoDrawEnabled ? 'translate-x-6' : 'translate-x-0'}`}></div>
+          </button>
+        </div>
+
         {/* Countdown Timer Widget (v1.1 Daily Settlement) */}
         <div className="flex items-center space-x-4 bg-[#16161A] border border-[#26262B] p-3 px-4 rounded-xl shadow-md">
           <div className="flex items-center space-x-2 text-[#FF9F0A]">
