@@ -219,6 +219,7 @@ export default function MobileApp() {
   const [gameBetMode, setGameBetMode] = useState<"manual" | "auto">("manual");
   const [manualRound, setManualRound] = useState<number>(1);
   const [dbRounds, setDbRounds] = useState<any[]>([]);
+  const availableManualRounds = dbRounds.filter((round) => round.can_participate);
   
   // Organization tree zoom/pinch states
   const [zoomScale, setZoomScale] = useState<number>(1.0);
@@ -271,6 +272,21 @@ export default function MobileApp() {
 
   // 1단계: 컨펌 팝업 열기
   const handleManualBet = () => {
+    const roundObj = dbRounds.find((r) => r.round_number === manualRound);
+    if (!roundObj?.can_participate) {
+      const reason = roundObj?.availability_reason;
+      const message =
+        reason === "NOT_STARTED"
+          ? (lang === "ko" ? "아직 시작 전인 회차입니다." : "This round has not started yet.")
+          : reason === "BETTING_CLOSED"
+            ? (lang === "ko" ? "북경시간 기준 마감 1분 전부터 배팅이 닫힙니다." : "Betting closes 1 minute before the deadline.")
+            : reason === "DRAW_COMPLETED"
+              ? (lang === "ko" ? "이 회차는 오늘 추첨이 이미 완료되었습니다." : "This round has already been drawn today.")
+              : (lang === "ko" ? "현재 참여할 수 없는 회차입니다." : "This round is not available right now.");
+      alert(message);
+      return;
+    }
+
     const cost = manualBetsCount * 1;
     if (urdBalance < cost) {
       setShowGameConfirmModal(false);
@@ -711,7 +727,8 @@ export default function MobileApp() {
         if (data.success && data.rounds) {
           setDbRounds(data.rounds);
           if (data.rounds.length > 0) {
-            setManualRound(data.rounds[0].round_number);
+            const firstAvailableRound = data.rounds.find((r: any) => r.can_participate);
+            setManualRound((firstAvailableRound ?? data.rounds[0]).round_number);
             setAutoSettings(prev => ({ ...prev, rounds: data.rounds.map((r: any) => r.round_number) }));
           }
         }
@@ -722,6 +739,18 @@ export default function MobileApp() {
     fetchUser();
     fetchGameRounds();
   }, []);
+
+  useEffect(() => {
+    if (dbRounds.length === 0) return;
+
+    const selectedRound = dbRounds.find((round) => round.round_number === manualRound);
+    if (selectedRound?.can_participate) return;
+
+    const firstAvailableRound = dbRounds.find((round) => round.can_participate);
+    if (firstAvailableRound) {
+      setManualRound(firstAvailableRound.round_number);
+    }
+  }, [dbRounds, manualRound]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -1997,21 +2026,29 @@ export default function MobileApp() {
                   <div className="space-y-2">
                     <label className="text-xs text-[#848E9C] font-bold">{t.selectRound}</label>
                     <div className="grid grid-cols-3 gap-2">
-                      {(dbRounds.length > 0 ? dbRounds.map(r => r.round_number) : [1, 2, 3]).map((rNum) => (
+                      {(dbRounds.length > 0 ? dbRounds : [{ round_number: 1, can_participate: false }, { round_number: 2, can_participate: false }, { round_number: 3, can_participate: false }]).map((round) => (
                         <button
-                          key={rNum}
-                          onClick={() => setManualRound(rNum)}
+                          key={round.round_number}
+                          onClick={() => round.can_participate && setManualRound(round.round_number)}
+                          disabled={!round.can_participate}
                           className={`py-2.5 rounded-xl text-xs font-extrabold border transition-all ${
-                            manualRound === rNum
+                            manualRound === round.round_number
                               ? "bg-[#FCD535]/10 border-[#FCD535] text-[#FCD535]"
-                              : "bg-[#0B0E11] border-[#2B3139] text-[#848E9C]"
+                              : round.can_participate
+                                ? "bg-[#0B0E11] border-[#2B3139] text-[#848E9C]"
+                                : "bg-[#0B0E11] border-[#2B3139] text-[#5E6673] opacity-50 cursor-not-allowed"
                           }`}
                         >
-                          {rNum}
+                          {round.round_number}
                           {lang === "ko" ? "회차" : lang === "en" ? " Round" : "轮"}
                         </button>
                       ))}
                     </div>
+                    {dbRounds.length > 0 && availableManualRounds.length === 0 && (
+                      <p className="text-[11px] text-[#848E9C]">
+                        {lang === "ko" ? "지금은 북경시간 기준으로 참여 가능한 회차가 없습니다." : "There are no rounds available to join right now."}
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -2087,7 +2124,8 @@ export default function MobileApp() {
 
                   <button
                     onClick={handleManualBet}
-                    className="w-full py-3.5 bg-[#FCD535] text-[#0B0E11] font-black rounded-xl text-sm hover:opacity-90 active:scale-95 transition-all shadow-[0_0_20px_rgba(252,213,53,0.2)] flex items-center justify-center space-x-2"
+                    disabled={dbRounds.length > 0 && !dbRounds.some((round) => round.round_number === manualRound && round.can_participate)}
+                    className="w-full py-3.5 bg-[#FCD535] text-[#0B0E11] font-black rounded-xl text-sm hover:opacity-90 active:scale-95 transition-all shadow-[0_0_20px_rgba(252,213,53,0.2)] flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
                   >
                     <Play size={16} />
                     <span>

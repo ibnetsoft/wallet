@@ -47,7 +47,7 @@ export default function GameRoundsPage() {
     }
   }, [formEndTime]);
 
-  const fetchRounds = async () => {
+  async function fetchRounds() {
     setLoading(true);
     setError("");
     try {
@@ -63,7 +63,7 @@ export default function GameRoundsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const handleOpenAddModal = () => {
     setModalMode("add");

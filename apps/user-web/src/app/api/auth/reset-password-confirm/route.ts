@@ -1,62 +1,40 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import crypto from "crypto";
+import { verifyAuthToken } from "@/lib/auth-token";
+
+type ResetPasswordTokenPayload = {
+  userId: string;
+  expiresAt: number;
+};
 
 export async function POST(req: Request) {
   try {
     const { token, newPassword } = await req.json();
 
     if (!token || !newPassword) {
-      return NextResponse.json({ error: "필수 데이터가 누락되었습니다." }, { status: 400 });
+      return NextResponse.json({ error: "?꾩닔 ?곗씠?곌? ?꾨씫?섏뿀?듬땲??" }, { status: 400 });
     }
 
-    const [dataStr, signature] = token.split(".");
-    if (!dataStr || !signature) {
-      return NextResponse.json({ error: "올바르지 않은 토큰 형식입니다." }, { status: 400 });
-    }
-
-    const secret = process.env.SUPABASE_SERVICE_ROLE_KEY || "default-secret-key";
-    const expectedSignature = crypto
-      .createHmac("sha256", secret)
-      .update(dataStr)
-      .digest("base64url");
-
-    if (signature !== expectedSignature) {
-      return NextResponse.json({ error: "토큰 인증 서명이 올바르지 않습니다." }, { status: 400 });
-    }
-
-    let payload: any;
+    let userId = "";
     try {
-      payload = JSON.parse(Buffer.from(dataStr, "base64url").toString("utf8"));
-    } catch (e) {
-      return NextResponse.json({ error: "토큰 디코딩에 실패했습니다." }, { status: 400 });
-    }
-
-    const { userId, expiresAt } = payload;
-
-    if (!userId || !expiresAt) {
-      return NextResponse.json({ error: "유효하지 않은 토큰 데이터입니다." }, { status: 400 });
-    }
-
-    if (expiresAt < Date.now()) {
-      return NextResponse.json({ error: "재설정 링크가 만료되었습니다. 다시 요청해 주세요." }, { status: 400 });
+      userId = verifyAuthToken<ResetPasswordTokenPayload>(token).userId;
+    } catch {
+      return NextResponse.json({ error: "?좏슚?섏? ?딆? ?좏겙?낅땲??" }, { status: 400 });
     }
 
     const supabase = createAdminClient();
-
-    // Supabase Auth 비밀번호 업데이트
     const { error: authError } = await supabase.auth.admin.updateUserById(userId, {
       password: newPassword
     });
 
     if (authError) {
       console.error("Auth password reset error:", authError);
-      return NextResponse.json({ error: `비밀번호 업데이트 실패: ${authError.message}` }, { status: 500 });
+      return NextResponse.json({ error: `鍮꾨?踰덊샇 ?낅뜲?댄듃 ?ㅽ뙣: ${authError.message}` }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, message: "비밀번호가 성공적으로 재설정되었습니다." });
-  } catch (error: any) {
+    return NextResponse.json({ success: true, message: "鍮꾨?踰덊샇媛 ?깃났?곸쑝濡??ъ꽕?뺣릺?덉뒿?덈떎." });
+  } catch (error: unknown) {
     console.error("Reset password confirm error:", error);
-    return NextResponse.json({ error: "서버 내부 오류가 발생했습니다." }, { status: 500 });
+    return NextResponse.json({ error: "?쒕쾭 ?대? ?ㅻ쪟媛 諛쒖깮?덉뒿?덈떎." }, { status: 500 });
   }
 }

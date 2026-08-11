@@ -4,29 +4,33 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 
-function createSafeClient(url: string, key: string, options?: any) {
-  if (!url || !key || key.includes("YOUR_SUPABASE_ANON_KEY") || url.includes("placeholder")) {
+function createSafeClient(url: string, key: string, options?: object) {
+  const shouldUseMock =
+    process.env.NODE_ENV !== "production" &&
+    process.env.ALLOW_MOCK_SUPABASE === "true";
+
+  if (shouldUseMock && (!url || !key || key.includes("YOUR_SUPABASE_ANON_KEY") || url.includes("placeholder"))) {
     console.warn("Using Mock Supabase Client in Admin App");
-    
-    const mockData: Record<string, any[]> = {
+
+    const mockData: Record<string, unknown[]> = {
       profiles: [
-        { id: "u-1", email: "user@urc369.com", nickname: "User (나)", referral_code: "URC883920", created_at: "2026-07-21T00:00:00Z", usdt_balance: 10500.00, status: "ACTIVE" },
-        { id: "u-2", email: "b_kim@urc369.com", nickname: "User B", referral_code: "URC110293", created_at: "2026-07-21T00:00:00Z", usdt_balance: 0.00, status: "PENDING" },
-        { id: "u-3", email: "yh_park@urc369.com", nickname: "User E", referral_code: "URC992011", created_at: "2026-07-20T00:00:00Z", usdt_balance: 0.00, status: "PENDING" }
+        { id: "u-1", email: "user@urc369.com", nickname: "User (??", referral_code: "URC883920", created_at: "2026-07-21T00:00:00Z", usdt_balance: 10500.0, status: "ACTIVE" },
+        { id: "u-2", email: "b_kim@urc369.com", nickname: "User B", referral_code: "URC110293", created_at: "2026-07-21T00:00:00Z", usdt_balance: 0.0, status: "PENDING" },
+        { id: "u-3", email: "yh_park@urc369.com", nickname: "User E", referral_code: "URC992011", created_at: "2026-07-20T00:00:00Z", usdt_balance: 0.0, status: "PENDING" }
       ],
       system_settings: [
-        { id: "1", key: "daily_rate", value: "1.2", description: "일일 수익률 (%)" },
-        { id: "2", key: "min_withdraw", value: "30.00", description: "최소 출금 가능 금액 (USDT)" },
-        { id: "3", key: "withdrawal_fee_rate", value: "3", description: "출금 수수료 (%)" }
+        { id: "1", key: "daily_rate", value: "1.2", description: "?쇱씪 ?섏씡瑜?(%)" },
+        { id: "2", key: "min_withdraw", value: "30.00", description: "理쒖냼 異쒓툑 媛??湲덉븸 (USDT)" },
+        { id: "3", key: "withdrawal_fee_rate", value: "3", description: "異쒓툑 ?섏닔猷?(%)" }
       ],
       ledger_entries: [
-        { id: "w-1001", user_id: "u-2", users: { email: "b_kim@urc369.com" }, amount: 30.00, fee: 0.90, asset: "USDT", tx_hash: "", status: "PENDING", created_at: "2026-07-27T12:30:00Z" }
+        { id: "w-1001", user_id: "u-2", users: { email: "b_kim@urc369.com" }, amount: 30.0, fee: 0.9, asset: "USDT", tx_hash: "", status: "PENDING", created_at: "2026-07-27T12:30:00Z" }
       ],
       users: [
-        { 
-          id: "u-1", 
-          email: "user@urc369.com", 
-          nickname: "User (나)", 
+        {
+          id: "u-1",
+          email: "user@urc369.com",
+          nickname: "User (??",
           status: "ACTIVE",
           user_wallets: [{ address: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F" }],
           user_balances: [
@@ -51,41 +55,49 @@ function createSafeClient(url: string, key: string, options?: any) {
 
     const mockClient = {
       from: (table: string) => {
-        const data = mockData[table] || [];
+        const data = mockData[table] ?? [];
+
         return {
-          select: (columns: string = "*") => {
+          select: () => {
             const chain = {
-              order: (col: string, opt: any) => chain,
-              eq: (col: string, val: any) => {
-                const filtered = data.filter(item => item[col] === val);
+              order: () => chain,
+              eq: (col: string, val: unknown) => {
+                const filtered = data.filter((item) => {
+                  if (!item || typeof item !== "object") {
+                    return false;
+                  }
+                  return (item as Record<string, unknown>)[col] === val;
+                });
+
                 return {
-                  single: () => Promise.resolve({ data: filtered[0] || null, error: null }),
-                  then: (resolve: any) => resolve({ data: filtered, error: null })
+                  single: () => Promise.resolve({ data: filtered[0] ?? null, error: null }),
+                  then: (resolve: (value: { data: unknown[]; error: null }) => unknown) =>
+                    resolve({ data: filtered, error: null })
                 };
               },
-              limit: (num: number) => chain,
-              single: () => Promise.resolve({ data: data[0] || null, error: null }),
-              then: (resolve: any) => resolve({ data, error: null })
+              limit: () => chain,
+              single: () => Promise.resolve({ data: data[0] ?? null, error: null }),
+              then: (resolve: (value: { data: unknown[]; error: null }) => unknown) =>
+                resolve({ data, error: null })
             };
+
             return chain;
           },
-          insert: (newData: any) => {
+          insert: (newData: unknown) => {
             const arr = Array.isArray(newData) ? newData : [newData];
             data.push(...arr);
             return Promise.resolve({ data, error: null });
           },
-          update: (updateData: any) => {
-            return {
-              eq: (col: string, val: any) => {
-                data.forEach(item => {
-                  if (item[col] === val) {
-                    Object.assign(item, updateData);
-                  }
-                });
-                return Promise.resolve({ data, error: null });
-              }
-            };
-          }
+          update: (updateData: unknown) => ({
+            eq: (col: string, val: unknown) => {
+              data.forEach((item) => {
+                if (item && typeof item === "object" && (item as Record<string, unknown>)[col] === val) {
+                  Object.assign(item as Record<string, unknown>, updateData);
+                }
+              });
+              return Promise.resolve({ data, error: null });
+            }
+          })
         };
       },
       auth: {
@@ -93,8 +105,14 @@ function createSafeClient(url: string, key: string, options?: any) {
         getUser: () => Promise.resolve({ data: { user: null }, error: null })
       }
     };
-    return mockClient as any;
+
+    return mockClient as unknown as ReturnType<typeof createClient>;
   }
+
+  if (!url || !key) {
+    return createClient("https://placeholder.supabase.co", "placeholder-key", options);
+  }
+
   return createClient(url, key, options);
 }
 

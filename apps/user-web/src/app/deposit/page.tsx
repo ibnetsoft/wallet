@@ -49,7 +49,7 @@ export default function DepositPage() {
           </div>
         ) : (
           <div className="text-center">
-            <p className="text-gray-400 mb-6">You don't have a deposit address yet. Generate one to start receiving funds.</p>
+            <p className="text-gray-400 mb-6">You don&apos;t have a deposit address yet. Generate one to start receiving funds.</p>
             <button 
               onClick={generateWallet}
               disabled={loading}

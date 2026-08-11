@@ -27,7 +27,10 @@ export async function GET() {
             'PACKAGE_BUY',
             'PACKAGE_BONUS',
             'GAME_WAGER',
-            'GAME_WIN'
+            'GAME_WIN',
+            'GAME_REFUND',
+            'GAME_REWARD',
+            'GAME_CONSOLATION'
         ));
       `);
       return NextResponse.json({ success: true, message: 'Migration applied!' });
