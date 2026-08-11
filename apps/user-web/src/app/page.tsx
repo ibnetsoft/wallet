@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getParticipationErrorMessage } from "@/lib/game-rounds";
 import {
   Home, Wallet, Gamepad2, Users, Settings, ArrowDownLeft, ArrowUpRight,
   RefreshCw, Copy, Check, Play, TrendingUp, Bell, ArrowRightLeft, Star,
@@ -274,16 +275,7 @@ export default function MobileApp() {
   const handleManualBet = () => {
     const roundObj = dbRounds.find((r) => r.round_number === manualRound);
     if (!roundObj?.can_participate) {
-      const reason = roundObj?.availability_reason;
-      const message =
-        reason === "NOT_STARTED"
-          ? (lang === "ko" ? "아직 시작 전인 회차입니다." : "This round has not started yet.")
-          : reason === "BETTING_CLOSED"
-            ? (lang === "ko" ? "북경시간 기준 마감 1분 전부터 배팅이 닫힙니다." : "Betting closes 1 minute before the deadline.")
-            : reason === "DRAW_COMPLETED"
-              ? (lang === "ko" ? "이 회차는 오늘 추첨이 이미 완료되었습니다." : "This round has already been drawn today.")
-              : (lang === "ko" ? "현재 참여할 수 없는 회차입니다." : "This round is not available right now.");
-      alert(message);
+      alert(getParticipationErrorMessage(roundObj?.availability_reason, lang));
       return;
     }
 
@@ -314,13 +306,13 @@ export default function MobileApp() {
   const confirmManualBet = async () => {
     const cost = manualBetsCount * 1;
     if (!userId) {
-      alert(lang === "ko" ? "로그인 상태를 확인할 수 없습니다." : "User session not found.");
+      alert(getParticipationErrorMessage("USER_SESSION_NOT_FOUND", lang));
       return;
     }
 
     const roundObj = dbRounds.find(r => r.round_number === manualRound);
     if (!roundObj) {
-      alert(lang === "ko" ? "유효하지 않은 회차입니다." : "Invalid round.");
+      alert(getParticipationErrorMessage("ROUND_NOT_FOUND", lang));
       return;
     }
 
@@ -335,7 +327,7 @@ export default function MobileApp() {
       const data = await res.json();
       
       if (!data.success) {
-        alert((lang === "ko" ? "참여 실패: " : "Error: ") + data.error);
+        alert(getParticipationErrorMessage(data.error_code, lang, data.error));
         return;
       }
 
@@ -368,7 +360,7 @@ export default function MobileApp() {
       setNotifications((prev) => [notif, ...prev]);
     } catch (err) {
       console.error(err);
-      alert(lang === "ko" ? "서버 통신 오류가 발생했습니다." : "Network error.");
+      alert(getParticipationErrorMessage("NETWORK_ERROR", lang));
     }
   };
 

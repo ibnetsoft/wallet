@@ -2,6 +2,15 @@ import { NextResponse } from "next/server";
 import { Pool } from "pg";
 import { getRoundAvailability, getRoundAvailabilityMessage } from "@/lib/game-rounds";
 
+class ParticipationError extends Error {
+  code: string;
+
+  constructor(code: string, message: string) {
+    super(message);
+    this.code = code;
+  }
+}
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
@@ -12,7 +21,10 @@ export async function POST(req: Request) {
     const { user_id, round_id, tickets_count } = await req.json();
 
     if (!user_id || !round_id || !tickets_count || tickets_count <= 0) {
-      return NextResponse.json({ success: false, error: "Invalid parameters" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: "Invalid parameters", error_code: "INVALID_PARAMETERS" },
+        { status: 400 }
+      );
     }
 
     const client = await pool.connect();
@@ -39,7 +51,9 @@ export async function POST(req: Request) {
          FOR UPDATE`,
         [round_id]
       );
-      if (roundRes.rows.length === 0) throw new Error("Round not found");
+      if (roundRes.rows.length === 0) {
+        throw new ParticipationError("ROUND_NOT_FOUND", "Round not found");
+      }
 
       const timeRes = await client.query(
         `SELECT (now() AT TIME ZONE 'Asia/Shanghai')::time AS current_time`
@@ -48,12 +62,22 @@ export async function POST(req: Request) {
 
       const availability = getRoundAvailability(roundRes.rows[0], currentTime, today);
       if (!availability.canParticipate) {
-        throw new Error(getRoundAvailabilityMessage(availability.reason));
+        throw new ParticipationError(
+          availability.reason,
+          getRoundAvailabilityMessage(availability.reason)
+        );
       }
 
-      const assetsRes = await client.query(`SELECT id, symbol FROM public.assets WHERE symbol IN ('USDT', 'JADE')`);
+      const assetsRes = await client.query(
+        `SELECT id, symbol FROM public.assets WHERE symbol IN ('USDT', 'JADE')`
+      );
       const assets = Object.fromEntries(assetsRes.rows.map((a) => [a.symbol, a.id]));
-      if (!assets.USDT || !assets.JADE) throw new Error("System assets not fully configured (USDT or JADE missing)");
+      if (!assets.USDT || !assets.JADE) {
+        throw new ParticipationError(
+          "SYSTEM_ASSET_CONFIG_MISSING",
+          "System assets not fully configured (USDT or JADE missing)"
+        );
+      }
 
       const usdtRequired = 100 * tickets_count;
       const jadeRequired = 1 * tickets_count;
@@ -63,14 +87,18 @@ export async function POST(req: Request) {
          WHERE user_id = $2 AND asset_id = $3 AND available_balance >= $1 RETURNING available_balance`,
         [usdtRequired, user_id, assets.USDT]
       );
-      if (usdtBalRes.rows.length === 0) throw new Error("Insufficient USDT balance");
+      if (usdtBalRes.rows.length === 0) {
+        throw new ParticipationError("INSUFFICIENT_USDT", "Insufficient USDT balance");
+      }
 
       const jadeBalRes = await client.query(
         `UPDATE public.user_balances SET available_balance = available_balance - $1, updated_at = NOW()
          WHERE user_id = $2 AND asset_id = $3 AND available_balance >= $1 RETURNING available_balance`,
         [jadeRequired, user_id, assets.JADE]
       );
-      if (jadeBalRes.rows.length === 0) throw new Error("Insufficient Jade Beads (?κ뎄??");
+      if (jadeBalRes.rows.length === 0) {
+        throw new ParticipationError("INSUFFICIENT_JADE", "Insufficient Jade Beads");
+      }
 
       await client.query(
         `INSERT INTO public.ledger_entries (user_id, asset_id, tx_type, amount, status)
@@ -93,8 +121,12 @@ export async function POST(req: Request) {
     } catch (e: unknown) {
       await client.query("ROLLBACK");
       console.error("Participation error:", e);
+
+      const errorCode = e instanceof ParticipationError ? e.code : "PARTICIPATION_FAILED";
+      const errorMessage = e instanceof Error ? e.message : "Participation failed";
+
       return NextResponse.json(
-        { success: false, error: e instanceof Error ? e.message : "Participation failed" },
+        { success: false, error: errorMessage, error_code: errorCode },
         { status: 400 }
       );
     } finally {
@@ -102,6 +134,9 @@ export async function POST(req: Request) {
     }
   } catch (err: unknown) {
     console.error("API error:", err);
-    return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: "Internal Server Error", error_code: "INTERNAL_SERVER_ERROR" },
+      { status: 500 }
+    );
   }
 }
