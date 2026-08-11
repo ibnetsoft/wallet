@@ -23,6 +23,16 @@ export async function POST(req: Request) {
       );
       const assets = Object.fromEntries(assetsRes.rows.map((a) => [a.symbol, a.id]));
 
+      if (!assets.HONGBAO) {
+        const hongbaoAssetRes = await client.query(
+          `INSERT INTO public.assets (symbol, contract_address, decimals, is_active)
+           VALUES ('HONGBAO', NULL, 0, true)
+           ON CONFLICT (symbol) DO UPDATE SET symbol = EXCLUDED.symbol
+           RETURNING id`
+        );
+        assets.HONGBAO = hongbaoAssetRes.rows[0]?.id;
+      }
+
       if (!assets.USDT || !assets.JADE) {
         throw new Error("System assets not fully configured (USDT or JADE missing)");
       }

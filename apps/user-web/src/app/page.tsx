@@ -659,9 +659,10 @@ export default function MobileApp() {
     if (!uid) return;
     setBalancesLoading(true);
     try {
-      const [balRes, betsRes] = await Promise.all([
+      const [balRes, betsRes, machinesRes] = await Promise.all([
         fetch(`/api/user/balance?userId=${uid}`),
-        fetch(`/api/user/bets?userId=${uid}`)
+        fetch(`/api/user/bets?userId=${uid}`),
+        fetch(`/api/user/machines?userId=${uid}`)
       ]);
       const data = await balRes.json();
       
@@ -671,6 +672,26 @@ export default function MobileApp() {
         setBaoBalance(data.balances.URC ?? 0); // DB의 URC 잔고를 UI의 BAO 잔고에 매핑
         setUrdBalance(data.balances.JADE ?? 0);
         setHongbaoCount(data.balances.HONGBAO ?? 0);
+      }
+
+      try {
+        const machinesData = await machinesRes.json();
+        if (machinesData.success && machinesData.machines) {
+          setMyMachines(
+            machinesData.machines.map((machine: any) => ({
+              ...machine,
+              name:
+                machine.level === 1
+                  ? t.node100Name
+                  : machine.level === 2
+                    ? t.node500Name
+                    : t.node1000Name,
+              purchasedAt: String(machine.purchasedAt).split("T")[0],
+            }))
+          );
+        }
+      } catch (e) {
+        console.error("Failed to parse machines:", e);
       }
 
       try {
