@@ -485,6 +485,9 @@ export default function MobileApp() {
         if (data.balances?.URC) {
           setUrcBalance((prev) => prev + data.balances.URC);
         }
+        if (data.balances?.HONGBAO) {
+          setHongbaoCount((prev) => prev + data.balances.HONGBAO);
+        }
         setMyMachines((prev) => [...prev, newMachine]);
         setConfirmPurchaseModal(null);
 
@@ -667,6 +670,7 @@ export default function MobileApp() {
         setUrcBalance(data.balances.URC ?? 0);
         setBaoBalance(data.balances.URC ?? 0); // DB의 URC 잔고를 UI의 BAO 잔고에 매핑
         setUrdBalance(data.balances.JADE ?? 0);
+        setHongbaoCount(data.balances.HONGBAO ?? 0);
       }
 
       try {

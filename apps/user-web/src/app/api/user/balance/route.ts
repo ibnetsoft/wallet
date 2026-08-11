@@ -30,7 +30,8 @@ export async function GET(request: Request) {
       USDT: 0,
       URC: 0,
       BNB: 0,
-      JADE: 0
+      JADE: 0,
+      HONGBAO: 0
     };
 
     res.rows.forEach((row) => {
