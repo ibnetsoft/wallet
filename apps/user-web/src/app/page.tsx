@@ -187,6 +187,7 @@ export default function MobileApp() {
   const supabase = createClient();
   const router = useRouter();
   const [lang, setLang] = useState<Language>("zh");
+  const buildVersion = process.env.NEXT_PUBLIC_APP_BUILD ?? "local";
   const t = I18N[lang];
 
   useEffect(() => {
@@ -940,6 +941,9 @@ export default function MobileApp() {
                     {hongbaoCount.toLocaleString()} {lang === "ko" ? "개" : lang === "en" ? "Env(s)" : "个"}
                   </p>
                 </div>
+              </div>
+              <div className="mt-3 pt-3 border-t border-[#2B3139] flex justify-end">
+                <span className="text-[10px] font-mono text-[#848E9C]">build {buildVersion}</span>
               </div>
             </div>
 
