@@ -18,6 +18,40 @@ export async function GET(request: Request) {
 
   const client = await pool.connect();
   try {
+    const hongbaoAssetRes = await client.query(
+      `INSERT INTO public.assets (symbol, contract_address, decimals, is_active)
+       VALUES ('HONGBAO', NULL, 0, true)
+       ON CONFLICT (symbol) DO UPDATE SET symbol = EXCLUDED.symbol
+       RETURNING id`
+    );
+    const hongbaoAssetId = hongbaoAssetRes.rows[0]?.id;
+
+    if (hongbaoAssetId) {
+      const expectedHongbaoRes = await client.query(
+        `SELECT COALESCE(SUM(
+            CASE
+              WHEN package_level = 2 THEN 1
+              WHEN package_level = 3 THEN 3
+              ELSE 0
+            END
+          ), 0) AS expected_hongbao
+         FROM public.user_game_machines
+         WHERE user_id = $1`,
+        [userId]
+      );
+      const expectedHongbao = parseFloat(expectedHongbaoRes.rows[0]?.expected_hongbao ?? "0");
+
+      await client.query(
+        `INSERT INTO public.user_balances (user_id, asset_id, available_balance, updated_at)
+         VALUES ($1, $2, $3, NOW())
+         ON CONFLICT (user_id, asset_id)
+         DO UPDATE SET
+           available_balance = GREATEST(public.user_balances.available_balance, EXCLUDED.available_balance),
+           updated_at = NOW()`,
+        [userId, hongbaoAssetId, expectedHongbao]
+      );
+    }
+
     // JOIN query to get balance by symbol dynamically
     const res = await client.query(`
       SELECT b.available_balance, a.symbol 
