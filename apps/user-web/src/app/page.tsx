@@ -516,6 +516,7 @@ export default function MobileApp() {
   const [nicknameUpdateLoading, setNicknameUpdateLoading] = useState(false);
   const [userId, setUserId] = useState("");
   const [countdown, setCountdown] = useState("");
+  const [totalAssetValuation, setTotalAssetValuation] = useState(0);
   const [urdBalance, setUrdBalance] = useState(0);
   const [hongbaoCount, setHongbaoCount] = useState(0);
   const [baoBalance, setBaoBalance] = useState(0);
@@ -800,7 +801,10 @@ export default function MobileApp() {
   const parsedWithdraw = parseFloat(withdrawAmount) || 0;
   const withdrawFee = parsedWithdraw * 0.03;
   const withdrawFinal = parsedWithdraw * 0.97;
-  const totalAssetValuation = usdtBalance;
+
+  useEffect(() => {
+    setTotalAssetValuation(usdtBalance);
+  }, [usdtBalance]);
 
   const fetchNetworkData = async () => {
     setLoadingNetwork(true);
