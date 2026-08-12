@@ -101,6 +101,9 @@ export default function WalletSweepPage() {
         if (feeData.success) {
           setFeeWalletAddress(feeData.address);
           setFeeWalletBalance(feeData.balance);
+          if (typeof feeData.usdtBalance === "number") {
+            setHotBalanceUSDT(feeData.usdtBalance);
+          }
         }
       } catch (err) {
         console.error("Fee wallet fetch error:", err);
