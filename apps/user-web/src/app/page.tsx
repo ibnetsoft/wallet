@@ -1504,8 +1504,8 @@ export default function MobileApp() {
 
         {/* History Modal Popup */}
         {showHistoryModal && (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end justify-center sm:items-center p-0 sm:p-4">
-            <div className="bg-[#1E2329] border border-[#2B3139] rounded-t-2xl sm:rounded-2xl w-full max-w-md shadow-2xl relative flex flex-col" style={{ maxHeight: "90vh" }}>
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center px-3 pt-6 pb-24 sm:p-4">
+            <div className="bg-[#1E2329] border border-[#2B3139] rounded-2xl w-full max-w-md shadow-2xl relative flex flex-col" style={{ maxHeight: "calc(100vh - 9rem)" }}>
               {/* Modal Header */}
               <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-[#2B3139] flex-shrink-0">
                 <div className="flex items-center space-x-2">
