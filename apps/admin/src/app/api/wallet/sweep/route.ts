@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Pool } from "pg";
 import { parseEther, formatUnits, Wallet, HDNodeWallet, JsonRpcProvider, Contract } from "ethers";
+import { getBscRpcUrl } from "@/lib/chain-config";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +10,7 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-const BSC_RPC_URL = process.env.NEXT_PUBLIC_BSC_RPC_URL || "https://data-seed-prebsc-1-s1.binance.org:8545";
+const BSC_RPC_URL = getBscRpcUrl();
 const provider = new JsonRpcProvider(BSC_RPC_URL);
 
 // ERC20 ABI (transfer and balanceOf)

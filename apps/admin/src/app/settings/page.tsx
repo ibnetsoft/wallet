@@ -77,6 +77,10 @@ export default function SettingsPage() {
         setColdVault(map["cold_vault_address"] ?? "");
         setHotBalanceUSDT(map["hot_balance_usdt"] ?? "0");
         setColdBalanceUSDT(map["cold_balance_usdt"] ?? "0");
+        if (data.walletSnapshot?.address) setHotWallet(data.walletSnapshot.address);
+        if (typeof data.walletSnapshot?.usdtBalance === "number") {
+          setHotBalanceUSDT(String(data.walletSnapshot.usdtBalance));
+        }
         
         try {
           if (map["hot_wallet_history"]) {
@@ -335,6 +339,12 @@ export default function SettingsPage() {
             </div>
 
             <form onSubmit={handleSaveWallets} className="space-y-5">
+              {hotWallet && (
+                <div className="rounded-xl border border-[#30D5C8]/25 bg-[#30D5C8]/8 px-4 py-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-[#30D5C8]">Current Master Wallet</p>
+                  <p className="mt-1 break-all font-mono text-sm text-white">{hotWallet}</p>
+                </div>
+              )}
               {/* 핫 지갑 주소 */}
               <div className="p-4 bg-[#0C0C0E] border border-[#26262B] rounded-xl space-y-3">
                 <div className="flex items-center space-x-2">

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { Pool } from "pg";
+import { Contract, JsonRpcProvider, Wallet, formatEther, formatUnits } from "ethers";
+import { getBscRpcUrl, getBscUsdtContract } from "@/lib/chain-config";
 
 export const dynamic = "force-dynamic";
 
@@ -7,6 +9,10 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
+
+const BSC_RPC_URL = getBscRpcUrl();
+const USDT_CONTRACT = getBscUsdtContract();
+const ERC20_ABI = ["function balanceOf(address account) view returns (uint256)"];
 
 export async function GET() {
   try {
@@ -38,6 +44,40 @@ export async function GET() {
       // 2. Get system settings
       const settingsRes = await client.query("SELECT key, value FROM public.system_settings");
       const settings = settingsRes.rows;
+      const settingsMap = Object.fromEntries(settings.map((row) => [row.key, row.value]));
+
+      let walletSnapshot: {
+        address: string;
+        bnbBalance: number;
+        usdtBalance: number;
+      } | null = null;
+
+      try {
+        const walletPk =
+          settingsMap["master_hot_wallet_private_key"] || process.env.MASTER_HOT_WALLET_PRIVATE_KEY;
+
+        if (walletPk) {
+          const provider = new JsonRpcProvider(BSC_RPC_URL);
+          const wallet = new Wallet(walletPk, provider);
+          const [bnbRaw, usdtRaw] = await Promise.all([
+            provider.getBalance(wallet.address),
+            new Contract(USDT_CONTRACT, ERC20_ABI, provider).balanceOf(wallet.address),
+          ]);
+
+          walletSnapshot = {
+            address: wallet.address,
+            bnbBalance: parseFloat(formatEther(bnbRaw)),
+            usdtBalance: parseFloat(formatUnits(usdtRaw, 18)),
+          };
+
+          settingsMap["master_hot_wallet"] = wallet.address;
+          settingsMap["hot_balance_usdt"] = walletSnapshot.usdtBalance.toString();
+        }
+      } catch (walletErr) {
+        console.error("wallet/status on-chain snapshot error:", walletErr);
+      }
+
+      const mergedSettings = Object.entries(settingsMap).map(([key, value]) => ({ key, value }));
 
       // 3. Get vault transfer logs
       const logsRes = await client.query("SELECT * FROM public.vault_transfers ORDER BY created_at DESC LIMIT 30");
@@ -46,8 +86,9 @@ export async function GET() {
       return NextResponse.json({
         success: true,
         usersWithBalances,
-        settings,
-        logs
+        settings: mergedSettings,
+        logs,
+        walletSnapshot,
       });
     } finally {
       client.release();

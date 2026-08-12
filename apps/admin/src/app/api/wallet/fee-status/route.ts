@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { JsonRpcProvider, Wallet, formatEther, formatUnits, Contract } from "ethers";
+import { getBscRpcUrl, getBscUsdtContract } from "@/lib/chain-config";
 
 export const dynamic = "force-dynamic";
 
-const BSC_RPC_URL = process.env.NEXT_PUBLIC_BSC_RPC_URL || "https://data-seed-prebsc-1-s1.binance.org:8545";
-const USDT_CONTRACT = process.env.NEXT_PUBLIC_USDT_CONTRACT || "0x337610d27c682E347C9cD60BD4b3b107C9d34dDd";
+const BSC_RPC_URL = getBscRpcUrl();
+const USDT_CONTRACT = getBscUsdtContract();
 const provider = new JsonRpcProvider(BSC_RPC_URL);
 
 const ERC20_ABI = [

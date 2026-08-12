@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Pool } from "pg";
 import { ethers } from "ethers";
+import { getBscRpcUrl, getBscUsdtContract } from "@/lib/chain-config";
 
 export const dynamic = "force-dynamic";
 
@@ -112,7 +113,7 @@ export async function POST(request: Request) {
         );
       }
 
-      const rpcUrl = process.env.NEXT_PUBLIC_BSC_RPC_URL;
+      const rpcUrl = getBscRpcUrl();
       let privateKey = process.env.MASTER_HOT_WALLET_PRIVATE_KEY;
       
       const pkRes = await client.query("SELECT value FROM public.system_settings WHERE key = 'master_hot_wallet_private_key'");
@@ -131,8 +132,7 @@ export async function POST(request: Request) {
       const provider = new ethers.JsonRpcProvider(rpcUrl);
       const wallet = new ethers.Wallet(privateKey, provider);
 
-      // USDT Contract on BSC: 0x55d398326f99059fF775485246999027B3197955
-      const usdtAddress = "0x55d398326f99059fF775485246999027B3197955";
+      const usdtAddress = getBscUsdtContract();
       const abi = ["function transfer(address to, uint256 amount) returns (bool)"];
       const usdtContract = new ethers.Contract(usdtAddress, abi, wallet);
 
