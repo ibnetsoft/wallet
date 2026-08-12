@@ -854,7 +854,7 @@ export default function MobileApp() {
   useEffect(() => { if (activeTab === "network") fetchNetworkData(); }, [activeTab]);
 
   return (
-    <div className="w-full max-w-md mx-auto bg-[#0B0E11] min-h-screen pb-20 relative font-sans text-[#EAECEF]">
+    <div className="w-full max-w-md mx-auto bg-[#0B0E11] min-h-screen pb-20 relative isolate flex flex-col font-sans text-[#EAECEF]">
       
       {/* ── TOP STATUS BAR ── */}
       <div className="sticky top-0 z-40 bg-[#0B0E11]/95 backdrop-blur-md border-b border-[#2B3139] px-5 py-3 flex justify-between items-center">
@@ -869,7 +869,8 @@ export default function MobileApp() {
               <span className="text-[10px] text-[#0ECB81] font-bold">UTC+8 {countdown}</span>
             </div>
           )}
-          <button 
+          <button
+            type="button"
             onClick={() => setShowNotifModal(true)} 
             className="relative p-1.5 bg-[#1E2329] hover:bg-[#2B3139] rounded transition-colors"
           >
@@ -912,7 +913,7 @@ export default function MobileApp() {
       )}
 
       {/* ── MAIN SCROLL AREA ── */}
-      <main className="flex-1 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+      <main className="relative z-10 flex-1 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
 
         {/* ═══════════════ HOME ═══════════════ */}
         {activeTab === "home" && (
@@ -935,7 +936,7 @@ export default function MobileApp() {
               </div>
               <div className="text-right">
                 <p className="text-[10px] text-[#848E9C]">邀请码</p>
-                <button onClick={copyReferral} className="flex items-center space-x-1 bg-[#1E2329] px-2.5 py-1.5 rounded mt-0.5">
+                  <button type="button" onClick={copyReferral} className="flex items-center space-x-1 bg-[#1E2329] px-2.5 py-1.5 rounded mt-0.5">
                   <span className="text-[10px] text-[#FCD535] font-mono font-bold">{userId ? `BAO-${userId.substring(0, 8).toUpperCase()}` : "BAO369"}</span>
                   {referralCopied ? <Check size={10} className="text-[#0ECB81]" /> : <Copy size={10} className="text-[#848E9C]" />}
                 </button>
@@ -2065,7 +2066,8 @@ export default function MobileApp() {
             {/* Mode Tabs (Manual Betting vs Auto Betting Settings) */}
             <div className="bg-[#1E2329] border border-[#2B3139] rounded-2xl p-4 space-y-4">
               <div className="grid grid-cols-2 gap-2 bg-[#0B0E11] p-1 rounded-xl border border-[#2B3139]">
-                <button 
+                <button
+                  type="button"
                   onClick={() => setGameBetMode("manual")}
                   className={`py-2 text-xs font-bold rounded-lg transition-all ${
                     gameBetMode === "manual" ? "bg-[#FCD535] text-[#0B0E11]" : "text-[#848E9C] hover:text-[#EAECEF]"
@@ -2073,7 +2075,8 @@ export default function MobileApp() {
                 >
                   🎲 {lang === "ko" ? "수동 배팅 참여" : lang === "en" ? "Manual Bet" : "手动下注"}
                 </button>
-                <button 
+                <button
+                  type="button"
                   onClick={() => setGameBetMode("auto")}
                   className={`py-2 text-xs font-bold rounded-lg transition-all ${
                     gameBetMode === "auto" ? "bg-[#FCD535] text-[#0B0E11]" : "text-[#848E9C] hover:text-[#EAECEF]"
@@ -2091,6 +2094,7 @@ export default function MobileApp() {
                     <div className="grid grid-cols-3 gap-2">
                       {(dbRounds.length > 0 ? dbRounds : [{ round_number: 1, can_participate: false }, { round_number: 2, can_participate: false }, { round_number: 3, can_participate: false }]).map((round) => (
                         <button
+                          type="button"
                           key={round.round_number}
                           onClick={() => setManualRound(round.round_number)}
                           className={`py-2.5 rounded-xl text-xs font-extrabold border transition-all ${
@@ -2198,6 +2202,7 @@ export default function MobileApp() {
                   </div>
 
                   <button
+                    type="button"
                     onClick={handleManualBet}
                     disabled={dbRounds.length > 0 && !dbRounds.some((round) => round.round_number === manualRound && round.can_participate)}
                     className="w-full py-3.5 bg-[#FCD535] text-[#0B0E11] font-black rounded-xl text-sm hover:opacity-90 active:scale-95 transition-all shadow-[0_0_20px_rgba(252,213,53,0.2)] flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
@@ -2215,6 +2220,7 @@ export default function MobileApp() {
                       <div className="bg-[#1E2329] border border-[#FCD535]/40 rounded-2xl w-full max-w-xs p-6 space-y-5 shadow-[0_0_40px_rgba(252,213,53,0.25)] relative">
                         {/* 닫기 */}
                         <button
+                          type="button"
                           onClick={() => setShowGameConfirmModal(false)}
                           className="absolute top-3 right-3 text-[#848E9C] hover:text-[#EAECEF] p-1.5 hover:bg-[#2B3139] rounded-lg transition-colors"
                         >
@@ -2275,12 +2281,14 @@ export default function MobileApp() {
                         {/* 버튼 */}
                         <div className="grid grid-cols-2 gap-3">
                           <button
+                            type="button"
                             onClick={() => setShowGameConfirmModal(false)}
                             className="py-3 rounded-xl border border-[#2B3139] bg-[#0B0E11] text-[#848E9C] font-bold text-sm hover:border-[#EAECEF] hover:text-[#EAECEF] transition-all active:scale-95"
                           >
                             {lang === "ko" ? "취소" : lang === "en" ? "Cancel" : "取消"}
                           </button>
                           <button
+                            type="button"
                             onClick={confirmManualBet}
                             className="py-3 rounded-xl bg-[#FCD535] text-[#0B0E11] font-black text-sm hover:opacity-90 transition-all active:scale-95 shadow-[0_0_16px_rgba(252,213,53,0.3)] flex items-center justify-center space-x-1.5"
                           >
@@ -2302,6 +2310,7 @@ export default function MobileApp() {
                         const checked = autoSettings.rounds.includes(rNum);
                         return (
                           <button
+                            type="button"
                             key={rNum}
                             onClick={() => toggleAutoRound(rNum)}
                             className={`py-2.5 rounded-xl text-xs font-bold border transition-all flex items-center justify-center space-x-1 ${
@@ -2412,6 +2421,7 @@ export default function MobileApp() {
                   </div>
 
                   <button
+                    type="button"
                     onClick={handleToggleAutoSettings}
                     disabled={autoSettingsLoading}
                     className={`w-full py-3.5 font-black rounded-xl text-sm transition-all flex items-center justify-center space-x-2 ${
@@ -2821,7 +2831,7 @@ export default function MobileApp() {
                 <span className="text-[10px] text-[#EAECEF] font-mono truncate mr-2">
                   {typeof window !== "undefined" ? window.location.origin : "https://app.urc369.com"}/register?ref={userId ? `BAO-${userId.substring(0, 8).toUpperCase()}` : "BAO369"}
                 </span>
-                <button onClick={copyReferral} className="p-2 bg-[#2B3139] hover:bg-[#FCD535] hover:text-[#0B0E11] rounded text-[#848E9C] transition-colors flex-shrink-0">
+                <button type="button" onClick={copyReferral} className="p-2 bg-[#2B3139] hover:bg-[#FCD535] hover:text-[#0B0E11] rounded text-[#848E9C] transition-colors flex-shrink-0">
                   {referralCopied ? <Check size={14} /> : <Copy size={14} />}
                 </button>
               </div>
@@ -2832,7 +2842,7 @@ export default function MobileApp() {
       </main>
 
       {/* ── BOTTOM NAV ── */}
-      <nav className="fixed bottom-0 w-full max-w-md bg-[#0B0E11] border-t border-[#2B3139] pb-safe z-50">
+      <nav className="fixed bottom-0 left-1/2 z-50 w-full max-w-md -translate-x-1/2 bg-[#0B0E11] border-t border-[#2B3139] pb-safe">
         <div className="flex justify-around items-center py-2 px-1">
           {[
             { id: "home", label: t.home, icon: <Home size={18} /> },
@@ -2842,7 +2852,7 @@ export default function MobileApp() {
             { id: "network", label: t.network, icon: <Users size={18} /> },
             { id: "settings", label: t.settings, icon: <Settings size={18} /> },
           ].map((tab) => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id as TabType)}
+            <button type="button" key={tab.id} onClick={() => setActiveTab(tab.id as TabType)}
               className={`flex flex-col items-center space-y-0.5 p-1 transition-colors ${activeTab === tab.id ? "text-[#FCD535]" : "text-[#848E9C] hover:text-[#EAECEF]"}`}>
               {tab.icon}
               <span className="text-[9px] font-bold tracking-tight">{tab.label}</span>
