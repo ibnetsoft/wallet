@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/auto-draw",
-      "schedule": "*/10 * * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }
