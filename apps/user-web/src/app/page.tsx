@@ -222,6 +222,7 @@ export default function MobileApp() {
   const [manualRound, setManualRound] = useState<number>(1);
   const [dbRounds, setDbRounds] = useState<any[]>([]);
   const availableManualRounds = dbRounds.filter((round) => round.can_participate);
+  const selectedManualRound = dbRounds.find((round) => round.round_number === manualRound);
   
   // Organization tree zoom/pinch states
   const [zoomScale, setZoomScale] = useState<number>(1.0);
@@ -264,6 +265,7 @@ export default function MobileApp() {
     rounds: [1, 2, 3],
     betsCount: 10, // Default 10 times = 10 Jade Beads
   });
+  const [autoSettingsLoading, setAutoSettingsLoading] = useState(false);
 
   const [historyPage, setHistoryPage] = useState(1);
   const [walletHistoryTab, setWalletHistoryTab] = useState<"tx" | "bonus" | "swap">("tx");
@@ -365,54 +367,74 @@ export default function MobileApp() {
     }
   };
 
-  const handleToggleAutoSettings = () => {
-    const autoCost = autoSettings.betsCount * 1;
-    if (!autoSettings.enabled) {
-      if (urdBalance < autoCost) {
-        alert(
-          lang === "ko" 
-            ? `⚡ 옥구슬이 부족하여 자동 게임을 시작할 수 없습니다! (필요: ${autoCost}개, 보유: ${urdBalance}개)`
-            : lang === "en"
-            ? `⚡ Insufficient Jade Beads to start Auto Game! (Required: ${autoCost}, Balance: ${urdBalance})`
-            : `⚡ 玉珠不足，无法开始自动游戏！(需要: ${autoCost}个, 拥有: ${urdBalance}个)`
-        );
-        // Add Bead Depletion Notification to Bell
-        const notif: GameNotification = {
-          id: `n-${Date.now()}`,
-          round: "자동 게임",
-          time: new Date().toLocaleTimeString("ko-KR", { hour12: false, hour: "2-digit", minute: "2-digit" }),
-          title: lang === "ko" ? "⚠️ 옥구슬 소진으로 자동 게임 중단" : lang === "en" ? "⚠️ Auto Game Stopped (No Beads)" : "⚠️ 因玉珠耗尽自动游戏停止",
-          resultType: "COIN_WIN",
-          rewardText: lang === "ko"
-            ? `옥구슬이 소진되어 자동 게임 참여가 중단되었습니다. (필요: ${autoCost}개)`
-            : lang === "en"
-            ? `Auto Game stopped due to insufficient Jade Beads. (Required: ${autoCost})`
-            : `玉珠已耗尽，自动游戏停止。(需要: ${autoCost}个)`,
-          createdAt: new Date().toLocaleTimeString("ko-KR", { hour12: false, hour: "2-digit", minute: "2-digit" }),
-          read: false,
-        };
-        setNotifications((prev) => [notif, ...prev]);
-        return;
-      }
+  const handleToggleAutoSettings = async () => {
+    if (!userId) {
+      alert(getParticipationErrorMessage("USER_SESSION_NOT_FOUND", lang));
+      return;
+    }
 
-      setAutoSettings((prev) => ({ ...prev, enabled: true }));
-      setUrdBalance((prev) => prev - autoCost);
+    if (!autoSettings.enabled && autoSettings.rounds.length === 0) {
       alert(
         lang === "ko"
-          ? `⚡ 자동 게임 세팅이 활성화되었습니다!\n회당 ${autoSettings.betsCount}회 (옥구슬 ${autoCost}개 소모)로 매일 지정 회차에 자동으로 실행됩니다.`
+          ? "자동 배팅 회차를 하나 이상 선택해 주세요."
           : lang === "en"
-          ? `⚡ Auto Game settings activated!\nWill run automatically at designated rounds, ${autoSettings.betsCount} times per round (Cost: ${autoCost} Jade Beads).`
-          : `⚡ 自动游戏设置已激活！\n每天将在指定轮次自动运行，每轮参与 ${autoSettings.betsCount} 次（消耗 ${autoCost} 个玉珠）。`
+            ? "Select at least one round for auto betting."
+            : "请至少选择一个自动下注轮次。"
       );
-    } else {
-      setAutoSettings((prev) => ({ ...prev, enabled: false }));
+      return;
+    }
+
+    setAutoSettingsLoading(true);
+    try {
+      const nextEnabled = !autoSettings.enabled;
+      const res = await fetch("/api/auto-bet-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: userId,
+          enabled: nextEnabled,
+          dailyRepeat: autoSettings.dailyRepeat,
+          rounds: autoSettings.rounds,
+          betsCount: autoSettings.betsCount,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to save auto bet settings");
+      }
+
+      setAutoSettings({
+        enabled: data.settings.enabled,
+        dailyRepeat: data.settings.dailyRepeat,
+        rounds: data.settings.rounds,
+        betsCount: data.settings.betsCount,
+      });
+
       alert(
-        lang === "ko" 
-          ? "자동 게임 비활성화 완료" 
-          : lang === "en" 
-          ? "Auto Game deactivated" 
-          : "自动游戏已禁用"
+        nextEnabled
+          ? (lang === "ko"
+              ? "자동 배팅이 저장되었습니다. 지정한 회차가 열리면 cron이 자동으로 참여를 시도합니다."
+              : lang === "en"
+                ? "Auto betting has been saved. The cron job will try to join when the selected round opens."
+                : "自动下注已保存。所选轮次开放后，定时任务会自动尝试参与。")
+          : (lang === "ko"
+              ? "자동 배팅이 해제되었습니다."
+              : lang === "en"
+                ? "Auto betting has been disabled."
+                : "自动下注已停用。")
       );
+    } catch (error: unknown) {
+      console.error("Failed to save auto bet settings:", error);
+      alert(
+        lang === "ko"
+          ? "자동 배팅 저장 중 오류가 발생했습니다."
+          : lang === "en"
+            ? "Failed to save auto betting settings."
+            : "保存自动下注设置时发生错误。"
+      );
+    } finally {
+      setAutoSettingsLoading(false);
     }
   };
 
@@ -726,6 +748,28 @@ export default function MobileApp() {
     }
   };
 
+  const loadAutoBetSettings = async (uid: string) => {
+    if (!uid) return;
+
+    try {
+      const res = await fetch(`/api/auto-bet-settings?userId=${uid}`);
+      const data = await res.json();
+      if (!res.ok || !data.success || !data.settings) {
+        return;
+      }
+
+      setAutoSettings((prev) => ({
+        ...prev,
+        enabled: data.settings.enabled,
+        dailyRepeat: data.settings.dailyRepeat,
+        rounds: data.settings.rounds,
+        betsCount: data.settings.betsCount,
+      }));
+    } catch (error) {
+      console.error("Failed to load auto bet settings:", error);
+    }
+  };
+
   useEffect(() => {
     const fetchUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -736,6 +780,7 @@ export default function MobileApp() {
           setUserNickname(session.user.user_metadata.nickname);
         }
         loadBalances(session.user.id);
+        loadAutoBetSettings(session.user.id);
       }
     };
     const fetchGameRounds = async () => {
@@ -761,12 +806,9 @@ export default function MobileApp() {
   useEffect(() => {
     if (dbRounds.length === 0) return;
 
-    const selectedRound = dbRounds.find((round) => round.round_number === manualRound);
-    if (selectedRound?.can_participate) return;
-
-    const firstAvailableRound = dbRounds.find((round) => round.can_participate);
-    if (firstAvailableRound) {
-      setManualRound(firstAvailableRound.round_number);
+    const selectedRoundExists = dbRounds.some((round) => round.round_number === manualRound);
+    if (!selectedRoundExists) {
+      setManualRound(dbRounds[0].round_number);
     }
   }, [dbRounds, manualRound]);
 
@@ -2050,14 +2092,15 @@ export default function MobileApp() {
                       {(dbRounds.length > 0 ? dbRounds : [{ round_number: 1, can_participate: false }, { round_number: 2, can_participate: false }, { round_number: 3, can_participate: false }]).map((round) => (
                         <button
                           key={round.round_number}
-                          onClick={() => round.can_participate && setManualRound(round.round_number)}
-                          disabled={!round.can_participate}
+                          onClick={() => setManualRound(round.round_number)}
                           className={`py-2.5 rounded-xl text-xs font-extrabold border transition-all ${
                             manualRound === round.round_number
-                              ? "bg-[#FCD535]/10 border-[#FCD535] text-[#FCD535]"
+                              ? round.can_participate
+                                ? "bg-[#FCD535]/10 border-[#FCD535] text-[#FCD535]"
+                                : "bg-[#FCD535]/5 border-[#FCD535]/40 text-[#FCD535]"
                               : round.can_participate
                                 ? "bg-[#0B0E11] border-[#2B3139] text-[#848E9C]"
-                                : "bg-[#0B0E11] border-[#2B3139] text-[#5E6673] opacity-50 cursor-not-allowed"
+                                : "bg-[#0B0E11] border-[#2B3139] text-[#5E6673]"
                           }`}
                         >
                           {round.round_number}
@@ -2065,6 +2108,17 @@ export default function MobileApp() {
                         </button>
                       ))}
                     </div>
+                    {selectedManualRound && (
+                      <p className={`text-[11px] ${selectedManualRound.can_participate ? "text-[#0ECB81]" : "text-[#848E9C]"}`}>
+                        {selectedManualRound.can_participate
+                          ? (lang === "ko"
+                              ? `${manualRound}회차는 현재 참여 가능합니다.`
+                              : lang === "en"
+                                ? `Round ${manualRound} is currently open for participation.`
+                                : `第 ${manualRound} 轮当前可以参与。`)
+                          : getParticipationErrorMessage(selectedManualRound.availability_reason, lang)}
+                      </p>
+                    )}
                     {dbRounds.length > 0 && availableManualRounds.length === 0 && (
                       <p className="text-[11px] text-[#848E9C]">
                         {lang === "ko" ? "지금은 북경시간 기준으로 참여 가능한 회차가 없습니다." : "There are no rounds available to join right now."}
@@ -2359,13 +2413,20 @@ export default function MobileApp() {
 
                   <button
                     onClick={handleToggleAutoSettings}
+                    disabled={autoSettingsLoading}
                     className={`w-full py-3.5 font-black rounded-xl text-sm transition-all flex items-center justify-center space-x-2 ${
                       autoSettings.enabled
                         ? "bg-[#0ECB81] text-[#0B0E11]"
                         : "bg-[#FCD535] text-[#0B0E11]"
-                    }`}
+                    } disabled:opacity-60 disabled:cursor-not-allowed`}
                   >
-                    <span>{autoSettings.enabled ? t.stopAutoSettings : t.saveAutoSettings}</span>
+                    <span>
+                      {autoSettingsLoading
+                        ? (lang === "ko" ? "저장 중..." : lang === "en" ? "Saving..." : "保存中...")
+                        : autoSettings.enabled
+                          ? t.stopAutoSettings
+                          : t.saveAutoSettings}
+                    </span>
                   </button>
                 </div>
               )}
