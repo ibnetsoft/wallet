@@ -183,6 +183,23 @@ interface UnpaidMember {
   joinedAt: string;
 }
 
+function normalizeAutoBetRounds(value: unknown): number[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return [...new Set(
+    value
+      .map((round) => Number(round))
+      .filter((round) => Number.isInteger(round) && round > 0)
+  )].sort((a, b) => a - b);
+}
+
+function normalizeAutoBetCount(value: unknown) {
+  const count = Number(value);
+  return Number.isInteger(count) && count >= 1 && count <= 100 ? count : 10;
+}
+
 export default function MobileApp() {
   const supabase = createClient();
   const router = useRouter();
@@ -223,6 +240,12 @@ export default function MobileApp() {
   const [dbRounds, setDbRounds] = useState<any[]>([]);
   const availableManualRounds = dbRounds.filter((round) => round.can_participate);
   const selectedManualRound = dbRounds.find((round) => round.round_number === manualRound);
+  const currentBeijingTime = typeof dbRounds[0]?.current_time === "string"
+    ? dbRounds[0].current_time.substring(0, 5)
+    : null;
+  const nextOpenRound = dbRounds
+    .filter((round) => round.availability_reason === "NOT_STARTED")
+    .sort((a, b) => String(a.start_time).localeCompare(String(b.start_time)))[0];
   
   // Organization tree zoom/pinch states
   const [zoomScale, setZoomScale] = useState<number>(1.0);
@@ -405,10 +428,10 @@ export default function MobileApp() {
       }
 
       setAutoSettings({
-        enabled: data.settings.enabled,
-        dailyRepeat: data.settings.dailyRepeat,
-        rounds: data.settings.rounds,
-        betsCount: data.settings.betsCount,
+        enabled: Boolean(data.settings.enabled),
+        dailyRepeat: data.settings.dailyRepeat !== false,
+        rounds: normalizeAutoBetRounds(data.settings.rounds),
+        betsCount: normalizeAutoBetCount(data.settings.betsCount),
       });
 
       alert(
@@ -441,7 +464,9 @@ export default function MobileApp() {
   const toggleAutoRound = (roundNum: number) => {
     setAutoSettings((prev) => {
       const exists = prev.rounds.includes(roundNum);
-      const nextRounds = exists ? prev.rounds.filter((r) => r !== roundNum) : [...prev.rounds, roundNum].sort();
+      const nextRounds = exists
+        ? prev.rounds.filter((r) => r !== roundNum)
+        : [...prev.rounds, roundNum].sort((a, b) => a - b);
       return { ...prev, rounds: nextRounds };
     });
   };
@@ -760,10 +785,10 @@ export default function MobileApp() {
 
       setAutoSettings((prev) => ({
         ...prev,
-        enabled: data.settings.enabled,
-        dailyRepeat: data.settings.dailyRepeat,
-        rounds: data.settings.rounds,
-        betsCount: data.settings.betsCount,
+        enabled: Boolean(data.settings.enabled),
+        dailyRepeat: data.settings.dailyRepeat !== false,
+        rounds: normalizeAutoBetRounds(data.settings.rounds),
+        betsCount: normalizeAutoBetCount(data.settings.betsCount),
       }));
     } catch (error) {
       console.error("Failed to load auto bet settings:", error);
@@ -2086,9 +2111,12 @@ export default function MobileApp() {
                 </button>
               </div>
 
-              {/* Manual Betting Tab */}
-              {gameBetMode === "manual" ? (
-                <div className="space-y-4 pt-1">
+              {/* Keep both panels mounted so browser translation cannot disrupt React's DOM cleanup. */}
+              <div
+                hidden={gameBetMode !== "manual"}
+                aria-hidden={gameBetMode !== "manual"}
+                className="space-y-4 pt-1"
+              >
                   <div className="space-y-2">
                     <label className="text-xs text-[#848E9C] font-bold">{t.selectRound}</label>
                     <div className="grid grid-cols-3 gap-2">
@@ -2125,7 +2153,11 @@ export default function MobileApp() {
                     )}
                     {dbRounds.length > 0 && availableManualRounds.length === 0 && (
                       <p className="text-[11px] text-[#848E9C]">
-                        {lang === "ko" ? "지금은 북경시간 기준으로 참여 가능한 회차가 없습니다." : "There are no rounds available to join right now."}
+                        {lang === "ko"
+                          ? `현재 북경시간은 ${currentBeijingTime ?? "--:--"}입니다.${nextOpenRound ? ` 다음 참여 가능: ${nextOpenRound.round_number}회차 ${String(nextOpenRound.start_time).substring(0, 5)}.` : " 현재 참여 가능한 회차가 없습니다."}`
+                          : lang === "en"
+                            ? `Current Beijing time: ${currentBeijingTime ?? "--:--"}.${nextOpenRound ? ` Next round: ${nextOpenRound.round_number} at ${String(nextOpenRound.start_time).substring(0, 5)}.` : " No round is available right now."}`
+                            : `当前北京时间：${currentBeijingTime ?? "--:--"}。${nextOpenRound ? `下一可参与轮次：第${nextOpenRound.round_number}轮 ${String(nextOpenRound.start_time).substring(0, 5)}。` : "当前没有可参与轮次。"}`}
                       </p>
                     )}
                   </div>
@@ -2299,10 +2331,14 @@ export default function MobileApp() {
                       </div>
                     </div>
                   )}
-                </div>
-              ) : (
-                /* Auto Game Tab */
-                <div className="space-y-4 pt-1">
+              </div>
+
+              {/* Auto Game Tab */}
+              <div
+                hidden={gameBetMode !== "auto"}
+                aria-hidden={gameBetMode !== "auto"}
+                className="space-y-4 pt-1"
+              >
                   <div className="space-y-2">
                     <label className="text-xs text-[#848E9C] font-bold">{t.autoBetRounds}</label>
                     <div className="grid grid-cols-3 gap-2">
@@ -2438,8 +2474,7 @@ export default function MobileApp() {
                           : t.saveAutoSettings}
                     </span>
                   </button>
-                </div>
-              )}
+              </div>
             </div>
 
             {/* ── 게임 상태 탭 섹션 ── */}

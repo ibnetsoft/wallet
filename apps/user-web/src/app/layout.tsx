@@ -30,12 +30,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" translate="no" className="notranslate">
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="google" content="notranslate" />
       </head>
-      <body className="antialiased bg-[#0C0C0E] text-[#F2F2F7] min-h-screen flex flex-col justify-between">
+      <body translate="no" className="notranslate antialiased bg-[#0C0C0E] text-[#F2F2F7] min-h-screen flex flex-col justify-between">
         <PwaPrompt />
         {children}
       </body>
