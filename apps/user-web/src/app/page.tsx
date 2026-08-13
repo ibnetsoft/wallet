@@ -82,6 +82,7 @@ const I18N = {
     holdings: "보유 자산", initialBalance: "최초잔고", totalProfit: "총 수익", yieldRate: "수익률",
     deposit: "입금", withdraw: "출금", swap: "스왑", history: "내역", coinsCount: "2 종목",
     txHistoryTitle: "입출금 및 보너스 내역",
+    balanceLoading: "잔액을 불러오는 중입니다. 잠시 후 다시 시도해 주세요.",
   },
   en: {
     home: "Home", wallet: "Wallet", products: "Shop", game: "Game Zone", network: "Network", settings: "Settings",
@@ -112,6 +113,7 @@ const I18N = {
     holdings: "Holdings", initialBalance: "Initial Balance", totalProfit: "Total Profit", yieldRate: "Yield Rate",
     deposit: "Deposit", withdraw: "Withdraw", swap: "Swap", history: "History", coinsCount: "2 Assets",
     txHistoryTitle: "Transactions & Bonus History",
+    balanceLoading: "Loading your balance. Please try again in a moment.",
   },
   zh: {
     home: "首页", wallet: "钱包", products: "商城", game: "竞技场", network: "团队", settings: "设置",
@@ -142,6 +144,7 @@ const I18N = {
     holdings: "持有资产", initialBalance: "初始余额", totalProfit: "总收益", yieldRate: "收益率",
     deposit: "充值", withdraw: "提现", swap: "闪兑", history: "记录", coinsCount: "2 种资产",
     txHistoryTitle: "充提及奖金记录",
+    balanceLoading: "正在加载余额，请稍后再试。",
   }
 };
 
@@ -299,6 +302,11 @@ export default function MobileApp() {
 
   // 1단계: 컨펌 팝업 열기
   const handleManualBet = () => {
+    if (!balancesReady) {
+      alert(t.balanceLoading);
+      return;
+    }
+
     const roundObj = dbRounds.find((r) => r.round_number === manualRound);
     if (!roundObj?.can_participate) {
       alert(getParticipationErrorMessage(roundObj?.availability_reason, lang));
@@ -330,6 +338,12 @@ export default function MobileApp() {
 
   // 2단계: 컨펌 후 실제 참여 실행
   const confirmManualBet = async () => {
+    if (!balancesReady) {
+      setShowGameConfirmModal(false);
+      alert(t.balanceLoading);
+      return;
+    }
+
     const cost = manualBetsCount * 1;
     if (!userId) {
       alert(getParticipationErrorMessage("USER_SESSION_NOT_FOUND", lang));
@@ -483,6 +497,11 @@ export default function MobileApp() {
   } | null>(null);
 
   const handleRequestPurchase = (level: number, price: number, urdBonus: number, capRate: number) => {
+    if (!balancesReady) {
+      alert(t.balanceLoading);
+      return;
+    }
+
     if (usdtBalance < price) {
       alert(lang === "ko" ? "USDT 잔액이 부족합니다. 먼저 USDT를 입금해 주세요!" : lang === "en" ? "Insufficient USDT balance! Please deposit first." : "USDT 余额不足！请先充值。");
       return;
@@ -496,6 +515,12 @@ export default function MobileApp() {
   const executePurchaseProduct = async () => {
     if (!confirmPurchaseModal || isPurchasing) return;
     const { price, urdBonus, capRate, level } = confirmPurchaseModal;
+
+    if (!balancesReady) {
+      setConfirmPurchaseModal(null);
+      alert(t.balanceLoading);
+      return;
+    }
 
     if (usdtBalance < price) {
       alert(lang === "ko" ? "USDT 잔액이 부족합니다. 먼저 USDT를 입금해 주세요!" : lang === "en" ? "Insufficient USDT balance! Please deposit first." : "USDT 余额不足！请先充值。");
@@ -660,6 +685,11 @@ export default function MobileApp() {
   };
 
   const handlePlayGame = (betAmount: number = 100) => {
+    if (!balancesReady) {
+      alert(t.balanceLoading);
+      return;
+    }
+
     if (usdtBalance < 100) {
       alert(lang === "ko" ? "USDT 잔액이 부족합니다! (필요: 100 USDT)" : lang === "en" ? "Insufficient USDT! (Required: 100 USDT)" : "USDT 余额不足！(需要 100 USDT)");
       return;
@@ -702,9 +732,11 @@ export default function MobileApp() {
   };
 
   const [balancesLoading, setBalancesLoading] = useState(false);
+  const [balancesReady, setBalancesReady] = useState(false);
 
   const loadBalances = async (uid: string, attempt = 0) => {
     if (!uid) return;
+    if (attempt === 0) setBalancesReady(false);
     setBalancesLoading(true);
     try {
       const balRes = await fetch("/api/user/balance");
@@ -729,6 +761,7 @@ export default function MobileApp() {
       setBaoBalance(data.balances.BAO ?? 0);
       setUrdBalance(data.balances.JADE ?? 0);
       setHongbaoCount(data.balances.HONGBAO ?? 0);
+      setBalancesReady(true);
 
       const [betsResult, machinesResult] = await Promise.allSettled([
         fetch("/api/user/bets").then((response) => response.json()),
@@ -827,6 +860,7 @@ export default function MobileApp() {
     const fetchUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
+        setBalancesReady(false);
         setUserEmail(session.user.email || "Unknown");
         setUserId(session.user.id);
         if (session.user.user_metadata?.nickname) {
@@ -834,6 +868,8 @@ export default function MobileApp() {
         }
         loadBalances(session.user.id);
         loadAutoBetSettings(session.user.id);
+      } else {
+        setBalancesReady(false);
       }
     };
     const fetchGameRounds = async () => {
@@ -870,6 +906,7 @@ export default function MobileApp() {
   }, [dbRounds, manualRound]);
 
   const handleLogout = async () => {
+    setBalancesReady(false);
     await supabase.auth.signOut();
     router.push("/login");
   };
@@ -901,6 +938,9 @@ export default function MobileApp() {
   const withdrawFee = parsedWithdraw * 0.03;
   const withdrawFinal = parsedWithdraw * 0.97;
   const totalAssetValuation = Number(usdtBalance || 0);
+  const formatBalance = (value: number, options?: Intl.NumberFormatOptions) => (
+    balancesReady ? value.toLocaleString("en-US", options) : "--"
+  );
 
   const fetchNetworkData = async () => {
     setLoadingNetwork(true);
@@ -1026,8 +1066,9 @@ export default function MobileApp() {
                 </button>
               </div>
               <h2 className="text-3xl font-black text-[#EAECEF] mt-1 tracking-tight font-mono">
-                ${totalAssetValuation.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ${formatBalance(totalAssetValuation, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </h2>
+              {!balancesReady && <p className="text-[10px] text-[#848E9C] mt-1">{t.balanceLoading}</p>}
               <div className="flex items-center space-x-1.5 text-[#0ECB81] text-xs font-bold mt-1.5">
                 <TrendingUp size={12} />
                 <span>0.00% (24h)</span>
@@ -1036,19 +1077,19 @@ export default function MobileApp() {
                 <div>
                   <p className="text-[10px] text-[#848E9C]">USDT</p>
                   <p className="text-sm font-bold font-mono text-[#EAECEF] mt-0.5">
-                    {usdtBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {formatBalance(usdtBalance, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 </div>
                 <div>
                   <p className="text-[10px] text-[#848E9C]">{lang === "ko" ? "옥구슬" : lang === "en" ? "Jade Beads" : "玉珠"}</p>
                   <p className="text-sm font-bold font-mono text-[#FCD535] mt-0.5">
-                    {urdBalance.toLocaleString()} {lang === "ko" ? "개" : lang === "en" ? "Bead(s)" : "个"}
+                    {formatBalance(urdBalance)} {lang === "ko" ? "개" : lang === "en" ? "Bead(s)" : "个"}
                   </p>
                 </div>
                 <div>
                   <p className="text-[10px] text-[#848E9C]">{lang === "ko" ? "홍바오" : lang === "en" ? "Hongbao" : "红包"}</p>
                   <p className="text-sm font-bold font-mono text-[#F6465D] mt-0.5">
-                    {hongbaoCount.toLocaleString()} {lang === "ko" ? "개" : lang === "en" ? "Env(s)" : "个"}
+                    {formatBalance(hongbaoCount)} {lang === "ko" ? "개" : lang === "en" ? "Env(s)" : "个"}
                   </p>
                 </div>
               </div>
@@ -1281,8 +1322,9 @@ export default function MobileApp() {
                     {lang === "ko" ? "총 자산 평가액" : lang === "en" ? "Total Asset Valuation" : "总资产估值"}
                   </p>
                   <h2 className="text-3xl font-black text-[#EAECEF] tracking-tight font-mono mt-1">
-                    ${totalAssetValuation.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ${formatBalance(totalAssetValuation, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </h2>
+                  {!balancesReady && <p className="text-[10px] text-[#848E9C] mt-1">{t.balanceLoading}</p>}
                 </div>
               </div>
 
@@ -1350,13 +1392,13 @@ export default function MobileApp() {
                         </span>
                       </div>
                       <p className="text-xs font-mono text-[#848E9C] mt-0.5">
-                        {usdtBalance.toLocaleString("en-US", { minimumFractionDigits: 4 })} USDT
+                        {formatBalance(usdtBalance, { minimumFractionDigits: 4 })} USDT
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-extrabold font-mono text-[#EAECEF]">
-                      ${usdtBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ${formatBalance(usdtBalance, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                     <p className="text-[10px] font-bold text-[#848E9C] mt-0.5">0.00%</p>
                   </div>
@@ -1374,7 +1416,7 @@ export default function MobileApp() {
                         </span>
                       </div>
                       <p className="text-xs font-mono text-[#848E9C] mt-0.5">
-                        {baoBalance.toLocaleString()} {lang === "ko" ? "개" : lang === "en" ? "Token(s)" : "个"}
+                        {formatBalance(baoBalance)} {lang === "ko" ? "개" : lang === "en" ? "Token(s)" : "个"}
                       </p>
                     </div>
                   </div>
@@ -1969,8 +2011,9 @@ export default function MobileApp() {
               <div>
                 <p className="text-xs font-bold text-[#848E9C]">{t.usdtBalance}</p>
                 <h2 className="text-2xl font-black text-[#EAECEF] mt-1 tracking-tight">
-                  {usdtBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-normal text-[#848E9C]">USDT</span>
+                  {formatBalance(usdtBalance, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-normal text-[#848E9C]">USDT</span>
                 </h2>
+                {!balancesReady && <p className="text-[10px] text-[#848E9C] mt-1">{t.balanceLoading}</p>}
               </div>
               <button 
                 onClick={() => { setActiveTab("wallet"); openDepositModal(); }}
@@ -2056,10 +2099,11 @@ export default function MobileApp() {
 
                   <button 
                     onClick={() => handleRequestPurchase(p.level, p.price, p.urdBonus, p.capRate)}
-                    className="w-full py-3 bg-[#FCD535] text-[#0B0E11] font-black rounded-xl text-sm hover:opacity-90 active:scale-95 transition-all shadow-[0_0_20px_rgba(252,213,53,0.2)] flex items-center justify-center space-x-1.5 relative z-10"
+                    disabled={!balancesReady}
+                    className="w-full py-3 bg-[#FCD535] text-[#0B0E11] font-black rounded-xl text-sm hover:opacity-90 active:scale-95 transition-all shadow-[0_0_20px_rgba(252,213,53,0.2)] flex items-center justify-center space-x-1.5 relative z-10 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
                   >
                     <ShoppingBag size={16} />
-                    <span>${p.price.toLocaleString()} USDT {t.buyProduct}</span>
+                    <span>{balancesReady ? `$${p.price.toLocaleString()} USDT ${t.buyProduct}` : t.balanceLoading}</span>
                   </button>
                 </div>
               ))}
@@ -2076,7 +2120,7 @@ export default function MobileApp() {
               <div className="bg-[#1E2329] rounded-xl p-4 border border-[#2B3139]">
                 <p className="text-xs font-bold text-[#848E9C]">USDT {lang === "ko" ? "보유량" : lang === "en" ? "Balance" : "余额"}</p>
                 <h2 className="text-xl font-extrabold text-[#EAECEF] mt-1 tracking-tight">
-                  {usdtBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-normal text-[#848E9C]">USDT</span>
+                  {formatBalance(usdtBalance, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-normal text-[#848E9C]">USDT</span>
                 </h2>
               </div>
 
@@ -2084,7 +2128,7 @@ export default function MobileApp() {
               <div className="bg-[#1E2329] rounded-xl p-4 border border-[#2B3139]">
                 <p className="text-xs font-bold text-[#848E9C]">{lang === "ko" ? "옥구슬 보유량" : lang === "en" ? "Jade Beads Balance" : "玉珠持有量"}</p>
                 <h2 className="text-xl font-extrabold text-[#FCD535] mt-1 tracking-tight">
-                  {urdBalance.toLocaleString()} <span className="text-xs font-normal text-[#EAECEF]">{lang === "ko" ? "개" : lang === "en" ? "Bead(s)" : "个"}</span>
+                  {formatBalance(urdBalance)} <span className="text-xs font-normal text-[#EAECEF]">{lang === "ko" ? "개" : lang === "en" ? "Bead(s)" : "个"}</span>
                 </h2>
               </div>
             </div>
@@ -2277,13 +2321,13 @@ export default function MobileApp() {
                   <button
                     type="button"
                     onClick={handleManualBet}
-                    disabled={dbRounds.length > 0 && !dbRounds.some((round) => round.round_number === manualRound && round.can_participate)}
+                    disabled={!balancesReady || (dbRounds.length > 0 && !dbRounds.some((round) => round.round_number === manualRound && round.can_participate))}
                     className="w-full py-3.5 bg-[#FCD535] text-[#0B0E11] font-black rounded-xl text-sm hover:opacity-90 active:scale-95 transition-all shadow-[0_0_20px_rgba(252,213,53,0.2)] flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
                   >
                     <Play size={16} />
-                    <span>
-                      {manualRound}
-                      {lang === "ko" ? "회차" : lang === "en" ? " Round" : "轮"} {t.manualBetBtn} ({manualBetsCount * 1} {lang === "ko" ? "옥구슬 소모" : lang === "en" ? "Jade Bead(s)" : "个玉珠"})
+                    <span>{balancesReady
+                      ? `${manualRound}${lang === "ko" ? "회차" : lang === "en" ? " Round" : "轮"} ${t.manualBetBtn} (${manualBetsCount} ${lang === "ko" ? "옥구슬 소모" : lang === "en" ? "Jade Bead(s)" : "个玉珠"})`
+                      : t.balanceLoading}
                     </span>
                   </button>
 
