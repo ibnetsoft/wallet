@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { Pool } from "pg";
-import { Contract, JsonRpcProvider, Wallet, formatEther, formatUnits } from "ethers";
+import { Contract, JsonRpcProvider, formatEther, formatUnits } from "ethers";
 import { getBscRpcUrl, getBscUsdtContract } from "@/lib/chain-config";
+import { getAdminUser } from "@/lib/admin-auth";
+import { resolveMasterHotWallet } from "@/lib/master-hot-wallet";
 
 export const dynamic = "force-dynamic";
 
@@ -13,8 +15,38 @@ const pool = new Pool({
 const BSC_RPC_URL = getBscRpcUrl();
 const USDT_CONTRACT = getBscUsdtContract();
 const ERC20_ABI = ["function balanceOf(address account) view returns (uint256)"];
+const CLIENT_VISIBLE_SETTING_KEYS = [
+  "swap_fee_rate",
+  "withdrawal_fee_rate",
+  "master_hot_wallet",
+  "cold_vault_address",
+  "hot_balance_usdt",
+  "cold_balance_usdt",
+  "hot_wallet_history",
+];
+
+function sanitizeWalletHistory(value: unknown) {
+  try {
+    const parsed = JSON.parse(String(value));
+    if (!Array.isArray(parsed)) return "[]";
+
+    return JSON.stringify(
+      parsed
+        .filter((entry) => typeof entry?.address === "string" && typeof entry?.date === "string")
+        .map((entry) => ({ address: entry.address, date: entry.date }))
+        .slice(0, 5)
+    );
+  } catch {
+    return "[]";
+  }
+}
 
 export async function GET() {
+  const admin = await getAdminUser();
+  if (!admin) {
+    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const client = await pool.connect();
     try {
@@ -42,8 +74,17 @@ export async function GET() {
       const usersWithBalances = usersRes.rows;
 
       // 2. Get system settings
-      const settingsRes = await client.query("SELECT key, value FROM public.system_settings");
-      const settings = settingsRes.rows;
+      const settingsRes = await client.query(
+        `SELECT key, value
+         FROM public.system_settings
+         WHERE key = ANY($1::text[])`,
+        [CLIENT_VISIBLE_SETTING_KEYS]
+      );
+      const settings = settingsRes.rows.map((row) => (
+        row.key === "hot_wallet_history"
+          ? { ...row, value: sanitizeWalletHistory(row.value) }
+          : row
+      ));
       const settingsMap = Object.fromEntries(settings.map((row) => [row.key, row.value]));
 
       let walletSnapshot: {
@@ -53,24 +94,24 @@ export async function GET() {
       } | null = null;
 
       try {
-        const walletPk =
-          settingsMap["master_hot_wallet_private_key"] || process.env.MASTER_HOT_WALLET_PRIVATE_KEY;
+        const masterHotWallet = await resolveMasterHotWallet(client);
+        if (masterHotWallet.address) {
+          settingsMap["master_hot_wallet"] = masterHotWallet.address;
+        }
 
-        if (walletPk) {
+        if (masterHotWallet.address) {
           const provider = new JsonRpcProvider(BSC_RPC_URL);
-          const wallet = new Wallet(walletPk, provider);
           const [bnbRaw, usdtRaw] = await Promise.all([
-            provider.getBalance(wallet.address),
-            new Contract(USDT_CONTRACT, ERC20_ABI, provider).balanceOf(wallet.address),
+            provider.getBalance(masterHotWallet.address),
+            new Contract(USDT_CONTRACT, ERC20_ABI, provider).balanceOf(masterHotWallet.address),
           ]);
 
           walletSnapshot = {
-            address: wallet.address,
+            address: masterHotWallet.address,
             bnbBalance: parseFloat(formatEther(bnbRaw)),
             usdtBalance: parseFloat(formatUnits(usdtRaw, 18)),
           };
 
-          settingsMap["master_hot_wallet"] = wallet.address;
           settingsMap["hot_balance_usdt"] = walletSnapshot.usdtBalance.toString();
         }
       } catch (walletErr) {

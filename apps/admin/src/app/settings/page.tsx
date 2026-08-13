@@ -6,7 +6,6 @@ import {
   Wallet, Lock, CheckCircle, AlertTriangle, RefreshCw, Eye, EyeOff, Save, PlusCircle
 } from "lucide-react";
 import { Wallet as EthersWallet } from "ethers";
-import { supabaseAdmin } from "../../lib/supabase";
 import { createClient } from "@/lib/supabase/client";
 
 interface MsgState { type: "ok" | "err"; text: string }
@@ -26,11 +25,10 @@ export default function SettingsPage() {
   const [coldBalanceUSDT, setColdBalanceUSDT] = useState("");
   const [savingWallets, setSavingWallets] = useState(false);
   const [walletMsg, setWalletMsg] = useState<MsgState | null>(null);
-  const [showHot, setShowHot] = useState(false);
   const [showHotPk, setShowHotPk] = useState(false);
   const [showCold, setShowCold] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(true);
-  const [walletHistory, setWalletHistory] = useState<{address: string; privateKey: string; date: string}[]>([]);
+  const [walletHistory, setWalletHistory] = useState<{address: string; date: string}[]>([]);
 
   // ── 자체 지갑 생성 모달 관련 ──
   const [generatedWallet, setGeneratedWallet] = useState<{ address: string; privateKey: string } | null>(null);
@@ -73,7 +71,6 @@ export default function SettingsPage() {
         setSwapFee(map["swap_fee_rate"] ?? "0.1");
         setWithdrawalFee(map["withdrawal_fee_rate"] ?? "3.0");
         setHotWallet(map["master_hot_wallet"] ?? "");
-        setHotPrivateKey(map["master_hot_wallet_private_key"] ?? "");
         setColdVault(map["cold_vault_address"] ?? "");
         setHotBalanceUSDT(map["hot_balance_usdt"] ?? "0");
         setColdBalanceUSDT(map["cold_balance_usdt"] ?? "0");
@@ -84,7 +81,13 @@ export default function SettingsPage() {
         
         try {
           if (map["hot_wallet_history"]) {
-            setWalletHistory(JSON.parse(map["hot_wallet_history"]));
+            const history = JSON.parse(map["hot_wallet_history"]);
+            if (Array.isArray(history)) {
+              setWalletHistory(history
+                .filter((entry) => typeof entry?.address === "string" && typeof entry?.date === "string")
+                .map((entry) => ({ address: entry.address, date: entry.date }))
+                .slice(0, 5));
+            }
           }
         } catch (e) {
           console.error("History parse error", e);
@@ -119,19 +122,13 @@ export default function SettingsPage() {
     const newPk = generatedWallet.privateKey;
     const newHistory = [{
       address: newAddress,
-      privateKey: newPk,
       date: new Date().toLocaleString()
     }, ...walletHistory].slice(0, 5); // 최근 5개만 보관
 
-    setHotWallet(newAddress);
-    setHotPrivateKey(newPk);
-    setWalletHistory(newHistory);
-    setGeneratedWallet(null);
     setWalletMsg({ type: "ok", text: "저장 중..." });
     
     try {
       const rows = [
-        { key: "master_hot_wallet", value: newAddress, description: "마스터 핫 지갑 주소" },
         { key: "master_hot_wallet_private_key", value: newPk, description: "마스터 핫 지갑 개인키" },
         { key: "hot_wallet_history", value: JSON.stringify(newHistory), description: "핫 지갑 생성 이력" }
       ];
@@ -142,6 +139,13 @@ export default function SettingsPage() {
       });
       const saveData = await saveRes.json();
       if (!saveData.success) throw new Error(saveData.error);
+
+      // Keep the key in the browser only for the explicit generation/import step.
+      setHotWallet(newAddress);
+      setHotPrivateKey("");
+      setWalletHistory(newHistory);
+      setGeneratedWallet(null);
+      await loadSettings();
       
       setWalletMsg({ type: "ok", text: "신규 지갑이 생성되고 즉시 DB에 적용 및 자동 저장되었습니다! 지갑 모으기 페이지에도 즉각 반영됩니다." });
     } catch (err: any) {
@@ -182,12 +186,18 @@ export default function SettingsPage() {
     setWalletMsg(null);
     try {
       const rows = [
-        { key: "master_hot_wallet", value: hotWallet.trim(), description: "마스터 핫 지갑 주소" },
-        { key: "master_hot_wallet_private_key", value: hotPrivateKey.trim(), description: "마스터 핫 지갑 개인키" },
         { key: "cold_vault_address", value: coldVault.trim(), description: "콜드 금고 주소" },
         { key: "hot_balance_usdt", value: hotBalanceUSDT, description: "핫 지갑 USDT 잔액" },
         { key: "cold_balance_usdt", value: coldBalanceUSDT, description: "콜드 금고 USDT 잔액" },
       ];
+      if (hotPrivateKey.trim()) {
+        // The server derives and saves the matching public address.
+        rows.unshift({
+          key: "master_hot_wallet_private_key",
+          value: hotPrivateKey.trim(),
+          description: "마스터 핫 지갑 개인키",
+        });
+      }
       const saveRes = await fetch("/api/settings/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -195,6 +205,9 @@ export default function SettingsPage() {
       });
       const saveData = await saveRes.json();
       if (!saveData.success) throw new Error(saveData.error);
+
+      setHotPrivateKey("");
+      await loadSettings();
       
       setWalletMsg({ type: "ok", text: "지갑 주소, 개인키 및 잔액 설정이 DB에 저장되었습니다." });
     } catch (err: unknown) {
@@ -359,16 +372,12 @@ export default function SettingsPage() {
                   <label className="text-[10px] text-[#8E8E93] uppercase font-bold">BSC 지갑 주소 (0x...)</label>
                   <div className="relative flex items-center">
                     <input
-                      type={showHot ? "text" : "password"}
+                      type="text"
                       value={hotWallet}
-                      onChange={e => setHotWallet(e.target.value)}
+                      readOnly
                       placeholder="0x... (BEP-20 마스터 핫 지갑 주소)"
-                      className="w-full bg-[#1C1C21] border border-[#26262B] focus:border-[#00D2FF] pl-3 pr-10 py-2.5 rounded-lg text-sm text-white font-mono outline-none placeholder:font-normal placeholder:text-[#444]"
+                      className="w-full cursor-not-allowed bg-[#1C1C21] border border-[#26262B] px-3 py-2.5 rounded-lg text-sm text-white font-mono outline-none placeholder:font-normal placeholder:text-[#444]"
                     />
-                    <button type="button" onClick={() => setShowHot(v => !v)}
-                      className="absolute right-3 text-[#8E8E93] hover:text-white transition-colors">
-                      {showHot ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
                   </div>
                   {hotWallet && (
                     <p className="text-[10px] text-[#8E8E93] font-mono truncate">
@@ -393,7 +402,7 @@ export default function SettingsPage() {
                       {showHotPk ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
                   </div>
-                  <p className="text-[9px] text-[#FF9F0A]">※ 직접 입력하거나 상단의 [핫 지갑 자체 생성]을 통해 부여받은 키가 들어갑니다.</p>
+                  <p className="text-[9px] text-[#FF9F0A]">개인키를 저장하면 서버가 일치하는 지갑 주소를 자동 계산합니다. 주소는 직접 변경할 수 없습니다.</p>
                 </div>
 
                 <div className="space-y-1.5">
@@ -415,7 +424,7 @@ export default function SettingsPage() {
                 <label className="text-[10px] text-[#FF9F0A] uppercase font-bold flex items-center space-x-1">
                   <span>⚠️ 마스터 핫 지갑 자체 생성 이력 (최근 5건)</span>
                 </label>
-                <p className="text-[10px] text-[#8E8E93]">만약의 분실을 대비하여 이전에 자체 생성했던 지갑들의 주소와 개인키를 백업 용도로 임시 표시합니다. 외부 노출에 각별히 주의하세요.</p>
+                <p className="text-[10px] text-[#8E8E93]">이력에는 지갑 주소와 생성 시각만 남깁니다. 개인키는 이력에 저장하거나 다시 표시하지 않습니다.</p>
                 {walletHistory.length > 0 ? (
                   <div className="space-y-3 mt-3">
                     {walletHistory.map((h, i) => (
@@ -424,7 +433,6 @@ export default function SettingsPage() {
                           <span className="text-[9px] text-[#0ECB81] font-bold">생성 일시: {h.date}</span>
                         </div>
                         <div className="text-[10px] text-white font-mono break-all leading-tight"><span className="text-[#8E8E93]">주소:</span> {h.address}</div>
-                        <div className="text-[10px] text-[#BF5AF2] font-mono break-all leading-tight mt-1"><span className="text-[#8E8E93]">개인키:</span> {h.privateKey}</div>
                       </div>
                     ))}
                   </div>

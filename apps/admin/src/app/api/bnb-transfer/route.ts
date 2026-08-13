@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import { Pool, type PoolClient } from "pg";
 import {
   JsonRpcProvider,
-  Wallet,
   ZeroAddress,
   formatEther,
   getAddress,
@@ -12,6 +11,11 @@ import {
   parseEther,
 } from "ethers";
 import { getBnbTransferAdmin } from "@/lib/bnb-transfer-admin";
+import { getBscRpcUrl } from "@/lib/chain-config";
+import {
+  DEFAULT_MASTER_HOT_WALLET_ADDRESS,
+  resolveMasterHotWallet,
+} from "@/lib/master-hot-wallet";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -90,7 +94,7 @@ function parseRecipientAllowlist(value: string | undefined) {
 
 function getTransferSettings(): TransferSettings {
   const issues: string[] = [];
-  const rpcUrl = process.env.BNB_TRANSFER_RPC_URL?.trim() || null;
+  const rpcUrl = getBscRpcUrl().trim() || null;
   const maxAmountWei = parsePositiveBnb(process.env.BNB_TRANSFER_MAX_AMOUNT);
   const gasReserveWei = parsePositiveBnb(
     process.env.BNB_TRANSFER_GAS_RESERVE ?? DEFAULT_GAS_RESERVE
@@ -104,13 +108,10 @@ function getTransferSettings(): TransferSettings {
     issues.push("BNB_TRANSFER_CHAIN_ID=56 is required.");
   }
   if (!rpcUrl) {
-    issues.push("A server-side BNB_TRANSFER_RPC_URL is required.");
+    issues.push("A server-side BSC RPC URL is required.");
   }
   if (!process.env.DATABASE_URL?.trim()) {
     issues.push("A server-side database connection is required.");
-  }
-  if (!process.env.BNB_TRANSFER_PRIVATE_KEY?.trim()) {
-    issues.push("BNB_TRANSFER_PRIVATE_KEY is required.");
   }
   if (!maxAmountWei) {
     issues.push("A positive BNB_TRANSFER_MAX_AMOUNT is required.");
@@ -342,22 +343,27 @@ export async function GET() {
   }
 
   const settings = getTransferSettings();
-  let sourceAddress: string | null = null;
+  // Always show the current master wallet address, even while a signing-key
+  // configuration issue keeps transfers disabled.
+  let sourceAddress: string | null = DEFAULT_MASTER_HOT_WALLET_ADDRESS;
   let sourceBalance: string | null = null;
   let logs: Record<string, unknown>[] = [];
   let provider: JsonRpcProvider | null = null;
 
-  try {
-    const privateKey = process.env.BNB_TRANSFER_PRIVATE_KEY?.trim();
-    if (privateKey) {
-      sourceAddress = new Wallet(privateKey).address;
+  const hasDatabaseConnection = Boolean(process.env.DATABASE_URL?.trim());
+  if (hasDatabaseConnection) {
+    try {
+      const client = await pool.connect();
+      try {
+        const masterHotWallet = await resolveMasterHotWallet(client);
+        sourceAddress = masterHotWallet.address;
+        settings.issues.push(...masterHotWallet.issues);
+      } finally {
+        client.release();
+      }
+    } catch {
+      settings.issues.push("Unable to load the master hot wallet settings.");
     }
-  } catch {
-    settings.issues.push("BNB_TRANSFER_PRIVATE_KEY is invalid.");
-  }
-
-  if (!sourceAddress) {
-    settings.issues.push("A valid BNB_TRANSFER_PRIVATE_KEY is required.");
   }
 
   if (settings.rpcUrl && sourceAddress) {
@@ -365,7 +371,7 @@ export async function GET() {
       provider = new JsonRpcProvider(settings.rpcUrl);
       const network = await provider.getNetwork();
       if (network.chainId !== BigInt(BSC_MAINNET_CHAIN_ID)) {
-        settings.issues.push("BNB_TRANSFER_RPC_URL is not connected to BSC mainnet.");
+        settings.issues.push("The configured BSC RPC URL is not connected to BSC mainnet.");
         provider = null;
       } else {
         sourceBalance = formatEther(await provider.getBalance(sourceAddress));
@@ -374,8 +380,6 @@ export async function GET() {
       settings.issues.push("Unable to read the BNB transfer wallet from the configured RPC.");
     }
   }
-
-  const hasDatabaseConnection = Boolean(process.env.DATABASE_URL?.trim());
 
   if (provider && hasDatabaseConnection) {
     try {
@@ -481,23 +485,7 @@ export async function POST(request: Request) {
     return errorResponse(`The amount exceeds the configured ${formatEther(settings.maxAmountWei)} BNB transfer limit.`);
   }
 
-  const privateKey = process.env.BNB_TRANSFER_PRIVATE_KEY?.trim();
-  if (!privateKey) {
-    return errorResponse("BNB_TRANSFER_PRIVATE_KEY is not configured.", 503);
-  }
-
-  let unsignedWallet: Wallet;
-  try {
-    unsignedWallet = new Wallet(privateKey);
-  } catch {
-    return errorResponse("BNB_TRANSFER_PRIVATE_KEY is invalid.", 503);
-  }
-
   const recipientAddress = getAddress(rawRecipient);
-  const sourceAddress = unsignedWallet.address;
-  if (recipientAddress === ZeroAddress || recipientAddress.toLowerCase() === sourceAddress.toLowerCase()) {
-    return errorResponse("The recipient must be a different non-zero BSC address.");
-  }
   if (
     settings.recipientAllowlist.size > 0
     && !settings.recipientAllowlist.has(recipientAddress.toLowerCase())
@@ -506,7 +494,6 @@ export async function POST(request: Request) {
   }
 
   const provider = new JsonRpcProvider(settings.rpcUrl);
-  const wallet = unsignedWallet.connect(provider);
   let client: PoolClient;
   try {
     client = await pool.connect();
@@ -517,9 +504,27 @@ export async function POST(request: Request) {
   let transferId: string | null = null;
 
   try {
+    const masterHotWallet = await resolveMasterHotWallet(client);
+    if (
+      masterHotWallet.issues.length > 0
+      || !masterHotWallet.address
+      || !masterHotWallet.signer
+    ) {
+      return errorResponse(
+        masterHotWallet.issues.join(" ") || "The master hot wallet is not ready for BNB transfers.",
+        503
+      );
+    }
+
+    const sourceAddress = masterHotWallet.address;
+    const wallet = masterHotWallet.signer.connect(provider);
+    if (recipientAddress === ZeroAddress || recipientAddress.toLowerCase() === sourceAddress.toLowerCase()) {
+      return errorResponse("The recipient must be a different non-zero BSC address.");
+    }
+
     const network = await provider.getNetwork();
     if (network.chainId !== BigInt(BSC_MAINNET_CHAIN_ID)) {
-      return errorResponse("BNB_TRANSFER_RPC_URL is not connected to BSC mainnet.", 503);
+      return errorResponse("The configured BSC RPC URL is not connected to BSC mainnet.", 503);
     }
 
     const existing = await client.query(

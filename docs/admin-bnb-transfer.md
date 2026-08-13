@@ -1,14 +1,12 @@
 # Standalone Admin BNB Transfer
 
-This feature is available only at `Admin > BNB 송금`. It uses a dedicated BNB sender wallet and does not change the existing wallet, sweep, withdrawal, or ledger flows.
+This feature is available only at `Admin > BNB 송금`. It uses the same address and signing key as the existing master hot wallet, so a newly generated master wallet is automatically used as the BNB sender too.
 
 ## Required server-side environment variables
 
 ```dotenv
 BNB_TRANSFER_ENABLED=true
 BNB_TRANSFER_CHAIN_ID=56
-BNB_TRANSFER_RPC_URL=https://<trusted-bsc-mainnet-rpc>
-BNB_TRANSFER_PRIVATE_KEY=0x<dedicated-bnb-sender-private-key>
 BNB_TRANSFER_MAX_AMOUNT=0.5
 BNB_TRANSFER_GAS_RESERVE=0.005
 ```
@@ -24,15 +22,17 @@ BNB_TRANSFER_RECIPIENT_ALLOWLIST=0xRecipientOne,0xRecipientTwo
 
 The BNB-specific administrator list can only narrow the existing `ADMIN_EMAILS` list. The recipient allowlist is optional; if set, every recipient must be in it.
 
-Do not reuse `WALLET_MASTER_MNEMONIC` or `MASTER_FEE_WALLET_PRIVATE_KEY` for this feature. `BNB_TRANSFER_PRIVATE_KEY` must belong to a separate, BSC-mainnet-only sender wallet.
+The feature resolves its sender from `system_settings.master_hot_wallet_private_key`, falling back to the server-only `MASTER_HOT_WALLET_PRIVATE_KEY` setting. Its public address is derived from that key whenever the master wallet settings are saved. BSC RPC configuration is shared with the master wallet through `BSC_RPC_URL` or `NEXT_PUBLIC_BSC_RPC_URL`; the prior `BNB_TRANSFER_RPC_URL` setting remains accepted for compatibility.
+
+The initial public fallback address is `0x781dcdb491d5d8596c9F8aB5270f6C9FBAe3B9A4`. The BNB page always reads the BSC on-chain balance for the current master address, including while transfers are disabled. If the saved public address and signing key disagree, transfers are blocked rather than using a different wallet.
 
 ## Database migration
 
-Apply [20260814090000_create_admin_bnb_transfer_audit.sql](../supabase/migrations/20260814090000_create_admin_bnb_transfer_audit.sql) in Supabase SQL Editor before enabling the feature. It creates only the isolated BNB audit and lock tables.
+Apply [20260814090000_create_admin_bnb_transfer_audit.sql](../supabase/migrations/20260814090000_create_admin_bnb_transfer_audit.sql) and [20260814103000_protect_system_settings_secrets.sql](../supabase/migrations/20260814103000_protect_system_settings_secrets.sql) in Supabase SQL Editor before enabling the feature. The latter prevents the Data API from exposing server-only wallet settings.
 
 ## Operating procedure
 
-1. Fund the dedicated `BNB_TRANSFER_PRIVATE_KEY` wallet with BSC mainnet BNB.
+1. Configure the existing master hot wallet's matching private key in System Settings or `MASTER_HOT_WALLET_PRIVATE_KEY`.
 2. Open `Admin > BNB 송금`.
 3. Confirm the source wallet, balance, maximum amount, recipient, and BSC network.
 4. Enter an audit note and type `SEND BNB` exactly.

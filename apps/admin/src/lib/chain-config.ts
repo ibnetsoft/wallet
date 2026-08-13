@@ -4,14 +4,24 @@ export const DEFAULT_BSC_MAINNET_USDT_CONTRACT =
 
 // Keep admin chain settings centralized so Vercel monorepo deploys always include this path.
 
+function normalizedSetting(value: string | undefined) {
+  const trimmed = value?.trim() ?? "";
+  return trimmed.replace(/^(["'])(.*)\1$/, "$2");
+}
+
 export function getBscRpcUrl() {
-  return process.env.BSC_RPC_URL || process.env.NEXT_PUBLIC_BSC_RPC_URL || DEFAULT_BSC_MAINNET_RPC_URL;
+  return (
+    normalizedSetting(process.env.BSC_RPC_URL)
+    || normalizedSetting(process.env.BNB_TRANSFER_RPC_URL)
+    || normalizedSetting(process.env.NEXT_PUBLIC_BSC_RPC_URL)
+    || DEFAULT_BSC_MAINNET_RPC_URL
+  );
 }
 
 export function getBscUsdtContract() {
   return (
-    process.env.USDT_CONTRACT_ADDRESS ||
-    process.env.NEXT_PUBLIC_USDT_CONTRACT ||
+    normalizedSetting(process.env.USDT_CONTRACT_ADDRESS) ||
+    normalizedSetting(process.env.NEXT_PUBLIC_USDT_CONTRACT) ||
     DEFAULT_BSC_MAINNET_USDT_CONTRACT
   );
 }

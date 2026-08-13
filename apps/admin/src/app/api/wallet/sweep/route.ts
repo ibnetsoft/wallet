@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Pool } from "pg";
 import { parseEther, formatUnits, Wallet, HDNodeWallet, JsonRpcProvider, Contract } from "ethers";
 import { getBscRpcUrl } from "@/lib/chain-config";
+import { resolveMasterHotWallet } from "@/lib/master-hot-wallet";
 
 export const dynamic = "force-dynamic";
 
@@ -22,30 +23,32 @@ const ERC20_ABI = [
 export async function POST(request: Request) {
   const client = await pool.connect();
   try {
-    const { target_wallet } = await request.json();
-
-    // 1. Fetch Master Hot Wallet from system_settings or use target_wallet
-    const hotWalletRes = await client.query("SELECT value FROM public.system_settings WHERE key = 'master_hot_wallet'");
-    const masterHotWallet = (hotWalletRes.rows.length > 0 && hotWalletRes.rows[0].value) ? hotWalletRes.rows[0].value : target_wallet;
-
-    if (!masterHotWallet) {
-      return NextResponse.json({ success: false, error: "마스터 핫 지갑 주소가 설정되지 않았거나 target_wallet이 누락되었습니다." }, { status: 400 });
+    await request.json();
+    const resolvedMasterWallet = await resolveMasterHotWallet(client);
+    if (
+      !resolvedMasterWallet.address
+      || !resolvedMasterWallet.signer
+      || resolvedMasterWallet.issues.length > 0
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: resolvedMasterWallet.issues.join(" ") || "Master hot wallet is not configured.",
+        },
+        { status: 503 }
+      );
     }
 
-    let feeWalletPk = process.env.MASTER_HOT_WALLET_PRIVATE_KEY;
-    const pkRes = await client.query("SELECT value FROM public.system_settings WHERE key = 'master_hot_wallet_private_key'");
-    if (pkRes.rows.length > 0 && pkRes.rows[0].value) {
-      feeWalletPk = pkRes.rows[0].value;
-    }
+    const masterHotWallet = resolvedMasterWallet.address;
 
     const mnemonic = process.env.WALLET_MASTER_MNEMONIC;
 
-    if (!feeWalletPk || !mnemonic) {
+    if (!mnemonic) {
       return NextResponse.json({ success: false, error: "마스터 지갑 개인키(DB설정/환경변수) 또는 니모닉 환경변수가 누락되었습니다." }, { status: 500 });
     }
 
     // 2. Instantiate Master Fee Wallet (using master hot wallet private key)
-    const masterFeeWallet = new Wallet(feeWalletPk, provider);
+    const masterFeeWallet = resolvedMasterWallet.signer.connect(provider);
 
     // 3. Fetch user wallets and balances where USDT (asset_id = 2) available_balance > 0
     const queryRes = await client.query(`

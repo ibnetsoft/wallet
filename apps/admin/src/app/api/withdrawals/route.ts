@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Pool } from "pg";
 import { ethers } from "ethers";
 import { getBscRpcUrl, getBscUsdtContract } from "@/lib/chain-config";
+import { resolveMasterHotWallet } from "@/lib/master-hot-wallet";
 
 export const dynamic = "force-dynamic";
 
@@ -114,23 +115,20 @@ export async function POST(request: Request) {
       }
 
       const rpcUrl = getBscRpcUrl();
-      let privateKey = process.env.MASTER_HOT_WALLET_PRIVATE_KEY;
-      
-      const pkRes = await client.query("SELECT value FROM public.system_settings WHERE key = 'master_hot_wallet_private_key'");
-      if (pkRes.rows.length > 0 && pkRes.rows[0].value) {
-        privateKey = pkRes.rows[0].value;
-      }
-      
-      if (!rpcUrl || !privateKey) {
+      const masterHotWallet = await resolveMasterHotWallet(client);
+      if (!rpcUrl || !masterHotWallet.signer || masterHotWallet.issues.length > 0) {
         await client.query("ROLLBACK");
         return NextResponse.json(
-          { success: false, error: "RPC URL 또는 마스터 개인키(DB설정/환경변수)가 누락되었습니다." },
+          {
+            success: false,
+            error: masterHotWallet.issues.join(" ") || "RPC URL or master hot wallet configuration is missing.",
+          },
           { status: 500 }
         );
       }
 
       const provider = new ethers.JsonRpcProvider(rpcUrl);
-      const wallet = new ethers.Wallet(privateKey, provider);
+      const wallet = masterHotWallet.signer.connect(provider);
 
       const usdtAddress = getBscUsdtContract();
       const abi = ["function transfer(address to, uint256 amount) returns (bool)"];

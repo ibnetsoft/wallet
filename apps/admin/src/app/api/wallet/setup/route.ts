@@ -1,39 +1,50 @@
 import { NextResponse } from "next/server";
 import { Pool } from "pg";
+import { getAdminUser } from "@/lib/admin-auth";
+import { resolveMasterHotWallet } from "@/lib/master-hot-wallet";
 
 export const dynamic = "force-dynamic";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
 });
 
-export async function POST(request: Request) {
+// Keep this legacy endpoint from setting an arbitrary public address. The
+// settings save endpoint derives the address from the master signing key.
+export async function POST() {
+  const admin = await getAdminUser();
+  if (!admin) {
+    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
+  const client = await pool.connect();
   try {
-    const { address } = await request.json();
-    if (!address) {
-      return NextResponse.json({ success: false, error: "address is required" }, { status: 400 });
+    const masterHotWallet = await resolveMasterHotWallet(client);
+    if (!masterHotWallet.address || masterHotWallet.issues.length > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: masterHotWallet.issues.join(" ") || "Master hot wallet is not configured.",
+        },
+        { status: 503 }
+      );
     }
 
-    // 1. Save master_hot_wallet to system_settings
-    await pool.query(`
-      INSERT INTO public.system_settings (key, value)
-      VALUES ('master_hot_wallet', $1)
-      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
-    `, [address]);
+    await client.query(
+      `INSERT INTO public.system_settings (key, value)
+       VALUES ('hot_balance_usdt', '0')
+       ON CONFLICT (key) DO NOTHING`
+    );
 
-    // 2. Initialize hot_balance_usdt if not already set
-    const checkBalance = await pool.query("SELECT * FROM public.system_settings WHERE key = 'hot_balance_usdt'");
-    if (checkBalance.rows.length === 0) {
-      await pool.query(`
-        INSERT INTO public.system_settings (key, value)
-        VALUES ('hot_balance_usdt', '0')
-      `);
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (err: any) {
+    return NextResponse.json({ success: true, address: masterHotWallet.address });
+  } catch (err: unknown) {
     console.error("wallet/setup route error:", err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: "Unable to initialize the master hot wallet." },
+      { status: 500 }
+    );
+  } finally {
+    client.release();
   }
 }

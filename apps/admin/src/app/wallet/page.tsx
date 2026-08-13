@@ -5,8 +5,6 @@ import {
   Wallet, ArrowRightLeft, ShieldAlert, CheckCircle, RefreshCw,
   Lock, ArrowDownRight, ArrowUpRight, ShieldCheck, AlertTriangle, Info
 } from "lucide-react";
-import { supabaseAdmin } from "../../lib/supabase";
-import { ethers } from "ethers";
 
 interface UserWallet {
   user_id: string;
@@ -181,21 +179,19 @@ export default function WalletSweepPage() {
     setLoadingVault(true);
     setVaultMsg(null);
     try {
-      // 1. vault_transfers 기록 저장
-      const { error: insertErr } = await supabaseAdmin.from("vault_transfers").insert({
-        from_label: `마스터 핫 지갑 (${masterHotWallet.substring(0, 8)}...)`,
-        to_label: `오프라인 콜드 금고`,
-        amount: val,
-        asset: vaultAsset,
-        cold_vault_address: coldVaultAddress,
-        note: "어드민 수동 이체 기록",
+      const response = await fetch("/api/wallet/cold-vault-log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: val,
+          asset: vaultAsset,
+          coldVaultAddress,
+        }),
       });
-      if (insertErr) throw insertErr;
-
-      // 2. 콜드 금고 주소 업데이트 (변경된 경우)
-      await supabaseAdmin
-        .from("system_settings")
-        .upsert({ key: "cold_vault_address", value: coldVaultAddress }, { onConflict: "key" });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "콜드 금고 이체 기록을 저장하지 못했습니다.");
+      }
 
       setVaultMsg({
         type: "ok",

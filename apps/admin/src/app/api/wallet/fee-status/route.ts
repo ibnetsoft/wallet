@@ -1,62 +1,56 @@
 import { NextResponse } from "next/server";
-import { JsonRpcProvider, Wallet, formatEther, formatUnits, Contract } from "ethers";
+import { Contract, JsonRpcProvider, formatEther, formatUnits } from "ethers";
+import { Pool } from "pg";
+import { getAdminUser } from "@/lib/admin-auth";
 import { getBscRpcUrl, getBscUsdtContract } from "@/lib/chain-config";
+import { resolveMasterHotWallet } from "@/lib/master-hot-wallet";
 
 export const dynamic = "force-dynamic";
 
-const BSC_RPC_URL = getBscRpcUrl();
-const USDT_CONTRACT = getBscUsdtContract();
-const provider = new JsonRpcProvider(BSC_RPC_URL);
-
-const ERC20_ABI = [
-  "function balanceOf(address account) view returns (uint256)"
-];
-
-import { Pool } from "pg";
+const ERC20_ABI = ["function balanceOf(address account) view returns (uint256)"];
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
 });
 
 export async function GET() {
+  const admin = await getAdminUser();
+  if (!admin) {
+    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
   const dbClient = await pool.connect();
   try {
-    // DB에서 마스터 개인키 조회 시도
-    let feeWalletPk = process.env.MASTER_HOT_WALLET_PRIVATE_KEY;
-    
-    const pkRes = await dbClient.query("SELECT value FROM public.system_settings WHERE key = 'master_hot_wallet_private_key'");
-    if (pkRes.rows.length > 0 && pkRes.rows[0].value) {
-      feeWalletPk = pkRes.rows[0].value;
-    }
-    
-    if (!feeWalletPk) {
-      return NextResponse.json({ success: false, error: "MASTER_HOT_WALLET_PRIVATE_KEY가 DB설정 및 환경변수 둘 다 누락되었습니다." }, { status: 500 });
+    const masterHotWallet = await resolveMasterHotWallet(dbClient);
+    if (!masterHotWallet.address || masterHotWallet.issues.length > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: masterHotWallet.issues.join(" ") || "Master hot wallet is not configured.",
+        },
+        { status: 503 }
+      );
     }
 
-    const feeWallet = new Wallet(feeWalletPk, provider);
-    const balanceWei = await provider.getBalance(feeWallet.address);
-    const balanceBnb = formatEther(balanceWei);
-
-    // USDT 잔액 조회
-    let usdtBalance = 0;
-    try {
-      const usdtContract = new Contract(USDT_CONTRACT, ERC20_ABI, provider);
-      const usdtRaw = await usdtContract.balanceOf(feeWallet.address);
-      usdtBalance = parseFloat(formatUnits(usdtRaw, 18));
-    } catch (e) {
-      console.error("USDT balance query failed:", e);
-    }
+    const provider = new JsonRpcProvider(getBscRpcUrl());
+    const [balanceWei, usdtRaw] = await Promise.all([
+      provider.getBalance(masterHotWallet.address),
+      new Contract(getBscUsdtContract(), ERC20_ABI, provider).balanceOf(masterHotWallet.address),
+    ]);
 
     return NextResponse.json({
       success: true,
-      address: feeWallet.address,
-      balance: parseFloat(balanceBnb),
-      usdtBalance
+      address: masterHotWallet.address,
+      balance: parseFloat(formatEther(balanceWei)),
+      usdtBalance: parseFloat(formatUnits(usdtRaw, 18)),
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("GET api/wallet/fee-status error:", err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: "Unable to load the master hot wallet balance." },
+      { status: 500 }
+    );
   } finally {
     dbClient.release();
   }

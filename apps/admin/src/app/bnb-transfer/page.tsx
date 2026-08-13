@@ -80,6 +80,16 @@ function formatDate(value: string | null | undefined) {
   });
 }
 
+function formatBnbBalance(value: string | null | undefined) {
+  const balance = Number(value);
+  if (!Number.isFinite(balance)) return "-";
+
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 4,
+  }).format(balance);
+}
+
 function createIdempotencyKey() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
@@ -221,10 +231,10 @@ export default function BnbTransferPage() {
         <div>
           <div className="flex items-center gap-2">
             <Send className="text-[#F0B90B]" size={25} />
-            <h2 className="text-2xl font-bold tracking-tight text-white">전용 BNB 송금</h2>
+            <h2 className="text-2xl font-bold tracking-tight text-white">마스터 핫 월렛 BNB 송금</h2>
           </div>
           <p className="mt-1 text-sm text-[#8E8E93]">
-            별도 전송 지갑에서 BSC 메인넷 BNB만 보냅니다. 기존 지갑, 스윕, 출금, 장부 기능에는 영향을 주지 않습니다.
+            마스터 핫 월렛과 같은 주소에서 BSC 메인넷 BNB를 보냅니다. 새 마스터 지갑을 만들면 송금 주소도 자동으로 함께 바뀝니다.
           </p>
         </div>
         <button
@@ -272,7 +282,7 @@ export default function BnbTransferPage() {
           <div className="flex items-center justify-between border-b border-[#26262B] pb-4">
             <h3 className="flex items-center gap-2 text-sm font-bold text-white">
               <Wallet size={18} className="text-[#F0B90B]" />
-              전용 송금 지갑
+              마스터 핫 월렛
             </h3>
             <span className="rounded border border-[#F0B90B]/30 bg-[#F0B90B]/10 px-2 py-0.5 text-[10px] font-bold text-[#F0B90B]">
               BSC MAINNET
@@ -280,7 +290,7 @@ export default function BnbTransferPage() {
           </div>
 
           <div className="space-y-2 rounded-xl border border-[#26262B] bg-[#121215] p-4">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#8E8E93]">송금 지갑 주소</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#8E8E93]">마스터 핫 월렛 / 송금 주소</p>
             <p className="break-all font-mono text-xs text-white">{data?.sourceAddress || "Not configured"}</p>
             {data?.sourceAddress && <p className="font-mono text-[10px] text-[#8E8E93]">{shortAddress(data.sourceAddress)}</p>}
           </div>
@@ -289,8 +299,9 @@ export default function BnbTransferPage() {
             <div className="rounded-xl border border-[#26262B] bg-[#121215] p-4">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#8E8E93]">보유 BNB</p>
               <p className="mt-1 font-mono text-lg font-bold text-[#30D5C8]">
-                {data?.sourceBalance ?? "-"} <span className="text-xs">BNB</span>
+                {formatBnbBalance(data?.sourceBalance)} <span className="text-xs">BNB</span>
               </p>
+              <p className="mt-1 text-[10px] text-[#8E8E93]">BSC 온체인 잔액</p>
             </div>
             <div className="rounded-xl border border-[#26262B] bg-[#121215] p-4">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#8E8E93]">1회 한도</p>
