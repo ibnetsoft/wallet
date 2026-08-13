@@ -70,8 +70,8 @@ async function handleOnChainDeposit(tokenSymbol: string, fromAddress: string, to
 
     // 3. Verify double-deposit (idempotency check) via txHash
     const dupRes = await client.query(
-      'SELECT id FROM public.ledger_entries WHERE tx_hash = $1 AND type = $2 LIMIT 1',
-      [txHash, 'DEPOSIT']
+      "SELECT id FROM public.ledger_entries WHERE tx_hash = $1 AND tx_type = 'DEPOSIT' LIMIT 1",
+      [txHash]
     );
 
     if (dupRes.rows.length > 0) {
@@ -81,23 +81,31 @@ async function handleOnChainDeposit(tokenSymbol: string, fromAddress: string, to
     }
 
     const depositAmount = Number(amount);
+    const depositDetails = JSON.stringify({
+      source: 'on_chain',
+      chain: 'BSC',
+      from_address: fromAddress,
+      to_address: toAddress,
+      description: `BSC on-chain ${tokenSymbol} deposit`,
+    });
 
     // 4. Record Deposit in Ledger Bookkeeping
     const ledgerRes = await client.query(
-      `INSERT INTO public.ledger_entries (user_id, asset_id, amount, fee, type, status, tx_hash, description)
-       VALUES ($1, $2, $3, 0, 'DEPOSIT', 'COMPLETED', $4, $5) RETURNING id`,
-      [userId, assetId, depositAmount, txHash, `BSC On-chain Deposit from ${fromAddress}`]
+      `INSERT INTO public.ledger_entries (user_id, asset_id, amount, tx_type, status, tx_hash, details)
+       VALUES ($1, $2, $3, 'DEPOSIT', 'COMPLETED', $4, $5::jsonb) RETURNING id`,
+      [userId, assetId, amount, txHash, depositDetails]
     );
 
     console.log(`✅ Ledger Entry created: Entry ID ${ledgerRes.rows[0].id}`);
 
     // 5. Update user_balances (using upsert logic)
     await client.query(
-      `INSERT INTO public.user_balances (user_id, asset_id, balance, updated_at)
-       VALUES ($1, $2, $3, NOW())
+      `INSERT INTO public.user_balances (user_id, asset_id, available_balance, locked_balance, updated_at)
+       VALUES ($1, $2, $3, 0, NOW())
        ON CONFLICT (user_id, asset_id)
-       DO UPDATE SET balance = user_balances.balance + EXCLUDED.balance, updated_at = NOW()`,
-      [userId, assetId, depositAmount]
+       DO UPDATE SET available_balance = public.user_balances.available_balance + EXCLUDED.available_balance,
+                     updated_at = NOW()`,
+      [userId, assetId, amount]
     );
 
     console.log(`💰 Updated balance for User ${userId}: Credited +${depositAmount} ${tokenSymbol}`);
@@ -116,12 +124,12 @@ async function handleOnChainDeposit(tokenSymbol: string, fromAddress: string, to
         
         // This UPDATE triggers handle_user_activation() in public.users (Postgres Trigger)
         const updateRes = await client.query(
-          "UPDATE public.users SET status = 'ACTIVE' WHERE id = $1 RETURNING id, email, placement_id",
+          "UPDATE public.users SET status = 'ACTIVE' WHERE id = $1 RETURNING id",
           [userId]
         );
 
         if (updateRes.rows.length > 0) {
-          console.log(`✨ User Activated! Placement assigned to: ${updateRes.rows[0].placement_id}`);
+          console.log(`User activated after verified on-chain deposit: ${updateRes.rows[0].id}`);
         }
       }
     }

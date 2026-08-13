@@ -186,6 +186,45 @@ interface UnpaidMember {
   joinedAt: string;
 }
 
+interface WalletHistoryEntry {
+  id: string;
+  amount: number;
+  txType: string;
+  status: string;
+  txHash: string | null;
+  symbol: string;
+  details: Record<string, unknown>;
+  createdAt: string;
+  sourceUser: {
+    id: string;
+    nickname: string | null;
+  } | null;
+}
+
+type BonusCategory = "direct" | "mentor" | "mother" | "rank" | "package" | "game" | "other";
+
+function getBonusCategory(txType: string): BonusCategory {
+  switch (txType) {
+    case "REFERRAL_BONUS":
+      return "direct";
+    case "FOSTER_BONUS":
+      return "mentor";
+    case "MAMA_BONUS":
+      return "mother";
+    case "RANK_BONUS":
+    case "RANK_STAR_BONUS":
+      return "rank";
+    case "PACKAGE_BONUS":
+      return "package";
+    case "GAME_WIN":
+    case "GAME_REWARD":
+    case "GAME_CONSOLATION":
+      return "game";
+    default:
+      return "other";
+  }
+}
+
 function normalizeAutoBetRounds(value: unknown): number[] {
   if (!Array.isArray(value)) {
     return [];
@@ -641,18 +680,38 @@ export default function MobileApp() {
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [showSwapModal, setShowSwapModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [txHistory, setTxHistory] = useState<any[]>([]);
+  const [txHistory, setTxHistory] = useState<WalletHistoryEntry[]>([]);
+  const [bonusHistory, setBonusHistory] = useState<WalletHistoryEntry[]>([]);
+  const [swapHistory, setSwapHistory] = useState<WalletHistoryEntry[]>([]);
   const [txHistoryLoading, setTxHistoryLoading] = useState(false);
 
-  const loadTxHistory = async () => {
-    if (!userId) return;
+  const loadTxHistory = async (attempt = 0) => {
     setTxHistoryLoading(true);
     try {
       const res = await fetch("/api/user/history");
       const data = await res.json();
-      if (data.success) setTxHistory(data.entries || []);
-    } catch (e) { console.error(e); }
-    setTxHistoryLoading(false);
+      if (!res.ok || !data.success) {
+        if (attempt < 3 && typeof window !== "undefined") {
+          window.setTimeout(() => {
+            void loadTxHistory(attempt + 1);
+          }, 500 * (attempt + 1));
+        }
+        return;
+      }
+
+      setTxHistory(data.transactions || []);
+      setBonusHistory(data.bonuses || []);
+      setSwapHistory(data.swaps || []);
+    } catch (error) {
+      console.error("Failed to load wallet history:", error);
+      if (attempt < 3 && typeof window !== "undefined") {
+        window.setTimeout(() => {
+          void loadTxHistory(attempt + 1);
+        }, 500 * (attempt + 1));
+      }
+    } finally {
+      setTxHistoryLoading(false);
+    }
   };
 
   // Game Play Modal Result State
@@ -868,6 +927,7 @@ export default function MobileApp() {
         }
         loadBalances(session.user.id);
         loadAutoBetSettings(session.user.id);
+        loadTxHistory();
       } else {
         setBalancesReady(false);
       }
@@ -941,6 +1001,32 @@ export default function MobileApp() {
   const formatBalance = (value: number, options?: Intl.NumberFormatOptions) => (
     balancesReady ? value.toLocaleString("en-US", options) : "--"
   );
+  const bonusDateFormatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const todayBonusDate = bonusDateFormatter.format(new Date());
+  const todayBonusTotals = bonusHistory.reduce<Record<"direct" | "mentor" | "mother" | "rank", number>>(
+    (totals, entry) => {
+      if (
+        entry.symbol !== "USDT" ||
+        entry.amount <= 0 ||
+        bonusDateFormatter.format(new Date(entry.createdAt)) !== todayBonusDate
+      ) {
+        return totals;
+      }
+
+      const category = getBonusCategory(entry.txType);
+      if (category === "direct" || category === "mentor" || category === "mother" || category === "rank") {
+        totals[category] += entry.amount;
+      }
+      return totals;
+    },
+    { direct: 0, mentor: 0, mother: 0, rank: 0 }
+  );
+  const todayBonusTotal = Object.values(todayBonusTotals).reduce((total, amount) => total + amount, 0);
 
   const fetchNetworkData = async () => {
     setLoadingNetwork(true);
@@ -1291,19 +1377,19 @@ export default function MobileApp() {
               </div>
               <div className="space-y-2">
                 {[
-                  { label: lang === "ko" ? "직추천 보너스" : lang === "en" ? "Direct Bonus" : "直推奖", value: "$0.00" },
-                  { label: lang === "ko" ? "육성 보너스" : lang === "en" ? "Mentoring Bonus" : "育人奖", value: "$0.00" },
-                  { label: lang === "ko" ? "엄마 보너스" : lang === "en" ? "Mother Bonus" : "母体奖", value: "$0.00" },
-                  { label: lang === "ko" ? "직급 보너스" : lang === "en" ? "Rank Bonus" : "平级奖", value: "$0.00" },
+                  { label: lang === "ko" ? "직추천 보너스" : lang === "en" ? "Direct Bonus" : "直推奖", value: todayBonusTotals.direct },
+                  { label: lang === "ko" ? "육성 보너스" : lang === "en" ? "Mentoring Bonus" : "育人奖", value: todayBonusTotals.mentor },
+                  { label: lang === "ko" ? "엄마 보너스" : lang === "en" ? "Mother Bonus" : "母体奖", value: todayBonusTotals.mother },
+                  { label: lang === "ko" ? "직급 보너스" : lang === "en" ? "Rank Bonus" : "平级奖", value: todayBonusTotals.rank },
                 ].map((b) => (
                   <div key={b.label} className="flex justify-between text-xs">
                     <span className="text-[#848E9C]">{b.label}</span>
-                    <span className="font-bold text-[#0ECB81]">{b.value}</span>
+                    <span className="font-bold text-[#0ECB81]">${b.value.toFixed(2)}</span>
                   </div>
                 ))}
                 <div className="border-t border-[#2B3139] pt-2 flex justify-between text-xs font-bold">
                   <span>{lang === "ko" ? "오늘 총 보너스" : lang === "en" ? "Today's Total" : "今日总计"}</span>
-                  <span className="text-[#FCD535]">$0.00</span>
+                  <span className="text-[#FCD535]">${todayBonusTotal.toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -1363,7 +1449,7 @@ export default function MobileApp() {
                 </button>
 
                 <button
-                  onClick={() => { setShowHistoryModal(true); loadTxHistory(); }}
+                  onClick={() => { setWalletHistoryTab("tx"); setShowHistoryModal(true); loadTxHistory(); }}
                   className="bg-[#0B0E11] hover:bg-[#2B3139] border border-[#2B3139] hover:border-[#FCD535] py-3 rounded-xl flex flex-col items-center justify-center space-y-2 transition-all group"
                 >
                   <FileText size={24} strokeWidth={2.5} className="text-[#848E9C] group-hover:scale-110 transition-transform" />
@@ -1703,19 +1789,16 @@ export default function MobileApp() {
                     if (txType === "WITHDRAW") {
                       if (status === "PENDING") return lang === "ko" ? "⏳ 출금준비중" : lang === "en" ? "⏳ Pending Withdrawal" : "⏳ 提现准备中";
                       if (status === "COMPLETED" || status === "APPROVED") return lang === "ko" ? "✅ 출금완료" : lang === "en" ? "✅ Withdrawn" : "✅ 已提现";
-                      if (status === "REJECTED") return lang === "ko" ? "❌ 출금거절" : lang === "en" ? "❌ Rejected" : "❌ 已拒绝";
+                      if (status === "REJECTED" || status === "FAILED") return lang === "ko" ? "❌ 출금거절" : lang === "en" ? "❌ Rejected" : "❌ 已拒绝";
                       return lang === "ko" ? "출금" : "Withdraw";
                     }
-                    if (txType === "DEPOSIT" || txType === "RECHARGE") return lang === "ko" ? "💰 충전" : lang === "en" ? "💰 Deposit" : "💰 充值";
-                    if (txType === "GAME_WIN") return lang === "ko" ? "🎮 게임 당첨" : "🎮 Game Win";
-                    if (txType === "GAME_BET") return lang === "ko" ? "🎮 게임 참여" : "🎮 Game Bet";
-                    if (txType === "REFUND") return lang === "ko" ? "🔄 환불" : "🔄 Refund";
+                    if (txType === "DEPOSIT") return lang === "ko" ? "💰 BSC 입금" : lang === "en" ? "💰 BSC Deposit" : "💰 BSC 充值";
                     return txType;
                   };
                   const getStatusBadge = (txType: string, status: string) => {
                     if (txType === "WITHDRAW" && status === "PENDING") return { text: lang === "ko" ? "심사중" : "Pending", color: "text-[#F0B90B] bg-[#F0B90B]/10 border-[#F0B90B]/30" };
                     if (txType === "WITHDRAW" && (status === "COMPLETED" || status === "APPROVED")) return { text: lang === "ko" ? "완료" : "Done", color: "text-[#0ECB81] bg-[#0ECB81]/10 border-[#0ECB81]/30" };
-                    if (txType === "WITHDRAW" && status === "REJECTED") return { text: lang === "ko" ? "거절" : "Rejected", color: "text-[#F6465D] bg-[#F6465D]/10 border-[#F6465D]/30" };
+                    if (txType === "WITHDRAW" && (status === "REJECTED" || status === "FAILED")) return { text: lang === "ko" ? "거절" : "Rejected", color: "text-[#F6465D] bg-[#F6465D]/10 border-[#F6465D]/30" };
                     if (status === "COMPLETED") return { text: lang === "ko" ? "완료" : "Done", color: "text-[#0ECB81] bg-[#0ECB81]/10 border-[#0ECB81]/30" };
                     return { text: status, color: "text-[#848E9C] bg-[#848E9C]/10 border-[#848E9C]/30" };
                   };
@@ -1728,7 +1811,7 @@ export default function MobileApp() {
                         <div className="text-center py-8 text-[#848E9C] text-xs">로딩 중...</div>
                       ) : txHistory.length === 0 ? (
                         <div className="text-center py-8 text-[#848E9C] text-xs">
-                          {lang === "ko" ? "입출금 내역이 없습니다." : "No transaction history."}
+                          {lang === "ko" ? "실제 외부지갑 입출금 내역이 없습니다." : lang === "en" ? "No external wallet transactions." : "暂无外部钱包充提记录。"}
                         </div>
                       ) : (
                         <>
@@ -1736,14 +1819,18 @@ export default function MobileApp() {
                             {items.map((tx) => {
                               const isPlus = tx.amount > 0;
                               const badge = getStatusBadge(tx.txType, tx.status);
-                              const addr = tx.details?.address;
+                              const addr = tx.txType === "WITHDRAW" ? tx.details.address : tx.details.from_address;
                               return (
                                 <div key={tx.id} className="bg-[#0B0E11] p-3 rounded-xl border border-[#2B3139]">
                                   <div className="flex justify-between items-start">
                                     <div>
                                       <p className="text-xs font-bold text-[#EAECEF]">{getTxLabel(tx.txType, tx.status)}</p>
                                       <p className="text-[10px] text-[#848E9C] mt-0.5 font-mono">{new Date(tx.createdAt).toLocaleString()}</p>
-                                      {addr && <p className="text-[9px] text-[#848E9C] mt-0.5 font-mono truncate max-w-[180px]">→ {addr}</p>}
+                                      {typeof addr === "string" && (
+                                        <p className="text-[9px] text-[#848E9C] mt-0.5 font-mono truncate max-w-[180px]">
+                                          {tx.txType === "WITHDRAW" ? "→ " : "← "}{addr}
+                                        </p>
+                                      )}
                                     </div>
                                     <div className="text-right">
                                       <p className={`text-xs font-mono font-bold ${isPlus ? "text-[#0ECB81]" : "text-[#F6465D]"}`}>
@@ -1771,66 +1858,108 @@ export default function MobileApp() {
 
                 {/* ── 보너스 내역 탭 ── */}
                 {walletHistoryTab === "bonus" && (() => {
-                  type BonusTypeKey = "direct" | "mentor" | "mother" | "rank";
-                  const bonusTypeColor: Record<BonusTypeKey, string> = {
+                  const bonusTypeColor: Record<BonusCategory, string> = {
                     direct: "text-[#FCD535] bg-[#FCD535]/10 border-[#FCD535]/30",
                     mentor: "text-[#0ECB81] bg-[#0ECB81]/10 border-[#0ECB81]/30",
                     mother: "text-[#F0B90B] bg-[#F0B90B]/10 border-[#F0B90B]/30",
                     rank:   "text-[#9B59B6] bg-[#9B59B6]/10 border-[#9B59B6]/30",
+                    package: "text-[#5DADE2] bg-[#5DADE2]/10 border-[#5DADE2]/30",
+                    game: "text-[#BB8FCE] bg-[#BB8FCE]/10 border-[#BB8FCE]/30",
+                    other: "text-[#FF9F0A] bg-[#FF9F0A]/10 border-[#FF9F0A]/30",
                   };
-                  const bonusTypeLabel: Record<BonusTypeKey, string> = {
-                    direct: lang === "ko" ? "직추천 보너스" : lang === "en" ? "Direct Bonus" : "直推奖",
-                    mentor: lang === "ko" ? "육성 보너스"   : lang === "en" ? "Mentoring Bonus" : "育人奖",
-                    mother: lang === "ko" ? "엄마 보너스"   : lang === "en" ? "Mother Bonus" : "母体奖",
-                    rank:   lang === "ko" ? "직급 보너스"   : lang === "en" ? "Rank Bonus" : "平级奖",
+                  const bonusTypeLabel = (txType: string) => {
+                    switch (txType) {
+                      case "REFERRAL_BONUS":
+                        return lang === "ko" ? "직추천 보너스" : lang === "en" ? "Direct Bonus" : "直推奖";
+                      case "FOSTER_BONUS":
+                        return lang === "ko" ? "육성 보너스" : lang === "en" ? "Mentoring Bonus" : "育人奖";
+                      case "MAMA_BONUS":
+                        return lang === "ko" ? "엄마 보너스" : lang === "en" ? "Mother Bonus" : "母体奖";
+                      case "CHEOTAN_BONUS":
+                        return lang === "ko" ? "최탄 보너스" : lang === "en" ? "Cheotan Bonus" : "初弹奖";
+                      case "CHOITAN_BONUS":
+                        return lang === "ko" ? "초탄 보너스" : lang === "en" ? "Choitan Bonus" : "初弹奖";
+                      case "RANK_BONUS":
+                      case "RANK_STAR_BONUS":
+                        return lang === "ko" ? "직급 보너스" : lang === "en" ? "Rank Bonus" : "平级奖";
+                      case "PACKAGE_BONUS":
+                        return lang === "ko" ? "상품 구매 보상" : lang === "en" ? "Package Purchase Reward" : "购买商品奖励";
+                      case "GAME_WIN":
+                      case "GAME_REWARD":
+                        return lang === "ko" ? "게임 당첨 보상" : lang === "en" ? "Game Reward" : "游戏中奖奖励";
+                      case "GAME_CONSOLATION":
+                        return lang === "ko" ? "게임 위로 보상" : lang === "en" ? "Game Consolation" : "游戏安慰奖";
+                      default:
+                        return txType;
+                    }
                   };
-                  const bonusList: { id: string; type: BonusTypeKey; fromName: string; fromId: string; reason: string; amount: string; time: string; }[] = [];
+                  const systemName = lang === "ko" ? "시스템" : lang === "en" ? "System" : "系统";
+                  const bonusList = bonusHistory;
                   const pp = 8;
-                  const tp = Math.ceil(bonusList.length / pp);
+                  const tp = Math.max(1, Math.ceil(bonusList.length / pp));
                   const items = bonusList.slice((bonusHistoryPage - 1) * pp, bonusHistoryPage * pp);
-                  const totalBonus = bonusList.reduce((s, b) => s + parseFloat(b.amount.replace("+", "")), 0);
+                  const totalBonus = bonusList.reduce(
+                    (total, bonus) => bonus.symbol === "USDT" && bonus.amount > 0 ? total + bonus.amount : total,
+                    0
+                  );
                   return (
                     <div className="space-y-3">
                       {/* Summary Bar */}
                       <div className="bg-[#0B0E11] rounded-xl p-3 border border-[#FCD535]/20 flex justify-between items-center">
                         <span className="text-[10px] text-[#848E9C] font-bold">
-                          {lang === "ko" ? "총 수당 수익" : lang === "en" ? "Total Bonus Earned" : "总奖金收益"}
+                          {lang === "ko" ? "총 USDT 보너스" : lang === "en" ? "Total USDT Bonus" : "USDT 奖金总计"}
                         </span>
                         <span className="text-sm font-black text-[#FCD535] font-mono">+${totalBonus.toFixed(2)} USDT</span>
                       </div>
 
                       {/* Bonus Items */}
-                      <div className="space-y-2">
-                        {items.map((b) => (
-                          <div key={b.id} className="bg-[#0B0E11] rounded-xl border border-[#2B3139] hover:border-[#FCD535]/30 transition-all overflow-hidden">
-                            {/* Top row: type badge + amount */}
-                            <div className="flex justify-between items-center px-3 pt-3 pb-2">
-                              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded border ${bonusTypeColor[b.type]}`}>
-                                {bonusTypeLabel[b.type]}
-                              </span>
-                              <span className="text-sm font-black text-[#0ECB81] font-mono">+{b.amount} USDT</span>
-                            </div>
-                            {/* Divider */}
-                            <div className="border-t border-[#2B3139]/60 mx-3" />
-                            {/* From member info */}
-                            <div className="px-3 py-2 flex justify-between items-center">
-                              <div className="flex items-center space-x-2">
-                                <div className="w-7 h-7 rounded-full bg-[#1E2329] border border-[#2B3139] flex items-center justify-center text-[10px] font-black text-[#FCD535]">
-                                  {b.fromName.charAt(0)}
+                      {txHistoryLoading ? (
+                        <div className="text-center py-8 text-[#848E9C] text-xs">로딩 중...</div>
+                      ) : bonusList.length === 0 ? (
+                        <div className="text-center py-8 text-[#848E9C] text-xs">
+                          {lang === "ko" ? "보너스 내역이 없습니다." : lang === "en" ? "No bonus history." : "暂无奖金记录。"}
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {items.map((bonus) => {
+                            const category = getBonusCategory(bonus.txType);
+                            const sourceName = bonus.sourceUser?.nickname
+                              || (bonus.sourceUser ? `ID ${bonus.sourceUser.id.slice(0, 8)}` : systemName);
+                            const description = typeof bonus.details.description === "string"
+                              ? bonus.details.description
+                              : bonusTypeLabel(bonus.txType);
+
+                            return (
+                              <div key={bonus.id} className="bg-[#0B0E11] rounded-xl border border-[#2B3139] hover:border-[#FCD535]/30 transition-all overflow-hidden">
+                                <div className="flex justify-between items-center px-3 pt-3 pb-2">
+                                  <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded border ${bonusTypeColor[category]}`}>
+                                    {bonusTypeLabel(bonus.txType)}
+                                  </span>
+                                  <span className={`text-sm font-black font-mono ${bonus.amount >= 0 ? "text-[#0ECB81]" : "text-[#F6465D]"}`}>
+                                    {bonus.amount >= 0 ? "+" : ""}{Math.abs(bonus.amount).toFixed(2)} {bonus.symbol}
+                                  </span>
                                 </div>
-                                <div>
-                                  <p className="text-xs font-bold text-[#EAECEF]">{b.fromName}</p>
-                                  <p className="text-[9px] font-mono text-[#848E9C]">{b.fromId}</p>
+                                <div className="border-t border-[#2B3139]/60 mx-3" />
+                                <div className="px-3 py-2 flex justify-between items-center gap-3">
+                                  <div className="flex items-center space-x-2 min-w-0">
+                                    <div className="w-7 h-7 rounded-full bg-[#1E2329] border border-[#2B3139] flex items-center justify-center text-[10px] font-black text-[#FCD535] flex-shrink-0">
+                                      {sourceName.charAt(0)}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="text-xs font-bold text-[#EAECEF] truncate">{sourceName}</p>
+                                      <p className="text-[9px] font-mono text-[#848E9C] truncate">{bonus.txType}</p>
+                                    </div>
+                                  </div>
+                                  <div className="text-right min-w-0">
+                                    <p className="text-[9px] text-[#848E9C] truncate max-w-[145px]">{description}</p>
+                                    <p className="text-[9px] font-mono text-[#848E9C] mt-0.5">{new Date(bonus.createdAt).toLocaleString()}</p>
+                                  </div>
                                 </div>
                               </div>
-                              <div className="text-right">
-                                <p className="text-[9px] text-[#848E9C]">{b.reason}</p>
-                                <p className="text-[9px] font-mono text-[#848E9C] mt-0.5">{b.time}</p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                            );
+                          })}
+                        </div>
+                      )}
 
                       {/* Pagination */}
                       {tp > 1 && (
@@ -1847,23 +1976,40 @@ export default function MobileApp() {
                 {/* ── 스왑 탭 ── */}
                 {walletHistoryTab === "swap" && (
                   <div className="space-y-2">
-                    {([] as { id: string, from: string, to: string, rate: string, time: string, status: string }[]).map((s) => (
-                      <div key={s.id} className="bg-[#0B0E11] p-3 rounded-xl border border-[#2B3139]">
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center space-x-2">
-                            <span className="text-xs font-bold text-[#F6465D] font-mono">-{s.from}</span>
-                            <span className="text-[#848E9C] text-xs">➔</span>
-                            <span className="text-xs font-bold text-[#0ECB81] font-mono">+{s.to}</span>
-                          </div>
-                          <span className="text-[9px] font-bold text-[#0ECB81] bg-[#0ECB81]/10 px-2 py-0.5 rounded border border-[#0ECB81]/30">{s.status}</span>
-                        </div>
-                        <div className="flex justify-between mt-1.5">
-                          <span className="text-[9px] text-[#848E9C]">{s.rate}</span>
-                          <span className="text-[9px] font-mono text-[#848E9C]">{s.time}</span>
-                        </div>
+                    {txHistoryLoading ? (
+                      <div className="text-center py-8 text-[#848E9C] text-xs">로딩 중...</div>
+                    ) : swapHistory.length === 0 ? (
+                      <div className="text-center py-8 text-[#848E9C] text-xs">
+                        {lang === "ko" ? "스왑 내역이 없습니다." : lang === "en" ? "No swap history." : "暂无兑换记录。"}
                       </div>
-                    ))}
-                    {/* Empty state placeholder if no swap */}
+                    ) : (
+                      swapHistory.map((swap) => {
+                        const isIncoming = swap.txType === "SWAP_IN";
+                        return (
+                          <div key={swap.id} className="bg-[#0B0E11] p-3 rounded-xl border border-[#2B3139]">
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center space-x-2">
+                                <span className={`text-xs font-bold font-mono ${isIncoming ? "text-[#0ECB81]" : "text-[#F6465D]"}`}>
+                                  {isIncoming ? "+" : ""}{Math.abs(swap.amount).toFixed(2)} {swap.symbol}
+                                </span>
+                                <span className="text-[#848E9C] text-xs">
+                                  {isIncoming
+                                    ? (lang === "ko" ? "스왑 수령" : lang === "en" ? "Swap received" : "兑换到账")
+                                    : (lang === "ko" ? "스왑 지불" : lang === "en" ? "Swap paid" : "兑换支付")}
+                                </span>
+                              </div>
+                              <span className="text-[9px] font-bold text-[#0ECB81] bg-[#0ECB81]/10 px-2 py-0.5 rounded border border-[#0ECB81]/30">
+                                {swap.status === "COMPLETED" ? (lang === "ko" ? "완료" : lang === "en" ? "Done" : "完成") : swap.status}
+                              </span>
+                            </div>
+                            <div className="flex justify-between mt-1.5">
+                              <span className="text-[9px] text-[#848E9C]">{swap.txType}</span>
+                              <span className="text-[9px] font-mono text-[#848E9C]">{new Date(swap.createdAt).toLocaleString()}</span>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 )}
 
