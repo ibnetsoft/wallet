@@ -1,75 +1,64 @@
 import { NextResponse } from "next/server";
 import { Pool } from "pg";
+import { createCronUrl, isCronRequest } from "@/lib/cron-auth";
 import { getBeijingToday, reopenRoundsForNewDay } from "@/lib/game-rounds";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
 });
 
-export async function GET(req: Request) {
+export async function HEAD(request: Request) {
+  return new NextResponse(null, { status: isCronRequest(request) ? 204 : 401 });
+}
+
+export async function GET(request: Request) {
+  if (!isCronRequest(request)) {
+    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
+  const client = await pool.connect();
   try {
-    const client = await pool.connect();
-    try {
-      const res = await client.query(`SELECT value FROM public.system_settings WHERE key = 'auto_draw_enabled'`);
-      let autoDrawEnabled = true;
-      if (res.rows.length > 0) {
-        autoDrawEnabled = res.rows[0].value === "true";
-      }
-
-      if (!autoDrawEnabled) {
-        return NextResponse.json({ success: true, message: "Auto draw is currently DISABLED in settings." });
-      }
-
-      const { today, currentTime } = await getBeijingToday(client);
-      await reopenRoundsForNewDay(client, today);
-
-      const roundsRes = await client.query(
-        `SELECT id, round_number, draw_time
-         FROM public.game_rounds
-         WHERE status = 'OPEN'
-           AND draw_time <= $1::time
-           AND COALESCE(last_processed_date, DATE '1970-01-01') < $2::date
-         ORDER BY draw_time ASC, round_number ASC
-         LIMIT 1`,
-        [currentTime, today]
-      );
-
-      if (roundsRes.rows.length === 0) {
-        return NextResponse.json({ success: true, message: "No open rounds ready for draw at this time." });
-      }
-
-      const roundToDraw = roundsRes.rows[0];
-      const drawApiUrl = new URL("/api/game-rounds/draw", req.url).toString();
-
-      const drawReq = await fetch(drawApiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ round_id: roundToDraw.id })
-      });
-
-      const drawRes = await drawReq.json();
-      if (!drawReq.ok || !drawRes.success) {
-        console.error("Auto draw failed:", drawRes);
-        return NextResponse.json(
-          { success: false, error: drawRes.error || "Failed to execute draw API" },
-          { status: 500 }
-        );
-      }
-
-      return NextResponse.json({
-        success: true,
-        message: `Auto draw triggered for round ${roundToDraw.round_number}`,
-        data: drawRes
-      });
-    } finally {
-      client.release();
+    const setting = await client.query(`SELECT value FROM public.system_settings WHERE key = 'auto_draw_enabled'`);
+    if (setting.rows[0] && setting.rows[0].value !== "true") {
+      return NextResponse.json({ success: true, message: "Auto draw is disabled", processed: 0 });
     }
+
+    const { today, currentTime } = await getBeijingToday(client);
+    await reopenRoundsForNewDay(client, today);
+    const rounds = await client.query(
+      `SELECT id, round_number
+       FROM public.game_rounds
+       WHERE status = 'OPEN'
+         AND draw_time <= $1::time
+         AND COALESCE(last_processed_date, DATE '1970-01-01') < $2::date
+       ORDER BY draw_time ASC, round_number ASC`,
+      [currentTime, today]
+    );
+
+    const drawUrl = createCronUrl(new URL("/api/game-rounds/draw", request.url)).toString();
+    const results: Array<{ roundNumber: number; success: boolean; error?: string }> = [];
+    for (const round of rounds.rows) {
+      const response = await fetch(drawUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ round_id: round.id }),
+      });
+      const data = await response.json().catch(() => ({}));
+      results.push({
+        roundNumber: Number(round.round_number),
+        success: response.ok && Boolean(data.success),
+        error: response.ok && data.success ? undefined : (data.error || "Draw failed"),
+      });
+    }
+
+    return NextResponse.json({ success: results.every((result) => result.success), date: today, currentTime, processed: results.length, results });
   } catch (error: unknown) {
     console.error("Auto draw cron error:", error);
-    return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : "Auto draw failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: "Auto draw failed" }, { status: 500 });
+  } finally {
+    client.release();
   }
 }

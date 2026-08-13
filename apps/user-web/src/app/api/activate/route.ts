@@ -1,74 +1,33 @@
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { Pool } from "pg";
+import { getAuthenticatedUser } from "@/lib/current-user";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(request: Request) {
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
+
+export async function POST() {
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ success: false, error: "Authentication required" }, { status: 401 });
+  }
   try {
-    const { userId } = await request.json();
-
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: "userId is required" },
-        { status: 400 }
-      );
-    }
-
-    // 1. Fetch user to verify they exist and are currently in PENDING state
-    const { data: user, error: fetchError } = await supabaseAdmin
-      .from("users")
-      .select("id, email, status, parent_id")
-      .eq("id", userId)
-      .single();
-
-    if (fetchError || !user) {
-      return NextResponse.json(
-        { success: false, error: "User not found" },
-        { status: 404 }
-      );
-    }
-
-    if (user.status === "ACTIVE") {
-      return NextResponse.json(
-        { success: false, error: "User is already active" },
-        { status: 400 }
-      );
-    }
-
-    // 2. Update user status to ACTIVE. 
-    // This will fire the Postgres trigger: trg_user_activation
-    // which increments sponsor's referral_count and applies 3-배수 pass-up placement.
-    const { data: updatedUsers, error: updateError } = await supabaseAdmin
-      .from("users")
-      .update({ status: "ACTIVE" })
-      .eq("id", userId)
-      .select("id, email, status, parent_id, placement_id, referral_count")
-      .single();
-
-    if (updateError || !updatedUsers) {
-      return NextResponse.json(
-        { success: false, error: `Activation failed: ${updateError?.message}` },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: "User successfully activated. 369 Rollup placement completed.",
-      user: {
-        id: updatedUsers.id,
-        email: updatedUsers.email,
-        status: updatedUsers.status,
-        parentId: updatedUsers.parent_id,
-        placementId: updatedUsers.placement_id, // This is the final calculated placement parent after trigger execution
-        referralCount: updatedUsers.referral_count
-      }
-    });
-
-  } catch (err: any) {
-    return NextResponse.json(
-      { success: false, error: err?.message || "Internal server error" },
-      { status: 500 }
+    const result = await pool.query(
+      `UPDATE public.users
+       SET status = 'ACTIVE', recommender_id = COALESCE(recommender_id, parent_id)
+       WHERE id = $1
+       RETURNING id, email, status, parent_id, recommender_id, sponsor_id, original_recommender_id, referral_seq`,
+      [user.id]
     );
+    if (!result.rows[0]) {
+      return NextResponse.json({ success: false, error: "User profile not found" }, { status: 404 });
+    }
+    return NextResponse.json({ success: true, user: result.rows[0] });
+  } catch (error: unknown) {
+    console.error("Activation error:", error);
+    return NextResponse.json({ success: false, error: "Activation failed" }, { status: 500 });
   }
 }

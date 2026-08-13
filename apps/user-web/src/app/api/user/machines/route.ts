@@ -1,51 +1,52 @@
 import { NextResponse } from "next/server";
 import { Pool } from "pg";
+import { getAuthenticatedUser } from "@/lib/current-user";
+import { getProduct } from "@/lib/products";
 
 export const dynamic = "force-dynamic";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
 });
 
-export async function GET(request: Request) {
+export async function GET() {
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ success: false, error: "Authentication required" }, { status: 401 });
+  }
+
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
-
-    if (!userId) {
-      return NextResponse.json({ success: false, error: "userId is required" }, { status: 400 });
-    }
-
     const res = await pool.query(
-      `SELECT
-         id,
-         package_level,
-         purchase_price,
-         total_entry_limit,
-         payout_limit_usd,
-         accumulated_payout_usd,
-         created_at
+      `SELECT id, package_level, purchase_price, total_entry_limit, used_entries,
+              payout_limit_usd, accumulated_payout_usd, created_at
        FROM public.user_game_machines
        WHERE user_id = $1
        ORDER BY created_at DESC, id DESC`,
-      [userId]
+      [user.id]
     );
-
     return NextResponse.json({
       success: true,
-      machines: res.rows.map((row) => ({
-        id: String(row.id),
-        level: Number(row.package_level),
-        price: parseFloat(row.purchase_price),
-        urdBonus: Number(row.total_entry_limit ?? 0),
-        payoutCap: parseFloat(row.payout_limit_usd),
-        accumulatedPayout: parseFloat(row.accumulated_payout_usd ?? 0),
-        purchasedAt: row.created_at,
-      }))
+      machines: res.rows.map((row) => {
+        const product = getProduct(row.package_level);
+        const entryLimit = Number(row.total_entry_limit);
+        const usedEntries = Number(row.used_entries);
+        return {
+          id: String(row.id),
+          level: Number(row.package_level),
+          price: Number(row.purchase_price),
+          urdBonus: product?.jadeBonus ?? 0,
+          entryLimit,
+          usedEntries,
+          remainingEntries: Math.max(entryLimit - usedEntries, 0),
+          payoutCap: Number(row.payout_limit_usd),
+          accumulatedPayout: Number(row.accumulated_payout_usd),
+          purchasedAt: row.created_at,
+        };
+      }),
     });
-  } catch (err: any) {
-    console.error("GET api/user/machines error:", err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (error: unknown) {
+    console.error("Machine query failed:", error);
+    return NextResponse.json({ success: false, error: "Failed to load game machines" }, { status: 500 });
   }
 }

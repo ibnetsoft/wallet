@@ -1,30 +1,24 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { Pool } from "pg";
+import { getAuthenticatedUser } from "@/lib/current-user";
 
 export const dynamic = "force-dynamic";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
 
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-
-export async function POST(request: Request) {
+export async function POST() {
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ success: false, error: "Authentication required" }, { status: 401 });
+  }
   try {
-    const { userId } = await request.json();
-    if (!userId) {
-      return NextResponse.json({ success: false, error: "userId is required" }, { status: 400 });
-    }
-
-    const { error } = await supabaseAdmin
-      .from("users")
-      .update({ last_login_at: new Date().toISOString() })
-      .eq("id", userId);
-
-    if (error) throw error;
-
+    await pool.query(`UPDATE public.users SET last_login_at = NOW() WHERE id = $1`, [user.id]);
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    console.error("record-login error:", err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (error: unknown) {
+    console.error("Record login error:", error);
+    return NextResponse.json({ success: false, error: "Failed to record login" }, { status: 500 });
   }
 }

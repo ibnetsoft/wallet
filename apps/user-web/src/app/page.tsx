@@ -72,7 +72,7 @@ const I18N = {
     confirm: "확인 구매", cancel: "취소",
     unpaidMembersTitle: "상품 미구매 추천 회원", unpaidMembersSub: "",
     directTreeSub: "직추천 조직", sponsorTreeSub: "후원 계보 조직",
-    bet1minLimit: "마감 1분 전 게임 마감", round: "회차", round1: "1회차", round2: "2회차", round3: "3회차",
+    bet1minLimit: "발표 시각부터 게임 마감", round: "회차", round1: "1회차", round2: "2회차", round3: "3회차",
     betTime: "참여 가능 시간", aiDraw: "AI 당첨 발표", drawTime: "발표 시각", selectRound: "참여 회차 선택", selectPlayCount: "참여 횟수 선택",
     selectBetCount: "게임 횟수 선택 (회당 옥구슬 1개)", totalCost: "총 소모", manualBetBtn: "게임 참여하기",
     autoBetRounds: "자동 참여 회차 (다중 선택)", dailyRepeat: "매일 반복 자동 참여",
@@ -102,7 +102,7 @@ const I18N = {
     confirm: "Confirm Purchase", cancel: "Cancel",
     unpaidMembersTitle: "Unpurchased Referral Members", unpaidMembersSub: "",
     directTreeSub: "Direct Referral Tree", sponsorTreeSub: "Sponsor Tree",
-    bet1minLimit: "Game closes 1 min before deadline", round: "Round", round1: "Round 1", round2: "Round 2", round3: "Round 3",
+    bet1minLimit: "Game closes at draw time", round: "Round", round1: "Round 1", round2: "Round 2", round3: "Round 3",
     betTime: "Playable Time", aiDraw: "AI Draw Announcement", drawTime: "Draw Time", selectRound: "Select Round", selectPlayCount: "Select Play Count",
     selectBetCount: "Select Game Play Count (1 Jade Bead each)", totalCost: "Total Cost", manualBetBtn: "Join Game",
     autoBetRounds: "Auto Rounds (Multi-select)", dailyRepeat: "Daily Auto Repeat",
@@ -132,7 +132,7 @@ const I18N = {
     confirm: "确认购买", cancel: "取消",
     unpaidMembersTitle: "未购设备推荐会员", unpaidMembersSub: "",
     directTreeSub: "直推谱系团队", sponsorTreeSub: "安置架构团队",
-    bet1minLimit: "截止前1分钟停止游戏", round: "轮次", round1: "第1轮", round2: "第2轮", round3: "第3轮",
+    bet1minLimit: "开奖时停止游戏", round: "轮次", round1: "第1轮", round2: "第2轮", round3: "第3轮",
     betTime: "可游戏时间", aiDraw: "AI 抽奖公布", drawTime: "公布时间", selectRound: "选择游戏轮次",
     selectBetCount: "选择游戏次数 (每轮 1 个玉珠)", totalCost: "总消耗", manualBetBtn: "参与游戏",
     autoBetRounds: "自动参与轮次 (多选)", dailyRepeat: "每日重复自动游戏",
@@ -348,7 +348,7 @@ export default function MobileApp() {
       const res = await fetch("/api/game-rounds/participate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: userId, round_id: roundObj.id, tickets_count: manualBetsCount })
+        body: JSON.stringify({ round_id: roundObj.id, tickets_count: manualBetsCount })
       });
       const data = await res.json();
       
@@ -414,7 +414,6 @@ export default function MobileApp() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_id: userId,
           enabled: nextEnabled,
           dailyRepeat: autoSettings.dailyRepeat,
           rounds: autoSettings.rounds,
@@ -509,7 +508,7 @@ export default function MobileApp() {
       const res = await fetch("/api/package/purchase", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: userId, level, price, urdBonus, capRate })
+        body: JSON.stringify({ level })
       });
       const data = await res.json();
 
@@ -555,8 +554,8 @@ export default function MobileApp() {
       setIsPurchasing(false);
     }
   };
-  const [directTree] = useState<any[]>([]);
-  const [sponsorTree] = useState<any[]>([]);
+  const [directTree, setDirectTree] = useState<any[]>([]);
+  const [sponsorTree, setSponsorTree] = useState<any[]>([]);
   const [userEmail, setUserEmail] = useState("user@bao369.com");
   const [userNickname, setUserNickname] = useState("User");
   const [isEditingNickname, setIsEditingNickname] = useState(false);
@@ -591,7 +590,7 @@ export default function MobileApp() {
         const res = await fetch("/api/wallet/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user_id: userId }),
+          body: JSON.stringify({}),
         });
         const data = await res.json();
         if (res.ok && data.address) {
@@ -623,7 +622,7 @@ export default function MobileApp() {
     if (!userId) return;
     setTxHistoryLoading(true);
     try {
-      const res = await fetch(`/api/user/history?userId=${userId}`);
+      const res = await fetch("/api/user/history");
       const data = await res.json();
       if (data.success) setTxHistory(data.entries || []);
     } catch (e) { console.error(e); }
@@ -708,16 +707,16 @@ export default function MobileApp() {
     setBalancesLoading(true);
     try {
       const [balRes, betsRes, machinesRes] = await Promise.all([
-        fetch(`/api/user/balance?userId=${uid}`),
-        fetch(`/api/user/bets?userId=${uid}`),
-        fetch(`/api/user/machines?userId=${uid}`)
+        fetch("/api/user/balance"),
+        fetch("/api/user/bets"),
+        fetch("/api/user/machines")
       ]);
       const data = await balRes.json();
       
       if (data.success && data.balances) {
         setUsdtBalance(data.balances.USDT ?? 0);
         setUrcBalance(data.balances.URC ?? 0);
-        setBaoBalance(data.balances.URC ?? 0); // DB의 URC 잔고를 UI의 BAO 잔고에 매핑
+        setBaoBalance(data.balances.BAO ?? 0);
         setUrdBalance(data.balances.JADE ?? 0);
         setHongbaoCount(data.balances.HONGBAO ?? 0);
       }
@@ -777,7 +776,7 @@ export default function MobileApp() {
     if (!uid) return;
 
     try {
-      const res = await fetch(`/api/auto-bet-settings?userId=${uid}`);
+      const res = await fetch("/api/auto-bet-settings");
       const data = await res.json();
       if (!res.ok || !data.success || !data.settings) {
         return;
@@ -817,7 +816,11 @@ export default function MobileApp() {
           if (data.rounds.length > 0) {
             const firstAvailableRound = data.rounds.find((r: any) => r.can_participate);
             setManualRound((firstAvailableRound ?? data.rounds[0]).round_number);
-            setAutoSettings(prev => ({ ...prev, rounds: data.rounds.map((r: any) => r.round_number) }));
+            setAutoSettings((prev) => (
+              prev.rounds.length > 0
+                ? prev
+                : { ...prev, rounds: data.rounds.map((round: any) => round.round_number) }
+            ));
           }
         }
       } catch (e) {
@@ -872,8 +875,18 @@ export default function MobileApp() {
 
   const fetchNetworkData = async () => {
     setLoadingNetwork(true);
-    await new Promise(r => setTimeout(r, 800));
-    setLoadingNetwork(false);
+    try {
+      const res = await fetch("/api/network");
+      const data = await res.json();
+      if (res.ok && data.success && data.data) {
+        setDirectTree(data.data.directTree ?? []);
+        setSponsorTree(data.data.sponsorTree ?? []);
+      }
+    } catch (error) {
+      console.error("Failed to load network:", error);
+    } finally {
+      setLoadingNetwork(false);
+    }
   };
 
   useEffect(() => { if (activeTab === "network") fetchNetworkData(); }, [activeTab]);
@@ -1541,7 +1554,6 @@ export default function MobileApp() {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
-                          userId,
                           amount: amountVal,
                           address: withdrawAddress.trim()
                         })
@@ -2051,7 +2063,7 @@ export default function MobileApp() {
             {/* Timetable Schedule Card */}
             <div className="bg-[#1E2329] border border-[#2B3139] rounded-2xl p-4 space-y-3">
               <h3 className="text-xs font-extrabold text-[#EAECEF] flex items-center justify-between">
-                <span>🕒 {lang === "ko" ? "일일 3회차 AI 추첨 시간표" : lang === "en" ? "Daily 3-Round Timetable" : "每日 3 轮 AI 抽奖时间表"}</span>
+                <span>🕒 {lang === "ko" ? "일일 AI 추첨 시간표" : lang === "en" ? "Daily AI Draw Timetable" : "每日 AI 抽奖时间表"}</span>
                 <span className="text-[10px] text-[#848E9C]">{t.bet1minLimit}</span>
               </h3>
 

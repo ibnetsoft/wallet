@@ -1,146 +1,125 @@
 import { NextResponse } from "next/server";
 import { Pool } from "pg";
+import { getAuthenticatedUser } from "@/lib/current-user";
+import { getProduct } from "@/lib/products";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
 });
 
 export async function POST(req: Request) {
-  try {
-    const { user_id, level, price, urdBonus, capRate } = await req.json();
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ success: false, error: "Authentication required" }, { status: 401 });
+  }
 
-    if (!user_id || !level || !price) {
-      return NextResponse.json({ success: false, error: "Invalid parameters" }, { status: 400 });
+  try {
+    const { level } = await req.json();
+    const product = getProduct(level);
+    if (!product) {
+      return NextResponse.json({ success: false, error: "Invalid product" }, { status: 400 });
     }
 
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
 
+      const userRes = await client.query(
+        `UPDATE public.users
+         SET status = 'ACTIVE',
+             recommender_id = COALESCE(recommender_id, parent_id)
+         WHERE id = $1
+         RETURNING id`,
+        [user.id]
+      );
+      if (userRes.rows.length === 0) {
+        throw new Error("User profile not found");
+      }
+
       const assetsRes = await client.query(
         `SELECT id, symbol FROM public.assets WHERE symbol IN ('USDT', 'JADE', 'URC', 'HONGBAO')`
       );
-      const assets = Object.fromEntries(assetsRes.rows.map((a) => [a.symbol, a.id]));
-
-      if (!assets.HONGBAO) {
-        const hongbaoAssetRes = await client.query(
-          `INSERT INTO public.assets (symbol, contract_address, decimals, is_active)
-           VALUES ('HONGBAO', NULL, 0, true)
-           ON CONFLICT (symbol) DO UPDATE SET symbol = EXCLUDED.symbol
-           RETURNING id`
-        );
-        assets.HONGBAO = hongbaoAssetRes.rows[0]?.id;
+      const assets = Object.fromEntries(assetsRes.rows.map((asset) => [asset.symbol, Number(asset.id)]));
+      if (!assets.USDT || !assets.JADE || !assets.HONGBAO) {
+        throw new Error("System assets are not configured");
       }
 
-      if (!assets.USDT || !assets.JADE) {
-        throw new Error("System assets not fully configured (USDT or JADE missing)");
-      }
-
-      const usdtBalRes = await client.query(
-        `UPDATE public.user_balances SET available_balance = available_balance - $1, updated_at = NOW()
-         WHERE user_id = $2 AND asset_id = $3 AND available_balance >= $1 RETURNING available_balance`,
-        [price, user_id, assets.USDT]
+      const usdtBalance = await client.query(
+        `UPDATE public.user_balances
+         SET available_balance = available_balance - $1, updated_at = NOW()
+         WHERE user_id = $2
+           AND asset_id = $3
+           AND available_balance >= $1
+         RETURNING available_balance`,
+        [product.price, user.id, assets.USDT]
       );
-      if (usdtBalRes.rows.length === 0) throw new Error("Insufficient USDT balance");
-
-      await client.query(
-        `INSERT INTO public.user_balances (user_id, asset_id, available_balance, updated_at)
-         VALUES ($1, $2, $3, NOW())
-         ON CONFLICT (user_id, asset_id)
-         DO UPDATE SET available_balance = user_balances.available_balance + EXCLUDED.available_balance, updated_at = NOW()`,
-        [user_id, assets.JADE, urdBonus]
-      );
-
-      let urcBonus = 0;
-      let hongbaoBonus = 0;
-      if (level === 2) {
-        urcBonus = 1;
-        hongbaoBonus = 1;
-      }
-      if (level === 3) {
-        urcBonus = 3;
-        hongbaoBonus = 3;
+      if (usdtBalance.rows.length === 0) {
+        throw new Error("Insufficient USDT balance");
       }
 
-      if (urcBonus > 0 && assets.URC) {
+      const creditBalance = async (assetId: number, amount: number) => {
+        if (amount <= 0) return;
         await client.query(
-          `INSERT INTO public.user_balances (user_id, asset_id, available_balance, updated_at)
-           VALUES ($1, $2, $3, NOW())
-           ON CONFLICT (user_id, asset_id)
-           DO UPDATE SET available_balance = user_balances.available_balance + EXCLUDED.available_balance, updated_at = NOW()`,
-          [user_id, assets.URC, urcBonus]
+          `INSERT INTO public.user_balances (user_id, asset_id, available_balance, locked_balance, updated_at)
+           VALUES ($1, $2, $3, 0, NOW())
+           ON CONFLICT (user_id, asset_id) DO UPDATE
+             SET available_balance = public.user_balances.available_balance + EXCLUDED.available_balance,
+                 updated_at = NOW()`,
+          [user.id, assetId, amount]
         );
-      }
+      };
 
-      if (hongbaoBonus > 0 && assets.HONGBAO) {
-        await client.query(
-          `INSERT INTO public.user_balances (user_id, asset_id, available_balance, updated_at)
-           VALUES ($1, $2, $3, NOW())
-           ON CONFLICT (user_id, asset_id)
-           DO UPDATE SET available_balance = user_balances.available_balance + EXCLUDED.available_balance, updated_at = NOW()`,
-          [user_id, assets.HONGBAO, hongbaoBonus]
-        );
-      }
-
-      await client.query(
-        `INSERT INTO public.ledger_entries (user_id, asset_id, tx_type, amount, status)
-         VALUES ($1, $2, 'PACKAGE_BUY', $3, 'COMPLETED')`,
-        [user_id, assets.USDT, -price]
-      );
-
-      await client.query(
-        `INSERT INTO public.ledger_entries (user_id, asset_id, tx_type, amount, status)
-         VALUES ($1, $2, 'PACKAGE_BONUS', $3, 'COMPLETED')`,
-        [user_id, assets.JADE, urdBonus]
-      );
-
-      if (urcBonus > 0 && assets.URC) {
+      const addLedger = async (assetId: number, amount: number, txType: "PACKAGE_BUY" | "PACKAGE_BONUS") => {
+        if (amount === 0) return;
         await client.query(
           `INSERT INTO public.ledger_entries (user_id, asset_id, tx_type, amount, status)
-           VALUES ($1, $2, 'PACKAGE_BONUS', $3, 'COMPLETED')`,
-          [user_id, assets.URC, urcBonus]
+           VALUES ($1, $2, $3, $4, 'COMPLETED')`,
+          [user.id, assetId, txType, amount]
         );
-      }
+      };
 
-      if (hongbaoBonus > 0 && assets.HONGBAO) {
-        await client.query(
-          `INSERT INTO public.ledger_entries (user_id, asset_id, tx_type, amount, status)
-           VALUES ($1, $2, 'PACKAGE_BONUS', $3, 'COMPLETED')`,
-          [user_id, assets.HONGBAO, hongbaoBonus]
-        );
-      }
+      await creditBalance(assets.JADE, product.jadeBonus);
+      await creditBalance(assets.URC, product.urcBonus);
+      await creditBalance(assets.HONGBAO, product.hongbaoBonus);
+      await addLedger(assets.USDT, -product.price, "PACKAGE_BUY");
+      await addLedger(assets.JADE, product.jadeBonus, "PACKAGE_BONUS");
+      await addLedger(assets.URC, product.urcBonus, "PACKAGE_BONUS");
+      await addLedger(assets.HONGBAO, product.hongbaoBonus, "PACKAGE_BONUS");
 
-      const payoutCap = price * capRate;
-      await client.query(
-        `INSERT INTO public.user_game_machines (user_id, package_level, purchase_price, total_entry_limit, payout_limit_usd)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [user_id, level, price, urdBonus, payoutCap]
+      const machineRes = await client.query(
+        `INSERT INTO public.user_game_machines
+           (user_id, package_level, purchase_price, total_entry_limit, payout_limit_usd)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id`,
+        [user.id, product.level, product.price, product.entryLimit, product.payoutLimit]
       );
 
+      await client.query(`SELECT public.settle_machine_purchase($1)`, [machineRes.rows[0].id]);
       await client.query("COMMIT");
 
       return NextResponse.json({
         success: true,
         message: "Package purchased successfully",
+        product,
         balances: {
-          USDT: usdtBalRes.rows[0].available_balance,
-          JADE: urdBonus,
-          URC: urcBonus,
-          HONGBAO: hongbaoBonus
-        }
+          USDT: Number(usdtBalance.rows[0].available_balance),
+          JADE: product.jadeBonus,
+          URC: product.urcBonus,
+          HONGBAO: product.hongbaoBonus,
+        },
       });
-    } catch (e: unknown) {
+    } catch (error) {
       await client.query("ROLLBACK");
-      throw e;
+      throw error;
     } finally {
       client.release();
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Purchase error:", error);
     return NextResponse.json(
-      { success: false, error: error.message || "Internal server error" },
-      { status: 500 }
+      { success: false, error: error instanceof Error ? error.message : "Purchase failed" },
+      { status: 400 }
     );
   }
 }

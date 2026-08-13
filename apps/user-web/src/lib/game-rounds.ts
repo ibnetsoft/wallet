@@ -2,6 +2,7 @@ type RoundLike = {
   status: string;
   start_time: string;
   end_time: string;
+  draw_time?: string;
   last_processed_date: string | null;
 };
 
@@ -26,8 +27,7 @@ export function getRoundCloseTime(endTime: string) {
 
 export function getRoundAvailability(round: RoundLike, currentTime: string, today: string) {
   const startTime = round.start_time.substring(0, 8);
-  const endTime = round.end_time.substring(0, 8);
-  const closeTime = getRoundCloseTime(endTime);
+  const closeTime = (round.draw_time ?? round.end_time).substring(0, 8);
 
   if (round.last_processed_date === today) {
     return {
@@ -73,7 +73,7 @@ export function getRoundAvailabilityMessage(reason: string) {
     case "NOT_STARTED":
       return "Betting for this round has not started yet";
     case "BETTING_CLOSED":
-      return "Betting closes 1 minute before the round deadline";
+      return "Betting closes when the draw time begins";
     case "DRAW_COMPLETED":
       return "This round has already been processed for today";
     case "ROUND_CLOSED":
@@ -105,9 +105,9 @@ export function getParticipationErrorMessage(code: string | undefined, lang: App
           : "本轮尚未开始。";
     case "BETTING_CLOSED":
       return lang === "ko"
-        ? "북경시간 기준 마감 1분 전부터 배팅이 닫힙니다."
+        ? "발표 시각부터는 배팅에 참여할 수 없습니다."
         : lang === "en"
-          ? "Betting closes 1 minute before the round deadline."
+          ? "Betting closes when the draw time begins."
           : "按北京时间，截止前1分钟停止投注。";
     case "DRAW_COMPLETED":
       return lang === "ko"

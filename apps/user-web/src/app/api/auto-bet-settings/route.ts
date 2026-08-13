@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Pool } from "pg";
+import { getAuthenticatedUser } from "@/lib/current-user";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -7,92 +8,60 @@ const pool = new Pool({
 });
 
 function normalizeRounds(rounds: unknown): number[] {
-  if (!Array.isArray(rounds)) {
-    return [];
-  }
-
+  if (!Array.isArray(rounds)) return [];
   return [...new Set(
     rounds
       .map((value) => Number(value))
-      .filter((value) => Number.isInteger(value) && value > 0)
-  )].sort((a, b) => a - b);
+      .filter((value) => Number.isInteger(value) && value >= 1 && value <= 6)
+  )].sort((left, right) => left - right);
 }
 
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const userId = searchParams.get("userId");
-
-  if (!userId) {
-    return NextResponse.json(
-      { success: false, error: "userId is required" },
-      { status: 400 }
-    );
+export async function GET() {
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ success: false, error: "Authentication required" }, { status: 401 });
   }
 
   try {
     const res = await pool.query(
-      `SELECT user_id, enabled, daily_repeat, rounds, bets_count
+      `SELECT enabled, daily_repeat, rounds, bets_count
        FROM public.auto_bet_settings
        WHERE user_id = $1`,
-      [userId]
+      [user.id]
     );
-
-    if (res.rows.length === 0) {
-      return NextResponse.json({
-        success: true,
-        settings: {
-          enabled: false,
-          dailyRepeat: true,
-          rounds: [],
-          betsCount: 10,
-        },
-      });
-    }
-
     const row = res.rows[0];
     return NextResponse.json({
       success: true,
-      settings: {
-        enabled: row.enabled,
-        dailyRepeat: row.daily_repeat,
-        rounds: row.rounds ?? [],
-        betsCount: row.bets_count,
-      },
+      settings: row
+        ? {
+            enabled: row.enabled,
+            dailyRepeat: row.daily_repeat,
+            rounds: row.rounds ?? [],
+            betsCount: row.bets_count,
+          }
+        : { enabled: false, dailyRepeat: true, rounds: [], betsCount: 10 },
     });
   } catch (error: unknown) {
     console.error("GET auto-bet-settings error:", error);
-    return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : "Failed to load auto bet settings" },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: "Failed to load auto bet settings" }, { status: 500 });
   }
 }
 
 export async function POST(req: Request) {
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ success: false, error: "Authentication required" }, { status: 401 });
+  }
+
   try {
-    const { user_id, enabled, dailyRepeat, rounds, betsCount } = await req.json();
-
-    if (!user_id) {
-      return NextResponse.json(
-        { success: false, error: "user_id is required" },
-        { status: 400 }
-      );
-    }
-
+    const { enabled, dailyRepeat, rounds, betsCount } = await req.json();
     const normalizedRounds = normalizeRounds(rounds);
     const normalizedBetsCount = Number(betsCount);
     if (!Number.isInteger(normalizedBetsCount) || normalizedBetsCount < 1 || normalizedBetsCount > 100) {
-      return NextResponse.json(
-        { success: false, error: "betsCount must be an integer between 1 and 100" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "betsCount must be between 1 and 100" }, { status: 400 });
     }
-
     if (enabled && normalizedRounds.length === 0) {
-      return NextResponse.json(
-        { success: false, error: "At least one round must be selected" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "At least one round must be selected" }, { status: 400 });
     }
 
     const res = await pool.query(
@@ -105,9 +74,8 @@ export async function POST(req: Request) {
          bets_count = EXCLUDED.bets_count,
          updated_at = NOW()
        RETURNING enabled, daily_repeat, rounds, bets_count`,
-      [user_id, Boolean(enabled), Boolean(dailyRepeat), normalizedRounds, normalizedBetsCount]
+      [user.id, Boolean(enabled), Boolean(dailyRepeat), normalizedRounds, normalizedBetsCount]
     );
-
     const row = res.rows[0];
     return NextResponse.json({
       success: true,
@@ -120,9 +88,6 @@ export async function POST(req: Request) {
     });
   } catch (error: unknown) {
     console.error("POST auto-bet-settings error:", error);
-    return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : "Failed to save auto bet settings" },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: "Failed to save auto bet settings" }, { status: 500 });
   }
 }

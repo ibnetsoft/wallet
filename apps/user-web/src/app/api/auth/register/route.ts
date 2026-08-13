@@ -118,6 +118,7 @@ export async function POST(req: Request) {
 
     if (parentId) {
       insertData.parent_id = parentId;
+      insertData.recommender_id = parentId;
     }
 
     const { error: dbError } = await supabase

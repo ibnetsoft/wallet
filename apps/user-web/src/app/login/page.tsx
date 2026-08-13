@@ -100,7 +100,7 @@ export default function LoginPage() {
           await fetch('/api/auth/record-login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: data.user.id })
+            body: JSON.stringify({})
           });
         } catch (e) {
           console.error("Failed to record login time", e);

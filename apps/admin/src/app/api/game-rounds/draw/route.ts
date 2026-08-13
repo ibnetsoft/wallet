@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { Pool } from "pg";
+import { isCronRequest } from "@/lib/cron-auth";
 import { getBeijingToday, reopenRoundsForNewDay } from "@/lib/game-rounds";
+import { createClient } from "@/lib/supabase/server";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -9,6 +11,17 @@ const pool = new Pool({
 
 export async function POST(req: Request) {
   try {
+    if (!isCronRequest(req)) {
+      const supabase = await createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      const adminEmails = (process.env.ADMIN_EMAILS || "").split(",").map((email) => email.trim().toLowerCase());
+      if (!user?.email || !adminEmails.includes(user.email.toLowerCase())) {
+        return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+      }
+    }
+
     const { round_id } = await req.json();
     if (!round_id) {
       return NextResponse.json({ success: false, error: "round_id is required" }, { status: 400 });
@@ -94,6 +107,30 @@ export async function POST(req: Request) {
              WHERE id = $1`,
             [p.id]
           );
+
+          const entryClaims = await client.query(
+            `SELECT machine_id, entries_count
+             FROM public.game_participant_entry_claims
+             WHERE participant_id = $1
+               AND refunded_at IS NULL
+             FOR UPDATE`,
+            [p.id]
+          );
+          for (const claim of entryClaims.rows) {
+            await client.query(
+              `UPDATE public.user_game_machines
+               SET used_entries = GREATEST(used_entries - $1, 0)
+               WHERE id = $2 AND user_id = $3`,
+              [claim.entries_count, claim.machine_id, p.user_id]
+            );
+          }
+          await client.query(
+            `UPDATE public.game_participant_entry_claims
+             SET refunded_at = NOW()
+             WHERE participant_id = $1
+               AND refunded_at IS NULL`,
+            [p.id]
+          );
         }
 
         await client.query(
@@ -155,9 +192,35 @@ export async function POST(req: Request) {
       }
 
       for (const r of results) {
-        const usdtPayout = (Number(r.won_tickets) * 102) + (Number(r.lost_tickets) * 80);
+        const requestedUsdtPayout = (Number(r.won_tickets) * 102) + (Number(r.lost_tickets) * 80);
         const baoPayout = Number(r.lost_tickets) * 20;
         const jadePayout = Number(r.lost_tickets) * 20;
+
+        const machineCapRes = await client.query(
+          `SELECT id, payout_limit_usd, accumulated_payout_usd
+           FROM public.user_game_machines
+           WHERE user_id = $1
+             AND accumulated_payout_usd < payout_limit_usd
+           ORDER BY created_at ASC, id ASC
+           FOR UPDATE`,
+          [r.user_id]
+        );
+        let remainingPayout = requestedUsdtPayout;
+        let usdtPayout = 0;
+        for (const machine of machineCapRes.rows) {
+          if (remainingPayout <= 0) break;
+          const available = Number(machine.payout_limit_usd) - Number(machine.accumulated_payout_usd);
+          const credited = Math.min(remainingPayout, available);
+          if (credited <= 0) continue;
+          await client.query(
+            `UPDATE public.user_game_machines
+             SET accumulated_payout_usd = accumulated_payout_usd + $1
+             WHERE id = $2`,
+            [credited, machine.id]
+          );
+          usdtPayout += credited;
+          remainingPayout -= credited;
+        }
 
         if (usdtPayout > 0) {
           await client.query(
