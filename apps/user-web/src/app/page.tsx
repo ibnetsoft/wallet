@@ -2982,7 +2982,11 @@ export default function MobileApp() {
                                 </span>
                                 {isRolledIn && (
                                   <span className="block mt-1 text-[10px] font-bold text-[#FCD535]">
-                                    {lang === "ko" ? "3번째 롤업" : lang === "en" ? "3rd roll-up" : "第3位归集"}
+                                    {lang === "ko"
+                                      ? `${member.referralSeq}번째 롤업`
+                                      : lang === "en"
+                                        ? `#${member.referralSeq} roll-up`
+                                        : `第${member.referralSeq}位归集`}
                                   </span>
                                 )}
                               </div>

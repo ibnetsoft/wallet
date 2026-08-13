@@ -175,7 +175,7 @@ async function triggerMamaBonus(
 //  STEP 1: Process individual purchase bonuses (real-time style)
 //  추천보너스 20% + 육성보너스 10% + 엄마보너스 100% 매칭
 // ═══════════════════════════════════════════════════════════
-async function processReferralAndFosterBonuses(
+async function processReferralAndFosterBonusesDeprecated(
   client: PoolClient,
   usdtAssetId: number
 ): Promise<{ count: number; totalPaid: number }> {
@@ -256,6 +256,46 @@ async function processReferralAndFosterBonuses(
 //  STEP 2: 직급(Star Rank) 갱신
 //  accumulated_revenue 기준, 한번 달성하면 유지 (하향 없음)
 // ═══════════════════════════════════════════════════════════
+// Purchase bonuses are settled by the database function so web purchases and
+// scheduled settlement share the same 369 placement and mama-bonus rules.
+async function processReferralAndFosterBonuses(
+  client: PoolClient,
+  _usdtAssetId: number
+): Promise<{ count: number; totalPaid: number }> {
+  const purchasesRes = await client.query(`
+    SELECT id AS machine_id
+    FROM public.user_game_machines
+    WHERE bonus_settled = FALSE
+      AND created_at::date <= CURRENT_DATE
+    ORDER BY created_at ASC, id ASC
+    FOR UPDATE SKIP LOCKED
+  `);
+
+  console.log(`   Found ${purchasesRes.rows.length} unprocessed purchase(s).`);
+  let totalPaid = 0;
+
+  for (const purchase of purchasesRes.rows) {
+    const settlementRes = await client.query(
+      `SELECT public.settle_machine_purchase($1) AS settlement`,
+      [purchase.machine_id]
+    );
+    const settlement = settlementRes.rows[0]?.settlement as {
+      referral_paid?: number | string;
+      foster_paid?: number | string;
+      mama_paid?: number | string;
+    } | undefined;
+    const paid =
+      Number(settlement?.referral_paid ?? 0) +
+      Number(settlement?.foster_paid ?? 0) +
+      Number(settlement?.mama_paid ?? 0);
+
+    totalPaid += paid;
+    console.log(`      Machine ${purchase.machine_id}: $${paid.toFixed(2)} settled by database rule.`);
+  }
+
+  return { count: purchasesRes.rows.length, totalPaid };
+}
+
 async function updateStarRanks(client: PoolClient): Promise<number> {
   const usersRes = await client.query(
     `SELECT id, accumulated_revenue, star_level FROM public.users WHERE status = 'ACTIVE'`
