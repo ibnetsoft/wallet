@@ -556,6 +556,7 @@ export default function MobileApp() {
   };
   const [directTree, setDirectTree] = useState<any[]>([]);
   const [sponsorTree, setSponsorTree] = useState<any[]>([]);
+  const visibleNetworkTree = networkTab === "referral" ? directTree : sponsorTree;
   const [userEmail, setUserEmail] = useState("user@bao369.com");
   const [userNickname, setUserNickname] = useState("User");
   const [isEditingNickname, setIsEditingNickname] = useState(false);
@@ -2726,15 +2727,55 @@ export default function MobileApp() {
                   </div>
 
                   {/* Level 1 Horizontal Branch Bar */}
-                  {networkTab === "referral" ? (
-                    /* ── 1. 추천 계보 (Direct Referral Tree) ── */
+                  {loadingNetwork ? (
                     <div className="relative w-full flex justify-center pt-8 pb-4">
-                      <p className="text-sm font-bold text-[#848E9C]">{lang === "ko" ? "아직 추천 회원이 없습니다" : lang === "en" ? "No referral members yet" : "暂无推荐会员"}</p>
+                      <p className="text-sm font-bold text-[#848E9C]">
+                        {lang === "ko" ? "조직도를 불러오는 중입니다" : lang === "en" ? "Loading network..." : "正在加载团队"}
+                      </p>
+                    </div>
+                  ) : visibleNetworkTree.length === 0 ? (
+                    <div className="relative w-full flex justify-center pt-8 pb-4">
+                      <p className="text-sm font-bold text-[#848E9C]">
+                        {networkTab === "referral"
+                          ? (lang === "ko" ? "아직 추천 회원이 없습니다" : lang === "en" ? "No referral members yet" : "暂无推荐会员")
+                          : (lang === "ko" ? "아직 후원 회원이 없습니다" : lang === "en" ? "No sponsor members yet" : "暂无赞助会员")}
+                      </p>
                     </div>
                   ) : (
-                    /* ── 2. 후원 계보 (Sponsor Placement Tree) ── */
-                    <div className="relative w-full flex justify-center pt-8 pb-4">
-                      <p className="text-sm font-bold text-[#848E9C]">{lang === "ko" ? "아직 후원 회원이 없습니다" : lang === "en" ? "No sponsor members yet" : "暂无赞助会员"}</p>
+                    <div className="relative w-full grid grid-cols-1 gap-3 pt-3 pb-4 px-3">
+                      {visibleNetworkTree.map((member) => {
+                        const isRolledIn = networkTab === "referral" ? Boolean(member.isRollup) : Boolean(member.isRolledIn);
+                        const memberRevenue = Number(networkTab === "referral" ? member.totalPurchase : member.salesVolume) || 0;
+
+                        return (
+                          <div key={member.id} className="bg-[#1E2329] border border-[#2B3139] rounded-xl px-4 py-3 shadow-sm">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-sm font-extrabold text-[#EAECEF] truncate">{member.nickname}</p>
+                                <p className="text-[10px] text-[#848E9C] mt-1">
+                                  {networkTab === "referral"
+                                    ? `${lang === "ko" ? "추천 순번" : lang === "en" ? "Referral #" : "推荐序号"} ${member.referralSeq}`
+                                    : `${lang === "ko" ? "후원 레벨" : lang === "en" ? "Sponsor level" : "安置层级"} ${member.tier ?? 1}`}
+                                </p>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-bold ${member.status === "ACTIVE" ? "bg-[#0ECB81]/10 text-[#0ECB81]" : "bg-[#FCD535]/10 text-[#FCD535]"}`}>
+                                  {member.status === "ACTIVE" ? (lang === "ko" ? "활성" : lang === "en" ? "Active" : "已激活") : (lang === "ko" ? "대기" : lang === "en" ? "Pending" : "待激活")}
+                                </span>
+                                {isRolledIn && (
+                                  <span className="block mt-1 text-[10px] font-bold text-[#FCD535]">
+                                    {lang === "ko" ? "3번째 롤업" : lang === "en" ? "3rd roll-up" : "第3位归集"}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="mt-2 pt-2 border-t border-[#2B3139] flex items-center justify-between text-[10px]">
+                              <span className="text-[#848E9C]">{lang === "ko" ? "누적 구매" : lang === "en" ? "Sales volume" : "累计购买"}</span>
+                              <span className="font-mono font-bold text-[#FCD535]">{memberRevenue.toLocaleString()} USDT</span>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
 
