@@ -707,11 +707,7 @@ export default function MobileApp() {
     if (!uid) return;
     setBalancesLoading(true);
     try {
-      const [balRes, betsRes, machinesRes] = await Promise.all([
-        fetch("/api/user/balance"),
-        fetch("/api/user/bets"),
-        fetch("/api/user/machines")
-      ]);
+      const balRes = await fetch("/api/user/balance");
       const data = await balRes.json();
       if (!balRes.ok || !data.success || !data.balances) {
         // A just-created browser session can reach the API before its auth cookie is available.
@@ -734,9 +730,14 @@ export default function MobileApp() {
       setUrdBalance(data.balances.JADE ?? 0);
       setHongbaoCount(data.balances.HONGBAO ?? 0);
 
+      const [betsResult, machinesResult] = await Promise.allSettled([
+        fetch("/api/user/bets").then((response) => response.json()),
+        fetch("/api/user/machines").then((response) => response.json()),
+      ]);
+
       try {
-        const machinesData = await machinesRes.json();
-        if (machinesData.success && machinesData.machines) {
+        const machinesData = machinesResult.status === "fulfilled" ? machinesResult.value : null;
+        if (machinesData?.success && machinesData.machines) {
           setMyMachines(
             machinesData.machines.map((machine: any) => ({
               ...machine,
@@ -755,8 +756,8 @@ export default function MobileApp() {
       }
 
       try {
-        const betsData = await betsRes.json();
-        if (betsData.success && betsData.bets) {
+        const betsData = betsResult.status === "fulfilled" ? betsResult.value : null;
+        if (betsData?.success && betsData.bets) {
           setMyBets(betsData.bets);
           // 과거 알림 내역(게임 참여 완료)도 복구
           const pastNotifs = betsData.bets.map((bet: any) => ({
@@ -780,6 +781,11 @@ export default function MobileApp() {
       }
     } catch (e) {
       console.error("Failed to load balances:", e);
+      if (attempt < 3 && typeof window !== "undefined") {
+        window.setTimeout(() => {
+          void loadBalances(uid, attempt + 1);
+        }, 500 * (attempt + 1));
+      }
     } finally {
       setBalancesLoading(false);
     }
