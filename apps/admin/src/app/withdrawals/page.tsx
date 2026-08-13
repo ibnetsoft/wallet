@@ -109,6 +109,10 @@ export default function WithdrawalAuditPage() {
         alert("✅ 출금이 성공적으로 승인되었습니다.");
         fetchPendingWithdrawals();
         fetchWalletInfo();
+      } else if (result.pending) {
+        alert(`⏳ 출금 거래가 네트워크 확인 대기 상태입니다. TX: ${result.txHash || "확인 중"}`);
+        fetchPendingWithdrawals();
+        fetchWalletInfo();
       } else {
         alert(`❌ 출금 승인 실패: ${result.error || '온체인 전송 중 오류가 발생했습니다.'}`);
       }
@@ -148,14 +152,19 @@ export default function WithdrawalAuditPage() {
       alert("승인 대기 중인 출금 건이 없습니다.");
       return;
     }
-    const totalAmount = withdrawals.reduce((s, w) => s + w.amount, 0);
-    if (!confirm(`[일괄 출금 승인]\n\n총 ${withdrawals.length}건 / 합계 ${totalAmount.toFixed(2)} USDT\n\n전체 출금을 한꺼번에 승인하시겠습니까?`)) return;
+    const pendingWithdrawals = withdrawals.filter((withdrawal) => withdrawal.status === "PENDING");
+    if (pendingWithdrawals.length === 0) {
+      alert("확정 대기 중인 온체인 출금만 있습니다. 새 승인 요청은 없습니다.");
+      return;
+    }
+    const totalAmount = pendingWithdrawals.reduce((s, w) => s + w.amount, 0);
+    if (!confirm(`[일괄 출금 승인]\n\n총 ${pendingWithdrawals.length}건 / 합계 ${totalAmount.toFixed(2)} USDT\n\n전체 출금을 한꺼번에 승인하시겠습니까?`)) return;
 
     setBulkApproving(true);
     let successCount = 0;
     let failCount = 0;
 
-    for (const w of withdrawals) {
+    for (const w of pendingWithdrawals) {
       try {
         const res = await fetch("/api/withdrawals", {
           method: "POST",
@@ -253,7 +262,7 @@ export default function WithdrawalAuditPage() {
         <div className="flex items-center justify-between border-b border-[#26262B] pb-4">
           <div className="flex items-center space-x-2 text-[#FF9F0A]">
             <ShieldAlert size={18} />
-            <h3 className="text-sm font-bold text-white">수동 승인 대기 중인 출금 신청 목록 ({withdrawals.length}건)</h3>
+            <h3 className="text-sm font-bold text-white">출금 신청 및 온체인 확인 목록 ({withdrawals.length}건)</h3>
           </div>
           <span className="text-xs text-[#8E8E93]">※ 승인 시 바이낸스 스마트 체인(BSC) 온체인으로 즉시 송금됩니다.</span>
         </div>
@@ -270,7 +279,7 @@ export default function WithdrawalAuditPage() {
                 <th className="py-3 px-4">수수료 (3%)</th>
                 <th className="py-3 px-4">실제 수령액</th>
                 <th className="py-3 px-4">수신 BSC 지갑 주소</th>
-                <th className="py-3 px-4 text-center">수동 승인 / 거절 심사</th>
+                <th className="py-3 px-4 text-center">상태 / 심사</th>
               </tr>
             </thead>
             <tbody>
@@ -312,22 +321,40 @@ export default function WithdrawalAuditPage() {
                         {w.address || w.txHash || "0x3a9B8f5C01A29D478b1E4109C2d4317e1D4A8912"}
                       </td>
                       <td className="py-4 px-4 text-center">
-                        <div className="flex justify-center space-x-2">
-                          <button
-                            onClick={() => handleApprove(w.id, w.email, w.amount, w.asset)}
-                            className="px-3 py-1.5 bg-[#0ECB81] hover:bg-[#0ECB81]/80 text-[#0B0E11] font-black rounded-lg text-xs transition-all flex items-center space-x-1 shadow-md"
-                          >
-                            <CheckCircle size={14} />
-                            <span>출금 승인</span>
-                          </button>
-                          <button
-                            onClick={() => handleReject(w.id, w.email, w.amount, w.asset)}
-                            className="px-3 py-1.5 bg-[#FF453A]/10 hover:bg-[#FF453A] text-[#FF453A] hover:text-white border border-[#FF453A]/30 font-bold rounded-lg text-xs transition-all flex items-center space-x-1"
-                          >
-                            <XCircle size={14} />
-                            <span>반려 (환불)</span>
-                          </button>
-                        </div>
+                        {w.status === "PROCESSING" ? (
+                          <div className="space-y-1 text-center">
+                            <span className="inline-block rounded border border-[#F0B90B]/30 bg-[#F0B90B]/10 px-2 py-1 text-[10px] font-bold text-[#F0B90B]">
+                              온체인 확정 대기
+                            </span>
+                            {w.txHash && w.txHash !== "-" ? (
+                              <a
+                                href={`https://bscscan.com/tx/${w.txHash}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="block font-mono text-[10px] text-[#00D2FF] hover:underline"
+                              >
+                                {`${w.txHash.slice(0, 10)}...${w.txHash.slice(-6)}`}
+                              </a>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <div className="flex justify-center space-x-2">
+                            <button
+                              onClick={() => handleApprove(w.id, w.email, w.amount, w.asset)}
+                              className="px-3 py-1.5 bg-[#0ECB81] hover:bg-[#0ECB81]/80 text-[#0B0E11] font-black rounded-lg text-xs transition-all flex items-center space-x-1 shadow-md"
+                            >
+                              <CheckCircle size={14} />
+                              <span>출금 승인</span>
+                            </button>
+                            <button
+                              onClick={() => handleReject(w.id, w.email, w.amount, w.asset)}
+                              className="px-3 py-1.5 bg-[#FF453A]/10 hover:bg-[#FF453A] text-[#FF453A] hover:text-white border border-[#FF453A]/30 font-bold rounded-lg text-xs transition-all flex items-center space-x-1"
+                            >
+                              <XCircle size={14} />
+                              <span>반려 (환불)</span>
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   );

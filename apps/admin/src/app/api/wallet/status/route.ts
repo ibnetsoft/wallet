@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Pool } from "pg";
 import { Contract, JsonRpcProvider, Wallet, formatEther, formatUnits } from "ethers";
 import { getBscRpcUrl, getBscUsdtContract } from "@/lib/chain-config";
+import { getVerifiedAdmin } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,11 @@ const ERC20_ABI = ["function balanceOf(address account) view returns (uint256)"]
 
 export async function GET() {
   try {
+    const admin = await getVerifiedAdmin();
+    if (!admin) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     const client = await pool.connect();
     try {
       // 1. Get users with balances
@@ -42,7 +48,19 @@ export async function GET() {
       const usersWithBalances = usersRes.rows;
 
       // 2. Get system settings
-      const settingsRes = await client.query("SELECT key, value FROM public.system_settings");
+      // This endpoint is consumed by browser pages. Return only the settings
+      // those pages need, rather than filtering a potentially expanding set of
+      // sensitive settings after selecting every row.
+      const visibleSettingKeys = [
+        "swap_fee_rate",
+        "withdrawal_fee_rate",
+        "cold_vault_address",
+        "cold_balance_usdt",
+      ];
+      const settingsRes = await client.query(
+        "SELECT key, value FROM public.system_settings WHERE key = ANY($1::text[])",
+        [visibleSettingKeys]
+      );
       const settings = settingsRes.rows;
       const settingsMap = Object.fromEntries(settings.map((row) => [row.key, row.value]));
 
@@ -53,8 +71,7 @@ export async function GET() {
       } | null = null;
 
       try {
-        const walletPk =
-          settingsMap["master_hot_wallet_private_key"] || process.env.MASTER_HOT_WALLET_PRIVATE_KEY;
+        const walletPk = process.env.MASTER_HOT_WALLET_PRIVATE_KEY;
 
         if (walletPk) {
           const provider = new JsonRpcProvider(BSC_RPC_URL);
@@ -70,8 +87,6 @@ export async function GET() {
             usdtBalance: parseFloat(formatUnits(usdtRaw, 18)),
           };
 
-          settingsMap["master_hot_wallet"] = wallet.address;
-          settingsMap["hot_balance_usdt"] = walletSnapshot.usdtBalance.toString();
         }
       } catch (walletErr) {
         console.error("wallet/status on-chain snapshot error:", walletErr);
