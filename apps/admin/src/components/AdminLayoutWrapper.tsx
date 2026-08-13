@@ -7,6 +7,7 @@ import {
   LayoutDashboard, 
   Users, 
   ArrowUpRight,
+  Send,
   PlusCircle,
   Activity,
   Wallet,
@@ -62,6 +63,17 @@ export default function AdminLayoutWrapper({
           <Link href="/wallet" className="flex items-center space-x-3 px-4 py-3 rounded-xl text-[#8E8E93] hover:bg-[#1C1C21] hover:text-[#FFFFFF] transition-all">
             <Wallet size={18} />
             <span>지갑 & 모으기 관리</span>
+          </Link>
+          <Link
+            href="/bnb-transfer"
+            className={`flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold transition-all ${
+              pathname === "/bnb-transfer"
+                ? "bg-[#F0B90B]/10 text-[#F0B90B] border border-[#F0B90B]/20"
+                : "text-[#8E8E93] hover:bg-[#1C1C21] hover:text-[#F0B90B]"
+            }`}
+          >
+            <Send size={18} />
+            <span>BNB 송금</span>
           </Link>
           <Link href="/transactions" className="flex items-center space-x-3 px-4 py-3 rounded-xl text-[#8E8E93] hover:bg-[#1C1C21] hover:text-[#FFFFFF] transition-all">
             <Activity size={18} />
