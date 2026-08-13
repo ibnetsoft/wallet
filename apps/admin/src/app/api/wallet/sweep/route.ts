@@ -1,16 +1,7 @@
 import { NextResponse } from "next/server";
 import { Pool } from "pg";
-import { parseEther, formatUnits, keccak256, Wallet, HDNodeWallet, JsonRpcProvider, Contract } from "ethers";
+import { parseEther, formatUnits, Wallet, HDNodeWallet, JsonRpcProvider, Contract } from "ethers";
 import { getBscRpcUrl } from "@/lib/chain-config";
-import { getVerifiedAdmin } from "@/lib/admin-auth";
-import {
-  refreshMasterHotWalletLock,
-  getMasterHotWalletLock,
-  markMasterHotWalletTransactionBroadcast,
-  releaseMasterHotWalletLock,
-  resumeMasterHotWalletLock,
-  tryAcquireMasterHotWalletLock,
-} from "@/lib/master-wallet-lock";
 
 export const dynamic = "force-dynamic";
 
@@ -28,85 +19,33 @@ const ERC20_ABI = [
   "function balanceOf(address account) view returns (uint256)"
 ];
 
-async function reconcileMasterWalletLock(client: import("pg").PoolClient) {
-  const lock = await getMasterHotWalletLock(client);
-  if (!lock || lock.state !== "BROADCAST" || !lock.txHash) {
-    return lock;
-  }
-
-  const receipt = await provider.getTransactionReceipt(lock.txHash);
-  if (!receipt) {
-    return lock;
-  }
-
-  if (lock.operation === "external-transfer") {
-    await client.query(
-      `UPDATE public.vault_transfers
-       SET status = $2,
-           confirmed_at = NOW(),
-           failure_reason = $3,
-           updated_at = NOW()
-       WHERE tx_hash = $1 AND status = 'BROADCAST'`,
-      [
-        lock.txHash,
-        receipt.status === 1 ? "CONFIRMED" : "FAILED",
-        receipt.status === 1 ? null : "The BSC transaction was mined but reverted.",
-      ]
-    );
-  } else if (lock.operation === "withdrawal") {
-    await client.query(
-      `UPDATE public.ledger_entries
-       SET status = $2
-       WHERE tx_hash = $1
-         AND tx_type = 'WITHDRAW'
-         AND status = 'PROCESSING'`,
-      [lock.txHash, receipt.status === 1 ? "COMPLETED" : "FAILED"]
-    );
-  } else if (lock.operation !== "sweep") {
-    return lock;
-  }
-
-  await releaseMasterHotWalletLock(client, lock.token);
-  return null;
-}
-
 export async function POST(request: Request) {
   const client = await pool.connect();
-  let masterWalletLockToken: string | null = null;
   try {
-    const admin = await getVerifiedAdmin();
-    if (!admin) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    const { target_wallet } = await request.json();
+
+    // 1. Fetch Master Hot Wallet from system_settings or use target_wallet
+    const hotWalletRes = await client.query("SELECT value FROM public.system_settings WHERE key = 'master_hot_wallet'");
+    const masterHotWallet = (hotWalletRes.rows.length > 0 && hotWalletRes.rows[0].value) ? hotWalletRes.rows[0].value : target_wallet;
+
+    if (!masterHotWallet) {
+      return NextResponse.json({ success: false, error: "마스터 핫 지갑 주소가 설정되지 않았거나 target_wallet이 누락되었습니다." }, { status: 400 });
     }
 
-    await request.json().catch(() => ({}));
-
-    const feeWalletPk = process.env.MASTER_HOT_WALLET_PRIVATE_KEY;
+    let feeWalletPk = process.env.MASTER_HOT_WALLET_PRIVATE_KEY;
+    const pkRes = await client.query("SELECT value FROM public.system_settings WHERE key = 'master_hot_wallet_private_key'");
+    if (pkRes.rows.length > 0 && pkRes.rows[0].value) {
+      feeWalletPk = pkRes.rows[0].value;
+    }
 
     const mnemonic = process.env.WALLET_MASTER_MNEMONIC;
 
     if (!feeWalletPk || !mnemonic) {
-      return NextResponse.json({ success: false, error: "서버 환경변수 MASTER_HOT_WALLET_PRIVATE_KEY 또는 WALLET_MASTER_MNEMONIC이 누락되었습니다." }, { status: 500 });
+      return NextResponse.json({ success: false, error: "마스터 지갑 개인키(DB설정/환경변수) 또는 니모닉 환경변수가 누락되었습니다." }, { status: 500 });
     }
 
-    // The signer-derived address is the only safe sweep destination. A stored
-    // display address must never redirect operational funds elsewhere.
+    // 2. Instantiate Master Fee Wallet (using master hot wallet private key)
     const masterFeeWallet = new Wallet(feeWalletPk, provider);
-    const masterHotWallet = masterFeeWallet.address;
-
-    masterWalletLockToken = await tryAcquireMasterHotWalletLock(client, "sweep");
-    if (!masterWalletLockToken) {
-      const unresolvedLock = await reconcileMasterWalletLock(client);
-      if (!unresolvedLock) {
-        masterWalletLockToken = await tryAcquireMasterHotWalletLock(client, "sweep");
-      }
-    }
-    if (!masterWalletLockToken) {
-      return NextResponse.json(
-        { success: false, error: "다른 마스터 지갑 온체인 거래가 진행 중입니다. 확정 후 다시 시도하세요." },
-        { status: 409 }
-      );
-    }
 
     // 3. Fetch user wallets and balances where USDT (asset_id = 2) available_balance > 0
     const queryRes = await client.query(`
@@ -138,10 +77,6 @@ export async function POST(request: Request) {
 
     // Process each user sequentially
     for (const user of users) {
-      if (!(await refreshMasterHotWalletLock(client, masterWalletLockToken))) {
-        throw new Error("마스터 지갑 잠금이 만료되었습니다. 온체인 상태를 확인한 뒤 다시 시도하세요.");
-      }
-
       const derivationIndex = user.derivation_index;
       
       // Derive user wallet
@@ -160,28 +95,11 @@ export async function POST(request: Request) {
       const amountToSweep = onChainUsdtBalance;
 
       // 4. Send ~0.0005 BNB from Master Fee Wallet to the user's wallet for gas. Wait for confirmation.
-      const gasFundingRequest = await masterFeeWallet.populateTransaction({
+      const gasFundTx = await masterFeeWallet.sendTransaction({
         to: userWallet.address,
         value: parseEther("0.0005")
       });
-      const signedGasFundingTransaction = await masterFeeWallet.signTransaction(gasFundingRequest);
-      const gasFundingTxHash = keccak256(signedGasFundingTransaction);
-      const lockRecorded = await markMasterHotWalletTransactionBroadcast(
-        client,
-        masterWalletLockToken,
-        gasFundingTxHash
-      );
-      if (!lockRecorded) {
-        throw new Error("마스터 지갑 가스비 전송 잠금을 기록하지 못했습니다.");
-      }
-      const gasFundTx = await provider.broadcastTransaction(signedGasFundingTransaction);
-      const gasFundReceipt = await gasFundTx.wait(1);
-      if (!gasFundReceipt || gasFundReceipt.status !== 1) {
-        throw new Error("유저 지갑 가스비 전송이 확정되지 않았습니다.");
-      }
-      if (!(await resumeMasterHotWalletLock(client, masterWalletLockToken))) {
-        throw new Error("마스터 지갑 잠금을 재개하지 못했습니다.");
-      }
+      await gasFundTx.wait();
 
       // 5. Use the user's derived wallet to sign and send their USDT balance to Master Hot Wallet
       const transferTx = await usdtContract.transfer(masterHotWallet, amountToSweep);
@@ -233,16 +151,6 @@ export async function POST(request: Request) {
     console.error("wallet/sweep route error:", err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   } finally {
-    if (masterWalletLockToken) {
-      try {
-        const currentLock = await getMasterHotWalletLock(client);
-        if (currentLock?.token === masterWalletLockToken && currentLock.state === "LOCKED") {
-          await releaseMasterHotWalletLock(client, masterWalletLockToken);
-        }
-      } catch (unlockError) {
-        console.error("wallet/sweep lock release error:", unlockError);
-      }
-    }
     client.release();
   }
 }

@@ -5,6 +5,8 @@ import {
   Wallet, ArrowRightLeft, ShieldAlert, CheckCircle, RefreshCw,
   Lock, ArrowDownRight, ArrowUpRight, ShieldCheck, AlertTriangle, Info
 } from "lucide-react";
+import { supabaseAdmin } from "../../lib/supabase";
+import { ethers } from "ethers";
 
 interface UserWallet {
   user_id: string;
@@ -20,21 +22,8 @@ interface VaultTransferLog {
   amount: number;
   asset: string;
   cold_vault_address: string;
-  note: string | null;
-  status?: "LEGACY" | "PROCESSING" | "BROADCAST" | "CONFIRMED" | "FAILED";
-  tx_hash?: string | null;
-  failure_reason?: string | null;
-  requested_by?: string | null;
-  confirmed_at?: string | null;
+  note: string;
   created_at: string;
-}
-
-interface TransferConfiguration {
-  enabled: boolean;
-  sourceAddress: string | null;
-  confirmationPhrase: string;
-  network: string;
-  armingIssues?: string[];
 }
 
 export default function WalletSweepPage() {
@@ -48,29 +37,19 @@ export default function WalletSweepPage() {
   const [masterHotWallet, setMasterHotWallet] = useState("");
   const [coldVaultAddress, setColdVaultAddress] = useState("");
   const [hotBalanceUSDT, setHotBalanceUSDT] = useState<number | null>(null);
+  const [coldBalanceUSDT, setColdBalanceUSDT] = useState<number | null>(null);
   
   // ── 수수료 지갑 상태 ──
   const [feeWalletAddress, setFeeWalletAddress] = useState<string | null>(null);
   const [feeWalletBalance, setFeeWalletBalance] = useState<number>(0);
 
   // ── 이체 폼 ──
+  const [vaultAsset, setVaultAsset] = useState<"USDT" | "BNB">("USDT");
   const [vaultAmount, setVaultAmount] = useState("");
-  const [vaultNote, setVaultNote] = useState("");
-  const [transferConfirmation, setTransferConfirmation] = useState("");
-  const [transferConfiguration, setTransferConfiguration] = useState<TransferConfiguration | null>(null);
-  const [transferIdempotencyKey, setTransferIdempotencyKey] = useState<string | null>(null);
-  const [bnbAmount, setBnbAmount] = useState("");
-  const [bnbRecipientAddress, setBnbRecipientAddress] = useState("");
-  const [bnbNote, setBnbNote] = useState("");
-  const [bnbConfirmation, setBnbConfirmation] = useState("");
-  const [bnbTransferConfiguration, setBnbTransferConfiguration] = useState<TransferConfiguration | null>(null);
-  const [bnbTransferIdempotencyKey, setBnbTransferIdempotencyKey] = useState<string | null>(null);
   const [loadingSweep, setLoadingSweep] = useState(false);
   const [loadingVault, setLoadingVault] = useState(false);
-  const [loadingBnbTransfer, setLoadingBnbTransfer] = useState(false);
   const [sweepMsg, setSweepMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [vaultMsg, setVaultMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
-  const [bnbTransferMsg, setBnbTransferMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   // ── 자체 지갑 생성 상태 ──
 
@@ -105,13 +84,10 @@ export default function WalletSweepPage() {
         if (statusData.settings) {
           const map: Record<string, string> = {};
           statusData.settings.forEach((s: { key: string; value: string }) => { map[s.key] = s.value; });
+          setMasterHotWallet(map["master_hot_wallet"] ?? "");
           setColdVaultAddress(map["cold_vault_address"] ?? "");
-        }
-        if (statusData.walletSnapshot?.address) {
-          setMasterHotWallet(statusData.walletSnapshot.address);
-        }
-        if (typeof statusData.walletSnapshot?.usdtBalance === "number") {
-          setHotBalanceUSDT(statusData.walletSnapshot.usdtBalance);
+          setHotBalanceUSDT(map["hot_balance_usdt"] ? parseFloat(map["hot_balance_usdt"]) : null);
+          setColdBalanceUSDT(map["cold_balance_usdt"] ? parseFloat(map["cold_balance_usdt"]) : null);
         }
 
         // 3. 콜드 금고 이체 로그
@@ -131,29 +107,6 @@ export default function WalletSweepPage() {
         }
       } catch (err) {
         console.error("Fee wallet fetch error:", err);
-      }
-
-      // 5. External transfer configuration. This never includes a private key.
-      try {
-        const transferRes = await fetch("/api/wallet/transfers", { cache: "no-store" });
-        const transferData = await transferRes.json();
-        if (transferData.success) {
-          setTransferConfiguration(transferData as TransferConfiguration);
-          if (transferData.sourceAddress) {
-            setMasterHotWallet(transferData.sourceAddress);
-          }
-        }
-
-        const bnbTransferRes = await fetch("/api/wallet/bnb-transfers", { cache: "no-store" });
-        const bnbTransferData = await bnbTransferRes.json();
-        if (bnbTransferData.success) {
-          setBnbTransferConfiguration(bnbTransferData as TransferConfiguration);
-          if (bnbTransferData.sourceAddress) {
-            setMasterHotWallet(bnbTransferData.sourceAddress);
-          }
-        }
-      } catch (err) {
-        console.error("External transfer configuration fetch error:", err);
       }
     } catch (err) {
       console.error("데이터 로드 오류:", err);
@@ -186,7 +139,7 @@ export default function WalletSweepPage() {
       const res = await fetch("/api/wallet/sweep", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({})
+        body: JSON.stringify({ target_wallet: masterHotWallet })
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
@@ -204,11 +157,11 @@ export default function WalletSweepPage() {
     }
   };
 
-  // ── 마스터 핫 지갑에서 외부 BSC 지갑으로 실제 USDT 전송 ──
+  // ── 콜드 금고 이체: 실제 블록체인 TX 없음 → vault_transfers에 기록 저장 ──
   const handleColdTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
-    const val = Number(vaultAmount);
-    if (!Number.isFinite(val) || val <= 0) {
+    const val = parseFloat(vaultAmount);
+    if (isNaN(val) || val <= 0) {
       setVaultMsg({ type: "err", text: "올바른 이체 수량을 입력해주세요." });
       return;
     }
@@ -216,130 +169,45 @@ export default function WalletSweepPage() {
       setVaultMsg({ type: "err", text: "콜드 금고 수신 지갑 주소를 입력해주세요." });
       return;
     }
-    if (hotBalanceUSDT !== null && val > hotBalanceUSDT) {
+    if (hotBalanceUSDT !== null && vaultAsset === "USDT" && val > hotBalanceUSDT) {
       setVaultMsg({ type: "err", text: `핫 지갑 잔액(${hotBalanceUSDT.toLocaleString()} USDT)을 초과합니다.` });
-      return;
-    }
-    if (transferConfirmation !== transferConfiguration?.confirmationPhrase) {
-      setVaultMsg({ type: "err", text: `확인 문구 ${transferConfiguration?.confirmationPhrase ?? "SEND USDT"}를 정확히 입력해주세요.` });
       return;
     }
 
     if (!confirm(
-      `[실제 BSC USDT 전송]\n\n전송 수량: ${val.toLocaleString()} USDT\n수신 지갑: ${coldVaultAddress}\n네트워크: BSC (BEP-20)\n\n이 작업은 되돌릴 수 없습니다. 주소와 네트워크를 다시 확인하세요.\n\n실제 전송을 진행하시겠습니까?`
+      `[마스터 핫 지갑 ➔ 오프라인 콜드 금고 이체 기록]\n\n이체 수량: ${val.toLocaleString()} ${vaultAsset}\n수신 지갑: ${coldVaultAddress}\n\n⚠️ 이 버튼은 DB에 이체 기록만 저장합니다.\n실제 블록체인 송금은 해당 지갑 앱에서 직접 실행하세요.\n\n계속하시겠습니까?`
     )) return;
 
     setLoadingVault(true);
     setVaultMsg(null);
     try {
-      // Reuse the key after an uncertain network response so retrying the same
-      // form cannot create a second on-chain transfer.
-      const idempotencyKey = transferIdempotencyKey ?? crypto.randomUUID();
-      setTransferIdempotencyKey(idempotencyKey);
-      const res = await fetch("/api/wallet/transfers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          toAddress: coldVaultAddress,
-          amount: vaultAmount,
-          note: vaultNote,
-          confirmation: transferConfirmation,
-          idempotencyKey,
-        }),
+      // 1. vault_transfers 기록 저장
+      const { error: insertErr } = await supabaseAdmin.from("vault_transfers").insert({
+        from_label: `마스터 핫 지갑 (${masterHotWallet.substring(0, 8)}...)`,
+        to_label: `오프라인 콜드 금고`,
+        amount: val,
+        asset: vaultAsset,
+        cold_vault_address: coldVaultAddress,
+        note: "어드민 수동 이체 기록",
       });
-      const data = await res.json();
-      if (!data.success) {
-        if (data.transfer?.status === "FAILED") {
-          setTransferIdempotencyKey(null);
-        }
-        throw new Error(data.error || "외부 지갑 전송에 실패했습니다.");
-      }
+      if (insertErr) throw insertErr;
+
+      // 2. 콜드 금고 주소 업데이트 (변경된 경우)
+      await supabaseAdmin
+        .from("system_settings")
+        .upsert({ key: "cold_vault_address", value: coldVaultAddress }, { onConflict: "key" });
 
       setVaultMsg({
         type: "ok",
-        text: data.transfer.status === "CONFIRMED"
-          ? `전송이 1회 블록 확정되었습니다. TX: ${data.transfer.txHash}`
-          : `전송이 네트워크에 제출되었습니다. BSCScan에서 TX 상태를 확인하세요: ${data.transfer.txHash}`,
+        text: `📋 이체 기록(${val.toLocaleString()} ${vaultAsset} → 콜드 금고)이 저장되었습니다. 실제 블록체인 송금은 지갑 앱에서 직접 실행하세요.`,
       });
       setVaultAmount("");
-      setVaultNote("");
-      setTransferConfirmation("");
-      setTransferIdempotencyKey(null);
       fetchData();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       setVaultMsg({ type: "err", text: `오류: ${msg}` });
     } finally {
       setLoadingVault(false);
-    }
-  };
-
-  const handleBnbTransfer = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const amount = Number(bnbAmount);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      setBnbTransferMsg({ type: "err", text: "Enter a positive BNB amount." });
-      return;
-    }
-    if (!bnbRecipientAddress.trim()) {
-      setBnbTransferMsg({ type: "err", text: "Enter a BSC recipient address." });
-      return;
-    }
-    if (amount >= feeWalletBalance) {
-      setBnbTransferMsg({ type: "err", text: "Leave BNB for the network fee; the full wallet balance cannot be sent." });
-      return;
-    }
-    if (bnbConfirmation !== bnbTransferConfiguration?.confirmationPhrase) {
-      setBnbTransferMsg({
-        type: "err",
-        text: `Type ${bnbTransferConfiguration?.confirmationPhrase ?? "SEND BNB"} exactly to confirm.`,
-      });
-      return;
-    }
-    if (!confirm(
-      `[BSC BNB transfer]\n\nAmount: ${amount.toLocaleString()} BNB\nRecipient: ${bnbRecipientAddress}\nNetwork: BSC\n\nThis action is irreversible. Verify the address and network before continuing.\n\nProceed with the real transfer?`
-    )) return;
-
-    setLoadingBnbTransfer(true);
-    setBnbTransferMsg(null);
-    try {
-      const idempotencyKey = bnbTransferIdempotencyKey ?? crypto.randomUUID();
-      setBnbTransferIdempotencyKey(idempotencyKey);
-      const res = await fetch("/api/wallet/bnb-transfers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          toAddress: bnbRecipientAddress,
-          amount: bnbAmount,
-          note: bnbNote,
-          confirmation: bnbConfirmation,
-          idempotencyKey,
-        }),
-      });
-      const data = await res.json();
-      if (!data.success) {
-        if (data.transfer?.status === "FAILED") {
-          setBnbTransferIdempotencyKey(null);
-        }
-        throw new Error(data.error || "BNB transfer failed.");
-      }
-
-      setBnbTransferMsg({
-        type: "ok",
-        text: data.transfer.status === "CONFIRMED"
-          ? `BNB transfer confirmed after one BSC block. TX: ${data.transfer.txHash}`
-          : `BNB transfer was broadcast. Check the BSCScan transaction status: ${data.transfer.txHash}`,
-      });
-      setBnbAmount("");
-      setBnbNote("");
-      setBnbConfirmation("");
-      setBnbTransferIdempotencyKey(null);
-      fetchData();
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : String(e);
-      setBnbTransferMsg({ type: "err", text: `Error: ${message}` });
-    } finally {
-      setLoadingBnbTransfer(false);
     }
   };
 
@@ -362,7 +230,7 @@ export default function WalletSweepPage() {
             <span>지갑 자산 모으기 &amp; 콜드 금고 이체 관리</span>
           </h2>
           <p className="text-sm text-[#8E8E93] mt-1">
-            유저 지갑 자산 모으기(Sweep)와 마스터 핫 지갑의 BSC USDT 외부 전송을 관리합니다.
+            유저 지갑 자산 모으기(Sweep) 및 마스터 핫 지갑과 오프라인 콜드 금고(Cold Vault) 간의 안전 자산 이체 기록을 제어합니다.
           </p>
         </div>
         <button
@@ -374,13 +242,14 @@ export default function WalletSweepPage() {
         </button>
       </div>
 
-      {/* ⚠️ 실제 자산 전송 안내 배너 */}
-      <div className="flex items-start space-x-3 p-4 bg-[#FF453A]/10 border border-[#FF453A]/30 rounded-xl">
+      {/* ⚠️ 실제 데이터 안내 배너 */}
+      <div className="flex items-start space-x-3 p-4 bg-[#FF9F0A]/10 border border-[#FF9F0A]/30 rounded-xl">
         <Info size={16} className="text-[#FF9F0A] flex-shrink-0 mt-0.5" />
         <div className="text-xs text-[#EAECEF] leading-relaxed">
-          <span className="font-bold text-[#FF453A]">[실제 자산 전송] </span>
-          외부 지갑 전송은 BSC(BEP-20)에서 <strong>실제 USDT 트랜잭션을 전송</strong>합니다.
-          수신 주소와 네트워크를 반드시 재확인하고, 전송 뒤에는 BSCScan 트랜잭션 해시로 확정 상태를 확인하세요.
+          <span className="font-bold text-[#FF9F0A]">[중요] </span>
+          이 페이지의 모든 잔액과 지갑 주소는 <strong>DB의 실제 데이터</strong>입니다.
+          &quot;스윕 실행&quot; 및 &quot;콜드 금고 이체&quot; 버튼은 <strong>블록체인에 직접 트랜잭션을 전송하지 않습니다.</strong>
+          &nbsp;DB에 요청/기록을 저장하며, 실제 온체인 실행은 별도 지갑 앱(MetaMask, Trust Wallet 등)에서 직접 수행하세요.
         </div>
       </div>
 
@@ -497,30 +366,22 @@ export default function WalletSweepPage() {
           >
             {loadingSweep ? <RefreshCw size={16} className="animate-spin" /> : (
               <>
-                <span>온체인 스윕 실행하기</span>
+                <span>스윕 실행하기 (DB 즉시 반영)</span>
                 <ArrowRightLeft size={16} />
               </>
             )}
           </button>
         </div>
 
-        {/* Panel 2: Master Hot Wallet → External USDT Transfer */}
+        {/* Panel 2: Master Hot Wallet → Cold Vault Transfer */}
         <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 shadow-lg space-y-5">
           <div className="flex items-center justify-between border-b border-[#26262B] pb-4">
             <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center space-x-2">
               <Lock size={18} className="text-[#30D5C8]" />
-              <span>2단계: 핫 지갑 ➔ 외부 지갑 USDT 전송</span>
+              <span>2단계: 핫 지갑 ➔ 오프라인 콜드 금고 이체</span>
             </h4>
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${transferConfiguration?.enabled ? "bg-[#FF453A]/10 text-[#FF453A] border-[#FF453A]/20" : "bg-[#FF9F0A]/10 text-[#FF9F0A] border-[#FF9F0A]/20"}`}>
-              {transferConfiguration?.enabled ? "실제 전송 사용" : "전송 비활성"}
-            </span>
+            <span className="text-[10px] font-bold px-2 py-0.5 bg-[#BF5AF2]/10 text-[#BF5AF2] rounded border border-[#BF5AF2]/20">기록만 저장</span>
           </div>
-
-          {!transferConfiguration?.enabled && transferConfiguration?.armingIssues?.length ? (
-            <p className="rounded-lg border border-[#FF9F0A]/30 bg-[#FF9F0A]/10 px-3 py-2 text-[10px] leading-relaxed text-[#FF9F0A]">
-              {transferConfiguration.armingIssues.join(" ")}
-            </p>
-          ) : null}
 
           {/* 핫/콜드 잔액 */}
           <div className="grid grid-cols-2 gap-3">
@@ -531,36 +392,37 @@ export default function WalletSweepPage() {
               ) : (
                 <p className="text-xs text-[#8E8E93] mt-1">미설정</p>
               )}
-              <p className="text-[10px] text-[#8E8E93] mt-0.5">BSC 온체인 조회</p>
+              <p className="text-[10px] text-[#8E8E93] mt-0.5">system_settings</p>
             </div>
             <div className="p-3 bg-[#121215] rounded-xl border border-[#26262B]">
-              <p className="text-[10px] text-[#8E8E93] uppercase font-bold">전송 네트워크</p>
-              <p className="text-base font-extrabold text-[#BF5AF2] mt-1 font-mono">BSC</p>
-              <p className="text-[10px] text-[#8E8E93] mt-0.5">USDT BEP-20 전용</p>
+              <p className="text-[10px] text-[#8E8E93] uppercase font-bold">콜드 금고 보관 기록</p>
+              {coldBalanceUSDT !== null ? (
+                <p className="text-base font-extrabold text-[#BF5AF2] mt-1 font-mono">{coldBalanceUSDT.toLocaleString()} USDT</p>
+              ) : (
+                <p className="text-xs text-[#8E8E93] mt-1">미설정</p>
+              )}
+              <p className="text-[10px] text-[#8E8E93] mt-0.5">누적 이체 기록 합산</p>
             </div>
           </div>
 
           <form onSubmit={handleColdTransfer} className="space-y-4">
-            {/* 외부 수신 주소 */}
+            {/* 콜드 금고 수신 주소 */}
             <div className="space-y-1.5">
               <label className="text-[10px] text-[#8E8E93] uppercase font-bold">
-                외부 수신 지갑 주소 <span className="text-[#FF453A]">(BSC BEP-20)</span>
+                콜드 금고 수신 지갑 주소 <span className="text-[#FF453A]">(직접 입력)</span>
               </label>
               <div className="flex items-center space-x-2 p-2.5 bg-[#1C1C21] border border-[#26262B] focus-within:border-[#30D5C8] rounded-xl transition-colors">
                 <ShieldCheck size={16} className="text-[#30D5C8] flex-shrink-0" />
                 <input
                   type="text"
                   value={coldVaultAddress}
-                  onChange={(e) => {
-                    setColdVaultAddress(e.target.value);
-                    setTransferIdempotencyKey(null);
-                  }}
-                  placeholder="0x... (수신 BSC 지갑 주소 입력)"
+                  onChange={(e) => setColdVaultAddress(e.target.value)}
+                  placeholder="0x... (실제 오프라인 콜드 지갑 주소 입력)"
                   className="bg-transparent border-none text-white font-mono text-xs focus:outline-none w-full placeholder:text-[#555]"
                 />
               </div>
               {!coldVaultAddress && (
-                <p className="text-[10px] text-[#FF9F0A]">주소가 비어 있습니다. 수신 BSC 지갑 주소를 입력하세요.</p>
+                <p className="text-[10px] text-[#FF9F0A]">⚠️ 주소가 비어 있습니다. 실제 콜드 지갑 주소를 입력하세요.</p>
               )}
             </div>
 
@@ -582,48 +444,21 @@ export default function WalletSweepPage() {
                 <input
                   type="number"
                   min="0.01"
-                  step="any"
                   required
                   value={vaultAmount}
-                  onChange={(e) => {
-                    setVaultAmount(e.target.value);
-                    setTransferIdempotencyKey(null);
-                  }}
+                  onChange={(e) => setVaultAmount(e.target.value)}
                   placeholder="이체할 수량 입력"
                   className="w-full bg-[#1C1C21] border border-[#26262B] focus:border-[#30D5C8] pl-3 pr-20 py-2.5 rounded-xl text-sm font-bold text-white font-mono outline-none placeholder:font-normal placeholder:text-[#555]"
                 />
-                <span className="absolute right-3 top-3 text-xs font-bold text-[#30D5C8]">USDT</span>
+                <select
+                  value={vaultAsset}
+                  onChange={(e) => setVaultAsset(e.target.value as "USDT" | "BNB")}
+                  className="absolute right-2 top-2 bg-[#26262B] text-xs font-bold text-[#30D5C8] rounded px-2 py-1 border-none focus:outline-none"
+                >
+                  <option value="USDT">USDT</option>
+                  <option value="BNB">BNB</option>
+                </select>
               </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[10px] text-[#8E8E93] uppercase font-bold">감사 메모 (선택)</label>
-              <input
-                type="text"
-                maxLength={500}
-                value={vaultNote}
-                onChange={(e) => {
-                  setVaultNote(e.target.value);
-                  setTransferIdempotencyKey(null);
-                }}
-                placeholder="예: 2026-08 운영 자금 콜드월렛 이체"
-                className="w-full bg-[#1C1C21] border border-[#26262B] focus:border-[#30D5C8] px-3 py-2.5 rounded-xl text-xs text-white outline-none placeholder:text-[#555]"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[10px] text-[#FF9F0A] uppercase font-bold">
-                확인 문구 입력: {transferConfiguration?.confirmationPhrase ?? "SEND USDT"}
-              </label>
-              <input
-                type="text"
-                autoComplete="off"
-                value={transferConfirmation}
-                onChange={(e) => setTransferConfirmation(e.target.value)}
-                placeholder={transferConfiguration?.confirmationPhrase ?? "SEND USDT"}
-                className="w-full bg-[#1C1C21] border border-[#FF9F0A]/40 focus:border-[#FF9F0A] px-3 py-2.5 rounded-xl text-xs font-mono text-white outline-none placeholder:text-[#555]"
-              />
-              <p className="text-[10px] text-[#8E8E93]">개인키는 서버 환경변수에만 보관되며 이 화면에는 표시되지 않습니다.</p>
             </div>
 
             {/* 오류/성공 메시지 */}
@@ -636,136 +471,13 @@ export default function WalletSweepPage() {
 
             <button
               type="submit"
-              disabled={loadingVault || !coldVaultAddress || !transferConfiguration?.enabled}
-              className="w-full py-3.5 bg-gradient-to-r from-[#FF453A] to-[#FF9F0A] hover:opacity-90 text-white font-black rounded-xl transition-all flex items-center justify-center space-x-2 shadow-[0_0_15px_rgba(255,69,58,0.2)] disabled:opacity-40 text-xs cursor-pointer"
+              disabled={loadingVault || !coldVaultAddress}
+              className="w-full py-3.5 bg-gradient-to-r from-[#30D5C8] to-[#BF5AF2] hover:opacity-90 text-white font-black rounded-xl transition-all flex items-center justify-center space-x-2 shadow-[0_0_15px_rgba(48,213,200,0.2)] disabled:opacity-40 text-xs cursor-pointer"
             >
               {loadingVault ? <RefreshCw size={16} className="animate-spin" /> : (
                 <>
                   <Lock size={16} />
-                  <span>실제 USDT 전송 및 1회 블록 확정 대기</span>
-                </>
-              )}
-            </button>
-          </form>
-        </div>
-
-        <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 shadow-lg space-y-5">
-          <div className="flex items-center justify-between border-b border-[#26262B] pb-4">
-            <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center space-x-2">
-              <Lock size={18} className="text-[#FF9F0A]" />
-              <span>BSC BNB external transfer</span>
-            </h4>
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${bnbTransferConfiguration?.enabled ? "bg-[#FF453A]/10 text-[#FF453A] border-[#FF453A]/20" : "bg-[#FF9F0A]/10 text-[#FF9F0A] border-[#FF9F0A]/20"}`}>
-              {bnbTransferConfiguration?.enabled ? "LIVE TRANSFER" : "DISABLED"}
-            </span>
-          </div>
-
-          {!bnbTransferConfiguration?.enabled && bnbTransferConfiguration?.armingIssues?.length ? (
-            <p className="rounded-lg border border-[#FF9F0A]/30 bg-[#FF9F0A]/10 px-3 py-2 text-[10px] leading-relaxed text-[#FF9F0A]">
-              {bnbTransferConfiguration.armingIssues.join(" ")}
-            </p>
-          ) : null}
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 bg-[#121215] rounded-xl border border-[#26262B]">
-              <p className="text-[10px] text-[#8E8E93] uppercase font-bold">Available BNB</p>
-              <p className="text-base font-extrabold text-[#FF9F0A] mt-1 font-mono">{feeWalletBalance.toFixed(6)} BNB</p>
-              <p className="text-[10px] text-[#8E8E93] mt-0.5">On-chain balance</p>
-            </div>
-            <div className="p-3 bg-[#121215] rounded-xl border border-[#26262B]">
-              <p className="text-[10px] text-[#8E8E93] uppercase font-bold">Network</p>
-              <p className="text-base font-extrabold text-[#BF5AF2] mt-1 font-mono">BSC</p>
-              <p className="text-[10px] text-[#8E8E93] mt-0.5">Native BNB only</p>
-            </div>
-          </div>
-
-          <p className="rounded-lg border border-[#FF9F0A]/30 bg-[#FF9F0A]/10 px-3 py-2 text-[10px] leading-relaxed text-[#FF9F0A]">
-            Do not send the full BNB balance. The server reserves the estimated BSC gas fee and blocks a transfer that would leave too little BNB.
-          </p>
-
-          <form onSubmit={handleBnbTransfer} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-[10px] text-[#8E8E93] uppercase font-bold">Recipient BSC address</label>
-              <div className="flex items-center space-x-2 p-2.5 bg-[#1C1C21] border border-[#26262B] focus-within:border-[#FF9F0A] rounded-xl transition-colors">
-                <ShieldCheck size={16} className="text-[#FF9F0A] flex-shrink-0" />
-                <input
-                  type="text"
-                  value={bnbRecipientAddress}
-                  onChange={(e) => {
-                    setBnbRecipientAddress(e.target.value);
-                    setBnbTransferIdempotencyKey(null);
-                  }}
-                  placeholder="0x..."
-                  className="bg-transparent border-none text-white font-mono text-xs focus:outline-none w-full placeholder:text-[#555]"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[10px] text-[#8E8E93] uppercase font-bold">BNB amount</label>
-              <div className="relative">
-                <input
-                  type="number"
-                  min="0.000001"
-                  step="any"
-                  required
-                  value={bnbAmount}
-                  onChange={(e) => {
-                    setBnbAmount(e.target.value);
-                    setBnbTransferIdempotencyKey(null);
-                  }}
-                  placeholder="Enter BNB amount"
-                  className="w-full bg-[#1C1C21] border border-[#26262B] focus:border-[#FF9F0A] pl-3 pr-16 py-2.5 rounded-xl text-sm font-bold text-white font-mono outline-none placeholder:font-normal placeholder:text-[#555]"
-                />
-                <span className="absolute right-3 top-3 text-xs font-bold text-[#FF9F0A]">BNB</span>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[10px] text-[#8E8E93] uppercase font-bold">Audit note (optional)</label>
-              <input
-                type="text"
-                maxLength={500}
-                value={bnbNote}
-                onChange={(e) => {
-                  setBnbNote(e.target.value);
-                  setBnbTransferIdempotencyKey(null);
-                }}
-                placeholder="Example: BNB operating wallet top-up"
-                className="w-full bg-[#1C1C21] border border-[#26262B] focus:border-[#FF9F0A] px-3 py-2.5 rounded-xl text-xs text-white outline-none placeholder:text-[#555]"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[10px] text-[#FF9F0A] uppercase font-bold">
-                Confirmation: {bnbTransferConfiguration?.confirmationPhrase ?? "SEND BNB"}
-              </label>
-              <input
-                type="text"
-                autoComplete="off"
-                value={bnbConfirmation}
-                onChange={(e) => setBnbConfirmation(e.target.value)}
-                placeholder={bnbTransferConfiguration?.confirmationPhrase ?? "SEND BNB"}
-                className="w-full bg-[#1C1C21] border border-[#FF9F0A]/40 focus:border-[#FF9F0A] px-3 py-2.5 rounded-xl text-xs font-mono text-white outline-none placeholder:text-[#555]"
-              />
-            </div>
-
-            {bnbTransferMsg && (
-              <div className={`flex items-start space-x-2 p-3 rounded-lg text-xs ${bnbTransferMsg.type === "ok" ? "bg-[#30D5C8]/10 border border-[#30D5C8]/30 text-[#30D5C8]" : "bg-[#FF453A]/10 border border-[#FF453A]/30 text-[#FF453A]"}`}>
-                {bnbTransferMsg.type === "ok" ? <CheckCircle size={14} className="flex-shrink-0 mt-0.5" /> : <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" />}
-                <span>{bnbTransferMsg.text}</span>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loadingBnbTransfer || !bnbRecipientAddress || !bnbTransferConfiguration?.enabled}
-              className="w-full py-3.5 bg-gradient-to-r from-[#FF9F0A] to-[#FF453A] hover:opacity-90 text-white font-black rounded-xl transition-all flex items-center justify-center space-x-2 shadow-[0_0_15px_rgba(255,159,10,0.2)] disabled:opacity-40 text-xs cursor-pointer"
-            >
-              {loadingBnbTransfer ? <RefreshCw size={16} className="animate-spin" /> : (
-                <>
-                  <Lock size={16} />
-                  <span>Send BNB and wait for one BSC block</span>
+                  <span>이체 기록 저장 (실제 TX는 지갑 앱에서 직접 실행)</span>
                 </>
               )}
             </button>
@@ -777,7 +489,7 @@ export default function WalletSweepPage() {
       <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 shadow-lg space-y-4">
         <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center space-x-2">
           <CheckCircle size={16} className="text-[#30D5C8]" />
-          <span>마스터 지갑 외부 전송 감사 로그</span>
+          <span>콜드 금고 이체 기록 로그 (DB vault_transfers)</span>
         </h4>
 
         {vaultLogs.length === 0 ? (
@@ -791,11 +503,9 @@ export default function WalletSweepPage() {
               <thead>
                 <tr className="border-b border-[#26262B] text-[#8E8E93] font-semibold uppercase tracking-wider">
                   <th className="py-3 px-4">출발 지갑</th>
-                  <th className="py-3 px-4">도착 지갑</th>
+                  <th className="py-3 px-4">도착 (콜드 금고)</th>
                   <th className="py-3 px-4">이체 수량</th>
                   <th className="py-3 px-4">수신 주소</th>
-                  <th className="py-3 px-4">상태</th>
-                  <th className="py-3 px-4">트랜잭션</th>
                   <th className="py-3 px-4 text-right">이체 시각</th>
                 </tr>
               </thead>
@@ -811,26 +521,6 @@ export default function WalletSweepPage() {
                       {log.cold_vault_address
                         ? `${log.cold_vault_address.slice(0, 10)}...${log.cold_vault_address.slice(-6)}`
                         : "—"}
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className={`px-2 py-1 rounded text-[9px] font-bold ${
-                        log.status === "CONFIRMED" ? "bg-[#30D5C8]/10 text-[#30D5C8]" :
-                        log.status === "FAILED" ? "bg-[#FF453A]/10 text-[#FF453A]" :
-                        log.status === "BROADCAST" ? "bg-[#FF9F0A]/10 text-[#FF9F0A]" :
-                        "bg-[#26262B] text-[#8E8E93]"
-                      }`}>{log.status ?? "LEGACY"}</span>
-                    </td>
-                    <td className="py-3 px-4">
-                      {log.tx_hash ? (
-                        <a
-                          href={`https://bscscan.com/tx/${log.tx_hash}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-[#00D2FF] hover:underline font-mono text-[10px]"
-                        >
-                          {`${log.tx_hash.slice(0, 10)}...${log.tx_hash.slice(-6)}`}
-                        </a>
-                      ) : <span className="text-[#8E8E93]">-</span>}
                     </td>
                     <td className="py-3 px-4 text-right text-[#8E8E93]">
                       {new Date(log.created_at).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
