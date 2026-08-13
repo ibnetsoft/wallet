@@ -703,7 +703,7 @@ export default function MobileApp() {
 
   const [balancesLoading, setBalancesLoading] = useState(false);
 
-  const loadBalances = async (uid: string) => {
+  const loadBalances = async (uid: string, attempt = 0) => {
     if (!uid) return;
     setBalancesLoading(true);
     try {
@@ -713,14 +713,26 @@ export default function MobileApp() {
         fetch("/api/user/machines")
       ]);
       const data = await balRes.json();
-      
-      if (data.success && data.balances) {
-        setUsdtBalance(data.balances.USDT ?? 0);
-        setUrcBalance(data.balances.URC ?? 0);
-        setBaoBalance(data.balances.BAO ?? 0);
-        setUrdBalance(data.balances.JADE ?? 0);
-        setHongbaoCount(data.balances.HONGBAO ?? 0);
+      if (!balRes.ok || !data.success || !data.balances) {
+        // A just-created browser session can reach the API before its auth cookie is available.
+        if (attempt < 3 && typeof window !== "undefined") {
+          window.setTimeout(() => {
+            void loadBalances(uid, attempt + 1);
+          }, 500 * (attempt + 1));
+        }
+        return;
       }
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.user.id !== uid) return;
+
+      setUsdtBalance(data.balances.USDT ?? 0);
+      setUrcBalance(data.balances.URC ?? 0);
+      setBaoBalance(data.balances.BAO ?? 0);
+      setUrdBalance(data.balances.JADE ?? 0);
+      setHongbaoCount(data.balances.HONGBAO ?? 0);
 
       try {
         const machinesData = await machinesRes.json();
@@ -773,13 +785,18 @@ export default function MobileApp() {
     }
   };
 
-  const loadAutoBetSettings = async (uid: string) => {
+  const loadAutoBetSettings = async (uid: string, attempt = 0) => {
     if (!uid) return;
 
     try {
       const res = await fetch("/api/auto-bet-settings");
       const data = await res.json();
       if (!res.ok || !data.success || !data.settings) {
+        if (attempt < 3 && typeof window !== "undefined") {
+          window.setTimeout(() => {
+            void loadAutoBetSettings(uid, attempt + 1);
+          }, 500 * (attempt + 1));
+        }
         return;
       }
 
@@ -792,6 +809,11 @@ export default function MobileApp() {
       }));
     } catch (error) {
       console.error("Failed to load auto bet settings:", error);
+      if (attempt < 3 && typeof window !== "undefined") {
+        window.setTimeout(() => {
+          void loadAutoBetSettings(uid, attempt + 1);
+        }, 500 * (attempt + 1));
+      }
     }
   };
 
