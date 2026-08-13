@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { Users, Search, Activity, PowerOff, Copy, Check, FileText, X, Gamepad2, Ticket, Gift } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -246,9 +247,9 @@ export default function UsersPage() {
                       <FileText size={10} />
                       <span>상세</span>
                     </button>
-                    <button className="px-2 py-1 bg-[#1C1C21] border border-[#26262B] hover:border-[#00D2FF] hover:text-[#00D2FF] text-[#EAECEF] text-[10px] font-bold rounded transition-colors">
+                    <Link href={`/users/${user.id}/organization`} className="px-2 py-1 bg-[#1C1C21] border border-[#26262B] hover:border-[#00D2FF] hover:text-[#00D2FF] text-[#EAECEF] text-[10px] font-bold rounded transition-colors">
                       조직도
-                    </button>
+                    </Link>
                     <button onClick={() => handleDeleteUser(user.id, user.nickname)} className="px-2 py-1 bg-[#F6465D]/10 hover:bg-[#F6465D] hover:text-white text-[#F6465D] text-[10px] font-bold rounded transition-colors">
                       삭제
                     </button>
