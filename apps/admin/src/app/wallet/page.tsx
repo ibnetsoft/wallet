@@ -456,6 +456,7 @@ export default function WalletSweepPage() {
                 <input
                   type="number"
                   min="0.01"
+                  step="any"
                   required
                   value={vaultAmount}
                   onChange={(e) => setVaultAmount(e.target.value)}
