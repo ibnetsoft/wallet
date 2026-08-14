@@ -7,6 +7,30 @@ type RegisterTokenPayload = {
   expiresAt: number;
 };
 
+function getUuidPrefixBounds(prefix: string) {
+  if (!/^[0-9a-f]{8}$/i.test(prefix)) {
+    return null;
+  }
+
+  const normalized = prefix.toLowerCase();
+  const lowerBound = `${normalized}-0000-0000-0000-000000000000`;
+
+  // UUID values can be compared directly, unlike a UUID column with LIKE.
+  // There is no upper bound after the largest possible eight-character prefix.
+  if (normalized === "ffffffff") {
+    return { lowerBound, upperBound: null };
+  }
+
+  const nextPrefix = (Number.parseInt(normalized, 16) + 1)
+    .toString(16)
+    .padStart(8, "0");
+
+  return {
+    lowerBound,
+    upperBound: `${nextPrefix}-0000-0000-0000-000000000000`,
+  };
+}
+
 export async function POST(req: Request) {
   try {
     const { token, password, nickname, referralCode } = await req.json();
@@ -41,21 +65,38 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "?대? ?ъ슜 以묒씤 ?됰꽕?꾩엯?덈떎." }, { status: 400 });
     }
 
+    const normalizedReferralCode = typeof referralCode === "string" ? referralCode.trim() : "";
     let parentId: string | null = null;
     const masterCodes = ["URC883920", "BAO369", "MASTER"];
 
-    if (referralCode && !masterCodes.includes(referralCode.toUpperCase())) {
+    if (normalizedReferralCode && !masterCodes.includes(normalizedReferralCode.toUpperCase())) {
       let resolvedUser: { id: string } | null = null;
 
-      if (referralCode.toUpperCase().startsWith("BAO-")) {
-        const idPart = referralCode.substring(4).toLowerCase();
-        if (idPart.length === 8) {
-          const { data: recById } = await supabase
+      if (normalizedReferralCode.toUpperCase().startsWith("BAO-")) {
+        const bounds = getUuidPrefixBounds(normalizedReferralCode.substring(4));
+        if (bounds) {
+          let lookup = supabase
             .from("users")
             .select("id")
-            .like("id", `${idPart}%`)
-            .limit(1);
-          if (recById && recById.length > 0) {
+            .gte("id", bounds.lowerBound)
+            .order("id", { ascending: true })
+            .limit(2);
+
+          if (bounds.upperBound) {
+            lookup = lookup.lt("id", bounds.upperBound);
+          }
+
+          const { data: recById, error: lookupError } = await lookup;
+          if (lookupError) {
+            return NextResponse.json({ error: "Referral code lookup failed." }, { status: 500 });
+          }
+
+          // An eight-character UUID prefix should be unique. Do not attach a
+          // new member to an arbitrary account if a collision ever occurs.
+          if (recById && recById.length > 1) {
+            return NextResponse.json({ error: "Referral code is ambiguous." }, { status: 400 });
+          }
+          if (recById && recById.length === 1) {
             resolvedUser = recById[0] as { id: string };
           }
         }
@@ -65,7 +106,7 @@ export async function POST(req: Request) {
         const { data: recommender } = await supabase
           .from("users")
           .select("id")
-          .eq("nickname", referralCode)
+          .eq("nickname", normalizedReferralCode)
           .single();
         if (recommender) {
           resolvedUser = recommender as { id: string };
@@ -76,7 +117,7 @@ export async function POST(req: Request) {
         const { data: recByEmail } = await supabase
           .from("users")
           .select("id")
-          .eq("email", referralCode)
+          .eq("email", normalizedReferralCode)
           .single();
         if (recByEmail) {
           resolvedUser = recByEmail as { id: string };

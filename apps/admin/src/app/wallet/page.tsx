@@ -44,7 +44,7 @@ export default function WalletSweepPage() {
   // ── 이체 폼 ──
   const [vaultAsset, setVaultAsset] = useState<"USDT" | "BNB">("USDT");
   const [vaultAmount, setVaultAmount] = useState("");
-  const [loadingSweep, setLoadingSweep] = useState(false);
+  const [loadingSweep, setLoadingSweep] = useState<"live" | "dry-run" | null>(null);
   const [loadingVault, setLoadingVault] = useState(false);
   const [sweepMsg, setSweepMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [vaultMsg, setVaultMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
@@ -143,10 +143,26 @@ export default function WalletSweepPage() {
     setTimeout(() => setMasterWalletCopied(false), 2000);
   };
 
+  const formatSweepSummary = (data: any, dryRun: boolean) => {
+    const summary = data?.summary;
+    if (!summary) {
+      return dryRun ? "드라이런 점검이 완료되었습니다." : "스윕이 완료되었습니다.";
+    }
+
+    const head = dryRun
+      ? `드라이런 완료: 대상 ${summary.actionableUsers}개 / 전체 ${summary.totalUsersScanned}개`
+      : `스윕 결과: 성공 ${summary.sweptUsers}개 / 실패 ${summary.failedUsers}개 / 건너뜀 ${summary.skippedUsers}개`;
+    const amountText = `수량 ${Number(summary.totalSweepAmount).toLocaleString()} USDT, 필요 가스 ${Number(summary.requiredGasBnb).toFixed(4)} BNB`;
+    const issueText = Array.isArray(summary.issues) && summary.issues.length > 0
+      ? ` 이슈 ${summary.issues.length}건은 sweep 로그에 기록되었습니다.`
+      : "";
+    return `${head}. ${amountText}.${issueText}`;
+  };
+
 
 
   // ── 스윕: API를 통해 DB 트랜잭션 수행 ──
-  const handleSweep = async () => {
+  const handleSweep = async (dryRun = false) => {
     if (totalSweepable <= 0) {
       setSweepMsg({ type: "err", text: "모으기 가능한 유저 잔액이 없습니다." });
       return;
@@ -155,29 +171,38 @@ export default function WalletSweepPage() {
       setSweepMsg({ type: "err", text: "마스터 핫 지갑 주소가 생성되지 않았습니다." });
       return;
     }
-    if (!confirm(`유저 개별 지갑 총 ${totalSweepable.toLocaleString()} USDT를 자체발행한 회사지갑(${masterHotWallet})으로 즉시 모으기(Sweep)하시겠습니까?\n\n⚠️ 이 작업은 즉시 유저 잔액을 차감하고 회사 지갑 잔액으로 병합합니다.`)) return;
+    if (!dryRun && !confirm(`유저 개별 지갑 총 ${totalSweepable.toLocaleString()} USDT를 회사지갑(${masterHotWallet})으로 실제 스윕하시겠습니까?\n\n⚠️ 이 작업은 BSC 온체인 트랜잭션을 전송하며, 성공한 지갑만큼 DB 잔액도 차감됩니다.`)) return;
 
-    setLoadingSweep(true);
+    setLoadingSweep(dryRun ? "dry-run" : "live");
     setSweepMsg(null);
     try {
       const res = await fetch("/api/wallet/sweep", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ target_wallet: masterHotWallet })
+        body: JSON.stringify({ target_wallet: masterHotWallet, dryRun })
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
+      if (dryRun) {
+        setSweepMsg({
+          type: "ok",
+          text: formatSweepSummary(data, true)
+        });
+        return;
+      }
 
-      setSweepMsg({ 
-        type: "ok", 
-        text: `✅ 지갑 모으기(${totalSweepable.toLocaleString()} USDT)가 성공적으로 완료되어 회사 지갑 잔고에 반영되었습니다!` 
+      setSweepMsg({
+        type: "ok",
+        text: formatSweepSummary(data, false)
       });
-      fetchData();
+      if (!dryRun) {
+        fetchData();
+      }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       setSweepMsg({ type: "err", text: `오류: ${msg}` });
     } finally {
-      setLoadingSweep(false);
+      setLoadingSweep(null);
     }
   };
 
@@ -394,14 +419,34 @@ export default function WalletSweepPage() {
             </div>
           )}
 
+          <div className="rounded-xl border border-[#26262B] bg-[#121215] p-3 text-[11px] text-[#8E8E93] space-y-1.5">
+            <p className="font-semibold text-white">Sweep 체크리스트</p>
+            <p>1. 먼저 `Dry Run`으로 대상 수량, 주소 불일치, 부족 잔액을 점검하세요.</p>
+            <p>2. 마스터 지갑의 BNB가 예상 가스비 이상인지 확인하세요.</p>
+            <p>3. 실제 실행 후에는 잔액과 로그를 새로고침해서 다시 확인하세요.</p>
+          </div>
+
           <button
-            onClick={handleSweep}
-            disabled={loadingSweep || totalSweepable <= 0}
+            onClick={() => handleSweep(true)}
+            disabled={loadingSweep !== null || totalSweepable <= 0}
+            className="w-full py-3.5 bg-[#26262B] hover:bg-[#303038] text-white font-bold rounded-xl transition-all flex items-center justify-center space-x-2 disabled:opacity-40 text-xs cursor-pointer"
+          >
+            {loadingSweep === "dry-run" ? <RefreshCw size={16} className="animate-spin" /> : (
+              <>
+                <Info size={16} />
+                <span>Dry Run 점검</span>
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={() => handleSweep(false)}
+            disabled={loadingSweep !== null || totalSweepable <= 0}
             className="w-full py-3.5 bg-gradient-to-r from-[#00D2FF] to-[#BF5AF2] hover:opacity-90 text-white font-bold rounded-xl transition-all flex items-center justify-center space-x-2 shadow-[0_0_15px_rgba(0,210,255,0.2)] disabled:opacity-40 text-xs cursor-pointer"
           >
-            {loadingSweep ? <RefreshCw size={16} className="animate-spin" /> : (
+            {loadingSweep === "live" ? <RefreshCw size={16} className="animate-spin" /> : (
               <>
-                <span>스윕 실행하기 (DB 즉시 반영)</span>
+                <span>Sweep 실행 (온체인)</span>
                 <ArrowRightLeft size={16} />
               </>
             )}
