@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Pool } from "pg";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -76,6 +77,7 @@ export async function GET() {
 }
 
 export async function DELETE(request: Request) {
+  const client = await pool.connect();
   try {
     const { userId } = await request.json();
 
@@ -83,15 +85,88 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ success: false, error: "userId is required" }, { status: 400 });
     }
 
-    const deleteRes = await pool.query("DELETE FROM public.users WHERE id = $1 RETURNING id", [userId]);
+    await client.query("BEGIN");
 
-    if (deleteRes.rowCount === 0) {
+    const userRes = await client.query(
+      "SELECT id, email, nickname FROM public.users WHERE id = $1 FOR UPDATE",
+      [userId],
+    );
+
+    if (userRes.rowCount === 0) {
+      await client.query("ROLLBACK");
       return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, deletedId: userId });
+    const machineRes = await client.query(
+      "SELECT id FROM public.user_game_machines WHERE user_id = $1",
+      [userId],
+    );
+    const machineIds = machineRes.rows.map((row) => row.id as string);
+
+    await client.query(
+      `UPDATE public.users
+       SET parent_id = NULL,
+           recommender_id = NULL,
+           sponsor_id = NULL,
+           original_recommender_id = NULL
+       WHERE parent_id = $1
+          OR recommender_id = $1
+          OR sponsor_id = $1
+          OR original_recommender_id = $1`,
+      [userId],
+    );
+
+    if (machineIds.length > 0) {
+      await client.query(
+        "DELETE FROM public.game_participant_entry_claims WHERE machine_id = ANY($1::uuid[])",
+        [machineIds],
+      );
+    }
+
+    await client.query("DELETE FROM public.game_participants WHERE user_id = $1", [userId]);
+    await client.query("DELETE FROM public.auto_bet_executions WHERE user_id = $1", [userId]);
+    await client.query("DELETE FROM public.auto_bet_settings WHERE user_id = $1", [userId]);
+    await client.query("DELETE FROM public.bsc_usdt_deposits WHERE user_id = $1", [userId]);
+    await client.query("DELETE FROM public.ledger_entries WHERE user_id = $1", [userId]);
+
+    if (machineIds.length > 0) {
+      await client.query(
+        "DELETE FROM public.user_game_machines WHERE id = ANY($1::uuid[])",
+        [machineIds],
+      );
+    }
+
+    await client.query("DELETE FROM public.user_wallets WHERE user_id = $1", [userId]);
+    await client.query("DELETE FROM public.user_balances WHERE user_id = $1", [userId]);
+
+    const deleteRes = await client.query(
+      "DELETE FROM public.users WHERE id = $1 RETURNING id",
+      [userId],
+    );
+
+    if (deleteRes.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
+    }
+
+    await client.query("COMMIT");
+
+    let authDeleted = false;
+    const authDelete = await supabaseAdmin.auth.admin.deleteUser(userId);
+    if (!authDelete.error) {
+      authDeleted = true;
+    } else {
+      console.warn("DELETE api/users auth delete warning:", authDelete.error.message);
+    }
+
+    return NextResponse.json({ success: true, deletedId: userId, authDeleted });
   } catch (err: any) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {}
     console.error("DELETE api/users error:", err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } finally {
+    client.release();
   }
 }
