@@ -117,11 +117,16 @@ export async function GET() {
         console.error("wallet/status on-chain snapshot error:", walletErr);
       }
 
-      const mergedSettings = Object.entries(settingsMap).map(([key, value]) => ({ key, value }));
-
       // 3. Get vault transfer logs
       const logsRes = await client.query("SELECT * FROM public.vault_transfers ORDER BY created_at DESC LIMIT 30");
       const logs = logsRes.rows;
+      const coldVaultTotalRes = await client.query<{ total: string }>(
+        `SELECT COALESCE(SUM(amount), 0)::text AS total
+         FROM public.vault_transfers
+         WHERE asset = 'USDT'`
+      );
+      settingsMap["cold_balance_usdt"] = coldVaultTotalRes.rows[0]?.total ?? "0";
+      const mergedSettings = Object.entries(settingsMap).map(([key, value]) => ({ key, value }));
 
       return NextResponse.json({
         success: true,

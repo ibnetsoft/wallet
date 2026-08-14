@@ -62,6 +62,18 @@ export async function POST(request: Request) {
        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
       [coldVaultAddress]
     );
+    if (asset === "USDT") {
+      await client.query(
+        `INSERT INTO public.system_settings (key, value, description)
+         VALUES ('cold_balance_usdt', $1, 'Cumulative logged cold vault USDT amount')
+         ON CONFLICT (key) DO UPDATE
+           SET value = (
+             COALESCE(NULLIF(BTRIM(public.system_settings.value), ''), '0')::numeric
+             + EXCLUDED.value::numeric
+           )::text`,
+        [amount.toString()]
+      );
+    }
     await client.query("COMMIT");
 
     return NextResponse.json({ success: true });
