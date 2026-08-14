@@ -23,13 +23,63 @@ interface PendingWithdrawal {
 interface RecentTx {
   id: string;
   email: string;
+  nickname: string;
   asset: string;
   amount: string;
   type: string;
-  hash: string;
   status: string;
   date: string;
   details?: string;
+}
+
+function assetLabel(asset: string) {
+  if (asset === "JADE") {
+    return "옥구슬";
+  }
+
+  return asset;
+}
+
+function assetBadgeClass(asset: string) {
+  if (asset === "USDT") {
+    return "bg-[#26A17B]/10 text-[#26A17B]";
+  }
+  if (asset === "BAO") {
+    return "bg-[#0ECB81]/10 text-[#0ECB81]";
+  }
+  if (asset === "JADE") {
+    return "bg-[#30D5C8]/10 text-[#30D5C8]";
+  }
+  if (asset === "HONGBAO") {
+    return "bg-[#FF453A]/10 text-[#FF453A]";
+  }
+  if (asset === "URC") {
+    return "bg-[#BF5AF2]/10 text-[#BF5AF2]";
+  }
+
+  return "bg-[#F0B90B]/10 text-[#F0B90B]";
+}
+
+function transactionTypeLabel(type: string) {
+  if (type === "GAME_WAGER") {
+    return "게임 베팅";
+  }
+
+  return type;
+}
+
+function statusLabel(status: string) {
+  if (status === "completed") {
+    return "완료";
+  }
+  if (status === "pending") {
+    return "대기 중";
+  }
+  if (status === "failed") {
+    return "실패";
+  }
+
+  return status;
 }
 
 export default function DashboardPage() {
@@ -444,62 +494,51 @@ export default function DashboardPage() {
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-[#26262B] text-[#8E8E93] font-semibold uppercase tracking-wider pb-3">
-                  <th className="py-3 px-4">Tx ID</th>
-                  <th className="py-3 px-4">사용자 이메일</th>
+                  <th className="py-3 px-4">시간</th>
+                  <th className="py-3 px-4">사용자</th>
                   <th className="py-3 px-4">자산</th>
                   <th className="py-3 px-4">금액</th>
                   <th className="py-3 px-4">유형</th>
                   <th className="py-3 px-4">상세 내역</th>
-                  <th className="py-3 px-4">Tx 해시</th>
                   <th className="py-3 px-4">상태</th>
-                  <th className="py-3 px-4 text-right">시간</th>
                 </tr>
               </thead>
               <tbody>
                 {recentTransactions.map((tx) => (
                   <tr key={tx.id} className="border-b border-[#26262B]/40 hover:bg-[#1C1C21]/30 transition-all">
-                    <td className="py-4 px-4 font-semibold text-white">{tx.id}</td>
-                    <td className="py-4 px-4 text-white font-medium">{tx.email}</td>
+                    <td className="py-4 px-4 text-[#8E8E93]">{tx.date}</td>
                     <td className="py-4 px-4">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        tx.asset === 'USDT' ? 'bg-[#26A17B]/10 text-[#26A17B]' : 
-                        tx.asset === 'URC' ? 'bg-[#BF5AF2]/10 text-[#BF5AF2]' : 
-                        'bg-[#F0B90B]/10 text-[#F0B90B]'
-                      }`}>
-                        {tx.asset}
+                      <div className="font-semibold text-white">{tx.nickname}</div>
+                      <div className="text-[10px] text-[#8E8E93]">{tx.email}</div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${assetBadgeClass(tx.asset)}`}>
+                        {assetLabel(tx.asset)}
                       </span>
                     </td>
                     <td className={`py-4 px-4 font-bold ${tx.amount.startsWith('+') ? 'text-[#30D5C8]' : 'text-[#FF9F0A]'}`}>{tx.amount}</td>
-                    <td className="py-4 px-4 text-[#8E8E93] font-medium">{tx.type}</td>
+                    <td className="py-4 px-4 text-[#8E8E93] font-medium">{transactionTypeLabel(tx.type)}</td>
                     <td className="py-4 px-4 text-[#8E8E93]">{tx.details || "-"}</td>
                     <td className="py-4 px-4">
-                      {tx.hash === "내부 처리" ? (
-                        <span className="text-[#8E8E93] italic text-[10px]">내부 처리</span>
-                      ) : (
-                        <span className="text-[#8E8E93] font-mono text-[10px]">{tx.hash}</span>
-                      )}
-                    </td>
-                    <td className="py-4 px-4">
-                      {tx.status === "완료" && (
+                      {tx.status === "completed" && (
                         <span className="flex items-center space-x-1 text-[#30D5C8] font-semibold">
                           <CheckCircle size={12} />
-                          <span>완료</span>
+                          <span>{statusLabel(tx.status)}</span>
                         </span>
                       )}
-                      {tx.status === "대기 중" && (
+                      {tx.status === "pending" && (
                         <span className="flex items-center space-x-1 text-[#FF9F0A] font-semibold">
                           <Clock size={12} />
-                          <span>대기 중</span>
+                          <span>{statusLabel(tx.status)}</span>
                         </span>
                       )}
-                      {tx.status === "실패" && (
+                      {tx.status === "failed" && (
                         <span className="flex items-center space-x-1 text-[#FF453A] font-semibold">
                           <XCircle size={12} />
-                          <span>실패</span>
+                          <span>{statusLabel(tx.status)}</span>
                         </span>
                       )}
                     </td>
-                    <td className="py-4 px-4 text-[#8E8E93] text-right">{tx.date}</td>
                   </tr>
                 ))}
               </tbody>

@@ -35,6 +35,22 @@ interface SyncResult {
   duplicatesSkipped: number;
 }
 
+function assetDisplayName(asset: string) {
+  if (asset === "JADE") {
+    return "옥구슬";
+  }
+
+  return asset;
+}
+
+function transactionTypeLabel(type: string) {
+  if (type === "GAME_WAGER") {
+    return "게임 베팅";
+  }
+
+  return type;
+}
+
 function isBscTransactionHash(value: string | null) {
   return Boolean(value && /^0x[a-fA-F0-9]{64}$/.test(value));
 }
@@ -126,7 +142,9 @@ export default function TransactionsPage() {
     || transaction.userEmail.toLowerCase().includes(normalizedSearch)
     || transaction.userNickname.toLowerCase().includes(normalizedSearch)
     || transaction.type.toLowerCase().includes(normalizedSearch)
+    || transactionTypeLabel(transaction.type).toLowerCase().includes(normalizedSearch)
     || transaction.asset.toLowerCase().includes(normalizedSearch)
+    || assetDisplayName(transaction.asset).toLowerCase().includes(normalizedSearch)
     || transaction.hash?.toLowerCase().includes(normalizedSearch)
     || transaction.chainTxHash?.toLowerCase().includes(normalizedSearch)
   ));
@@ -234,7 +252,7 @@ export default function TransactionsPage() {
                                 ? "border-[#FF453A]/20 bg-[#FF453A]/10 text-[#FF453A]"
                                 : "border-[#BF5AF2]/20 bg-[#BF5AF2]/10 text-[#BF5AF2]"
                       }`}>
-                        {transaction.asset}
+                        {assetDisplayName(transaction.asset)}
                       </span>
                     </td>
                     <td className={`px-4 py-4 text-right font-mono font-bold ${transaction.amount > 0 ? "text-[#30D5C8]" : "text-[#FF453A]"}`}>
@@ -247,7 +265,7 @@ export default function TransactionsPage() {
                         {transaction.type === "WITHDRAW" && <ArrowUpRight size={12} className="text-[#FF453A]" />}
                         {(transaction.type.includes("BONUS") || transaction.type === "GAME_CONSOLATION") && <Gift size={12} className="text-[#BF5AF2]" />}
                         {transaction.type.includes("SWAP") && <RefreshCw size={12} className="text-[#FF9F0A]" />}
-                        <span className="text-[10px] text-[#EAECEF]">{transaction.type}</span>
+                        <span className="text-[10px] text-[#EAECEF]">{transactionTypeLabel(transaction.type)}</span>
                       </div>
                     </td>
                     <td className="max-w-[180px] truncate px-4 py-4 text-[10px] text-[#8E8E93]" title={JSON.stringify(transaction.details)}>

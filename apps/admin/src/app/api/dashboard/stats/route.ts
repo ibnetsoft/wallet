@@ -5,8 +5,19 @@ export const dynamic = "force-dynamic";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
 });
+
+function statusLabel(status: string) {
+  switch (status) {
+    case "COMPLETED":
+      return "completed";
+    case "PENDING":
+      return "pending";
+    default:
+      return "failed";
+  }
+}
 
 export async function GET() {
   try {
@@ -27,7 +38,7 @@ export async function GET() {
       WHERE tx_type = 'WITHDRAW' AND status = 'PENDING'
     `);
     const pendingWithdrawalAmount = parseFloat(withdrawRes.rows[0].total || "0");
-    const pendingWithdrawalCount = parseInt(withdrawRes.rows[0].count || "0");
+    const pendingWithdrawalCount = parseInt(withdrawRes.rows[0].count || "0", 10);
 
     // 3. Registered & Active Users Count
     const usersRes = await pool.query(`
@@ -36,8 +47,8 @@ export async function GET() {
         COUNT(*) FILTER (WHERE status = 'ACTIVE') as active
       FROM public.users
     `);
-    const totalUsers = parseInt(usersRes.rows[0].total || "0");
-    const activeUsers = parseInt(usersRes.rows[0].active || "0");
+    const totalUsers = parseInt(usersRes.rows[0].total || "0", 10);
+    const activeUsers = parseInt(usersRes.rows[0].active || "0", 10);
 
     // 4. Withdrawal Fee Earned (sum of fees in COMPLETED withdrawals)
     const feeRes = await pool.query(`
@@ -53,10 +64,10 @@ export async function GET() {
       SELECT 
         l.id,
         u.email,
+        u.nickname,
         a.symbol as asset,
         l.amount,
         l.tx_type as type,
-        l.tx_hash as hash,
         l.status,
         l.created_at
       FROM public.ledger_entries l
@@ -68,14 +79,6 @@ export async function GET() {
     const txRes = await pool.query(txQuery);
     
     const recentTransactions = txRes.rows.map((tx: any) => {
-      let typeLabel = tx.type;
-      if (tx.type === "DEPOSIT") typeLabel = "입금 완료";
-      else if (tx.type === "WITHDRAW") typeLabel = tx.status === "PENDING" ? "출금 신청" : "출금 완료";
-      else if (tx.type === "SWAP_IN" || tx.type === "SWAP_OUT") typeLabel = "실시간 스왑";
-      else if (tx.type === "REFERRAL_BONUS") typeLabel = "추천 수당";
-      else if (tx.type === "RANK_BONUS") typeLabel = "직급 수당";
-      else if (tx.type === "CHOITAN_BONUS") typeLabel = "Foster 수당";
-
       const amtVal = parseFloat(tx.amount);
       const isNegative = amtVal < 0;
       const formattedAmount = `${isNegative ? "" : "+"}${amtVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
@@ -83,13 +86,13 @@ export async function GET() {
       return {
         id: tx.id.substring(0, 8).toUpperCase(),
         email: tx.email,
+        nickname: tx.nickname || "-",
         asset: tx.asset,
         amount: formattedAmount,
-        type: typeLabel,
-        hash: tx.hash ? (tx.hash.length > 12 ? `${tx.hash.substring(0, 6)}...${tx.hash.substring(tx.hash.length - 4)}` : tx.hash) : "내부 처리",
-        status: tx.status === "COMPLETED" ? "완료" : tx.status === "PENDING" ? "대기 중" : "실패",
+        type: tx.type,
+        status: statusLabel(tx.status),
         date: new Date(tx.created_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
-        details: tx.type === "WITHDRAW" ? `수수료 3% 적용` : undefined
+        details: tx.type === "WITHDRAW" ? "수수료 3% 적용" : undefined,
       };
     });
 
