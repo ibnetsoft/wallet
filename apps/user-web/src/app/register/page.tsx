@@ -44,7 +44,18 @@ function RegisterForm() {
     const saved = localStorage.getItem("urc_lang");
     if (saved === "zh" || saved === "en" || saved === "ko") {
       setLang(saved);
+      return;
     }
+
+    const browserLanguage = navigator.language.toLowerCase();
+    const detectedLanguage = browserLanguage.startsWith("ko")
+      ? "ko"
+      : browserLanguage.startsWith("en")
+      ? "en"
+      : "zh";
+
+    setLang(detectedLanguage);
+    localStorage.setItem("urc_lang", detectedLanguage);
   }, []);
 
   // 이메일 인증 링크로 이동해서 가입창으로 돌아온 경우의 파라미터 감지

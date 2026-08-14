@@ -53,7 +53,18 @@ export default function LoginPage() {
     const saved = localStorage.getItem("urc_lang");
     if (saved === "zh" || saved === "en" || saved === "ko") {
       setLang(saved);
+      return;
     }
+
+    const browserLanguage = navigator.language.toLowerCase();
+    const detectedLanguage = browserLanguage.startsWith("ko")
+      ? "ko"
+      : browserLanguage.startsWith("en")
+      ? "en"
+      : "zh";
+
+    setLang(detectedLanguage);
+    localStorage.setItem("urc_lang", detectedLanguage);
   }, []);
 
   useEffect(() => {
