@@ -55,6 +55,12 @@ function RegisterForm() {
     const verifiedParam = searchParams.get("verified");
     const emailParam = searchParams.get("email");
     const tokenParam = searchParams.get("token");
+    const localeParam = searchParams.get("locale");
+
+    if (localeParam === "zh" || localeParam === "en" || localeParam === "ko") {
+      setLang(localeParam);
+      localStorage.setItem("urc_lang", localeParam);
+    }
 
     if (verifiedParam === "true" && emailParam && tokenParam) {
       setVerified(true);
@@ -84,7 +90,7 @@ function RegisterForm() {
       const res = await fetch("/api/auth/send-verification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim() }),
+        body: JSON.stringify({ email: email.trim(), locale: lang }),
       });
       const data = await res.json();
       if (res.ok) {

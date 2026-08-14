@@ -34,7 +34,7 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/reset-password-request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nickname: resetNickname }),
+        body: JSON.stringify({ nickname: resetNickname, locale: lang }),
       });
       const data = await res.json();
       if (res.ok) {
