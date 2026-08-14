@@ -3,12 +3,12 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Users, Search, Activity, PowerOff, Copy, Check, FileText, X, Gamepad2, Ticket, Gift } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 
 interface UserProfile {
   id: string;
   email: string;
   nickname: string;
+  memberNumber: number;
   code: string;
   joinedAt: string;
   lastLoginAt: string;
@@ -26,7 +26,9 @@ interface UserProfile {
 }
 
 export default function UsersPage() {
+  const usersPerPage = 10;
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
@@ -46,8 +48,8 @@ export default function UsersPage() {
       if (data.success) {
         setUserDetails(data.details);
       }
-    } catch (e) {
-      console.error("Failed to fetch user details", e);
+    } catch (error) {
+      console.error("Failed to fetch user details", error);
     } finally {
       setDetailsLoading(false);
     }
@@ -98,12 +100,24 @@ export default function UsersPage() {
       } else {
         alert(`삭제 실패: ${data.error}`);
       }
-    } catch (e) {
+    } catch {
       alert("삭제 중 오류가 발생했습니다.");
     }
   };
 
   const filteredUsers = users.filter(u => u.email.includes(searchTerm) || u.nickname.includes(searchTerm) || u.code.includes(searchTerm));
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / usersPerPage));
+  const paginatedUsers = filteredUsers.slice((currentPage - 1) * usersPerPage, currentPage * usersPerPage);
+  const pageStart = filteredUsers.length === 0 ? 0 : (currentPage - 1) * usersPerPage + 1;
+  const pageEnd = filteredUsers.length === 0 ? 0 : Math.min(currentPage * usersPerPage, filteredUsers.length);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    setCurrentPage((prev) => Math.min(prev, totalPages));
+  }, [totalPages]);
 
   return (
     <div className="space-y-8 font-sans">
@@ -152,9 +166,9 @@ export default function UsersPage() {
                 <tr>
                   <td colSpan={8} className="py-8 text-center text-[#8E8E93]">회원 데이터를 불러오는 중...</td>
                 </tr>
-              ) : filteredUsers.map((user, index) => (
+              ) : paginatedUsers.map((user) => (
                 <tr key={user.id} className="border-b border-[#26262B]/40 hover:bg-[#1C1C21]/30 transition-all">
-                  <td className="py-3 px-2 text-center text-[#8E8E93] font-mono">{index + 1}</td>
+                  <td className="py-3 px-2 text-center text-[#8E8E93] font-mono">{user.memberNumber}</td>
                   
                   {/* 회원 정보 */}
                   <td className="py-3 px-4">
@@ -264,6 +278,42 @@ export default function UsersPage() {
             </tbody>
           </table>
         </div>
+        {!loading && filteredUsers.length > 0 && (
+          <div className="mt-5 flex flex-col gap-3 border-t border-[#26262B] pt-4 text-xs text-[#8E8E93] md:flex-row md:items-center md:justify-between">
+            <div>
+              {pageStart}-{pageEnd} / {filteredUsers.length}
+            </div>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className={`rounded-lg border px-3 py-1.5 font-bold transition-colors ${
+                  currentPage === 1
+                    ? "cursor-not-allowed border-[#26262B] bg-[#1C1C21] text-[#5A5A60] opacity-60"
+                    : "border-[#26262B] bg-[#1C1C21] text-white hover:border-[#00D2FF] hover:text-[#00D2FF]"
+                }`}
+              >
+                이전
+              </button>
+              <span className="min-w-[72px] text-center font-mono text-[#EAECEF]">
+                {currentPage} / {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className={`rounded-lg border px-3 py-1.5 font-bold transition-colors ${
+                  currentPage === totalPages
+                    ? "cursor-not-allowed border-[#26262B] bg-[#1C1C21] text-[#5A5A60] opacity-60"
+                    : "border-[#26262B] bg-[#1C1C21] text-white hover:border-[#00D2FF] hover:text-[#00D2FF]"
+                }`}
+              >
+                다음
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* User Details Modal */}

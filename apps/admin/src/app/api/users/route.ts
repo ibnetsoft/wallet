@@ -5,29 +5,30 @@ export const dynamic = "force-dynamic";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
 });
 
 export async function GET() {
   try {
     const query = `
-      SELECT 
+      SELECT
         u.id,
         u.email,
         u.nickname,
         u.status,
         u.created_at,
-        NULL as last_login_at,
+        ROW_NUMBER() OVER (ORDER BY u.created_at ASC, u.id ASC) AS member_number,
+        NULL AS last_login_at,
         u.star_level,
         uw.address AS wallet_address,
-        COALESCE(b_usdt.available_balance::numeric, 0) as usdt_balance,
-        COALESCE(b_bao.available_balance::numeric, 0) as bao_balance,
-        COALESCE(b_jade.available_balance::numeric, 0) as jade_balance,
-        COALESCE(b_hongbao.available_balance::numeric, 0) as hongbao_balance,
-        (SELECT COUNT(*) FROM public.users WHERE parent_id = u.id) as total_referrals,
-        COALESCE(ga.total_used_entries, 0) as used_entries,
-        s.email as sponsor_email,
-        s.nickname as sponsor_nickname
+        COALESCE(b_usdt.available_balance::numeric, 0) AS usdt_balance,
+        COALESCE(b_bao.available_balance::numeric, 0) AS bao_balance,
+        COALESCE(b_jade.available_balance::numeric, 0) AS jade_balance,
+        COALESCE(b_hongbao.available_balance::numeric, 0) AS hongbao_balance,
+        (SELECT COUNT(*) FROM public.users WHERE parent_id = u.id) AS total_referrals,
+        COALESCE(ga.total_used_entries, 0) AS used_entries,
+        s.email AS sponsor_email,
+        s.nickname AS sponsor_nickname
       FROM public.users u
       LEFT JOIN public.user_wallets uw ON u.id = uw.user_id
       LEFT JOIN public.assets a_usdt ON a_usdt.symbol = 'USDT'
@@ -40,31 +41,33 @@ export async function GET() {
       LEFT JOIN public.user_balances b_hongbao ON u.id = b_hongbao.user_id AND b_hongbao.asset_id = a_hongbao.id
       LEFT JOIN public.v_user_game_allowance ga ON u.id = ga.user_id
       LEFT JOIN public.users s ON u.parent_id = s.id
-      ORDER BY u.created_at DESC
+      ORDER BY u.created_at DESC, u.id DESC
     `;
+
     const res = await pool.query(query);
 
     return NextResponse.json({
       success: true,
-      users: res.rows.map((u: any) => ({
-        id: u.id,
-        email: u.email,
-        nickname: u.nickname || "유저",
-        code: `BAO-${u.id.substring(0, 8).toUpperCase()}`,
-        joinedAt: new Date(u.created_at).toISOString().split("T")[0],
-        lastLoginAt: u.last_login_at ? new Date(u.last_login_at).toLocaleString() : "기록없음",
-        starLevel: u.star_level || 0,
-        walletAddress: u.wallet_address || "미발급",
-        assets: parseFloat(u.usdt_balance),
-        baoBalance: parseFloat(u.bao_balance),
-        jadeBalance: parseFloat(u.jade_balance),
-        hongbaoBalance: parseFloat(u.hongbao_balance),
-        active: u.status === "ACTIVE",
-        totalReferrals: parseInt(u.total_referrals || 0),
-        usedEntries: parseInt(u.used_entries || 0),
-        sponsorEmail: u.sponsor_email || "없음",
-        sponsorNickname: u.sponsor_nickname || ""
-      }))
+      users: res.rows.map((user: any) => ({
+        id: user.id,
+        email: user.email,
+        nickname: user.nickname || "Unknown",
+        memberNumber: Number(user.member_number),
+        code: `BAO-${user.id.substring(0, 8).toUpperCase()}`,
+        joinedAt: new Date(user.created_at).toISOString().split("T")[0],
+        lastLoginAt: user.last_login_at ? new Date(user.last_login_at).toLocaleString() : "기록없음",
+        starLevel: user.star_level || 0,
+        walletAddress: user.wallet_address || "미발급",
+        assets: parseFloat(user.usdt_balance),
+        baoBalance: parseFloat(user.bao_balance),
+        jadeBalance: parseFloat(user.jade_balance),
+        hongbaoBalance: parseFloat(user.hongbao_balance),
+        active: user.status === "ACTIVE",
+        totalReferrals: Number(user.total_referrals || 0),
+        usedEntries: Number(user.used_entries || 0),
+        sponsorEmail: user.sponsor_email || "없음",
+        sponsorNickname: user.sponsor_nickname || "",
+      })),
     });
   } catch (err: any) {
     console.error("GET api/users error:", err);
@@ -75,12 +78,13 @@ export async function GET() {
 export async function DELETE(request: Request) {
   try {
     const { userId } = await request.json();
-    if (!userId) return NextResponse.json({ success: false, error: "userId is required" }, { status: 400 });
 
-    // public.users 에서 삭제하면 연관된 테이블들은 CASCADE 로 지워짐.
-    // auth.users 까지 삭제하려면 supabase admin API 가 필요하지만 일단 public.users 레코드 삭제
+    if (!userId) {
+      return NextResponse.json({ success: false, error: "userId is required" }, { status: 400 });
+    }
+
     const deleteRes = await pool.query("DELETE FROM public.users WHERE id = $1 RETURNING id", [userId]);
-    
+
     if (deleteRes.rowCount === 0) {
       return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
     }
