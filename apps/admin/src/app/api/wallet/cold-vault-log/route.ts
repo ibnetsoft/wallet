@@ -3,6 +3,7 @@ import { Pool } from "pg";
 import {
   Contract,
   JsonRpcProvider,
+  TransactionReceipt,
   ZeroAddress,
   formatEther,
   formatUnits,
@@ -30,6 +31,7 @@ const ERC20_ABI = [
   "function transfer(address to, uint256 amount) returns (bool)",
   "function balanceOf(address account) view returns (uint256)",
 ];
+const RECEIPT_POLL_DELAYS_MS = [3000, 5000, 8000, 12000];
 
 function errorResponse(error: string, status = 400) {
   return NextResponse.json({ success: false, error }, { status });
@@ -38,6 +40,49 @@ function errorResponse(error: string, status = 400) {
 function sanitizeError(error: unknown) {
   void error;
   return "The cold vault transfer could not be completed.";
+}
+
+function isRateLimitError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return error.message.includes("request limit reached")
+    || error.message.includes("rate limit")
+    || error.message.includes("too many requests");
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForReceiptWithBackoff(
+  provider: JsonRpcProvider,
+  txHash: string,
+): Promise<TransactionReceipt> {
+  let lastError: unknown;
+
+  for (const delay of RECEIPT_POLL_DELAYS_MS) {
+    await sleep(delay);
+
+    try {
+      const receipt = await provider.getTransactionReceipt(txHash);
+      if (receipt) {
+        return receipt;
+      }
+    } catch (error) {
+      lastError = error;
+      if (!isRateLimitError(error)) {
+        throw error;
+      }
+    }
+  }
+
+  if (lastError) {
+    throw lastError;
+  }
+
+  throw new Error("Timed out while waiting for the BSC transaction receipt.");
 }
 
 function isSameOriginRequest(request: Request) {
@@ -146,7 +191,10 @@ export async function POST(request: Request) {
         value: amountUnits,
       });
       txHash = tx.hash;
-      await tx.wait(1);
+      const receipt = await waitForReceiptWithBackoff(provider, txHash);
+      if (receipt.status !== 1) {
+        throw new Error("The BNB transfer transaction was mined but reverted.");
+      }
       explorerUrl = `https://bscscan.com/tx/${txHash}`;
     } else {
       const usdtContract = new Contract(getBscUsdtContract(), ERC20_ABI, signer);
@@ -160,7 +208,10 @@ export async function POST(request: Request) {
 
       const tx = await usdtContract.transfer(recipientAddress, amountUnits);
       txHash = tx.hash;
-      await tx.wait(1);
+      const receipt = await waitForReceiptWithBackoff(provider, txHash);
+      if (receipt.status !== 1) {
+        throw new Error("The USDT transfer transaction was mined but reverted.");
+      }
       explorerUrl = `https://bscscan.com/tx/${txHash}`;
     }
 

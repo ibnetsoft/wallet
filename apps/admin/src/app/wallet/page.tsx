@@ -635,7 +635,7 @@ export default function WalletSweepPage() {
                   <th className="px-4 py-3">도착</th>
                   <th className="px-4 py-3">금액</th>
                   <th className="px-4 py-3">주소</th>
-                  <th className="px-4 py-3">TX</th>
+                  <th className="w-[1%] whitespace-nowrap px-2 py-3 text-center">TX</th>
                   <th className="px-4 py-3 text-right">기록 시각</th>
                 </tr>
               </thead>
@@ -654,7 +654,7 @@ export default function WalletSweepPage() {
                           ? `${log.cold_vault_address.slice(0, 10)}...${log.cold_vault_address.slice(-6)}`
                           : "-"}
                       </td>
-                      <td className="px-4 py-3 font-mono text-[10px]">
+                      <td className="w-[1%] whitespace-nowrap px-2 py-3 text-center font-mono text-[10px]">
                         {txHash ? (
                           <a
                             href={`https://bscscan.com/tx/${txHash}`}
