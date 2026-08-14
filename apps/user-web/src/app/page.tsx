@@ -1179,9 +1179,6 @@ export default function MobileApp() {
                   </p>
                 </div>
               </div>
-              <div className="mt-3 pt-3 border-t border-[#2B3139] flex justify-end">
-                <span className="text-[10px] font-mono text-[#848E9C]">build {buildVersion}</span>
-              </div>
             </div>
 
             {/* Quick Menu 3x2 Grid */}
@@ -3145,6 +3142,10 @@ export default function MobileApp() {
                   {referralCopied ? <Check size={14} /> : <Copy size={14} />}
                 </button>
               </div>
+            </div>
+
+            <div className="pt-1 text-center">
+              <span className="text-[11px] font-mono text-[#848E9C]">ver. build {buildVersion}</span>
             </div>
 
           </div>

@@ -30,10 +30,37 @@ export async function GET(request: Request) {
 
   try {
     const { searchParams } = new URL(request.url);
-    const requestedLimit = Number.parseInt(searchParams.get("limit") || "100", 10);
+    const requestedLimit = Number.parseInt(searchParams.get("limit") || "20", 10);
     const limit = Number.isFinite(requestedLimit)
-      ? Math.min(Math.max(requestedLimit, 1), 500)
-      : 100;
+      ? Math.min(Math.max(requestedLimit, 1), 100)
+      : 20;
+    const requestedPage = Number.parseInt(searchParams.get("page") || "1", 10);
+    const page = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+    const selectedDate = searchParams.get("date")?.trim() || "";
+    const offset = (page - 1) * limit;
+
+    const filters: string[] = [];
+    const filterParams: Array<string | number> = [];
+
+    if (selectedDate) {
+      filterParams.push(selectedDate);
+      filters.push(`(l.created_at AT TIME ZONE 'Asia/Seoul')::date = $${filterParams.length}::date`);
+    }
+
+    const whereClause = filters.length > 0 ? `WHERE ${filters.join(" AND ")}` : "";
+
+    const countResult = await pool.query(
+      `SELECT COUNT(*)::int AS total
+       FROM public.ledger_entries AS l
+       JOIN public.users AS u ON l.user_id = u.id
+       JOIN public.assets AS a ON l.asset_id = a.id
+       ${whereClause}`,
+      filterParams,
+    );
+
+    const total = Number(countResult.rows[0]?.total ?? 0);
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const queryParams = [...filterParams, limit, offset];
 
     const result = await pool.query(
       `SELECT
@@ -50,13 +77,21 @@ export async function GET(request: Request) {
        FROM public.ledger_entries AS l
        JOIN public.users AS u ON l.user_id = u.id
        JOIN public.assets AS a ON l.asset_id = a.id
+       ${whereClause}
        ORDER BY l.created_at DESC
-       LIMIT $1`,
-      [limit]
+       LIMIT $${queryParams.length - 1}
+       OFFSET $${queryParams.length}`,
+      queryParams,
     );
 
     return NextResponse.json({
       success: true,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+      },
       transactions: result.rows.map((row: any) => {
         const details = parseDetails(row.details) as Record<string, unknown> | null;
 
@@ -79,7 +114,7 @@ export async function GET(request: Request) {
     console.error("GET api/transactions error:", error);
     return NextResponse.json(
       { success: false, error: error instanceof Error ? error.message : "Unable to load transactions." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
