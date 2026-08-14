@@ -1,9 +1,20 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-  Wallet, ArrowRightLeft, ShieldAlert, CheckCircle, RefreshCw,
-  Lock, ArrowDownRight, ArrowUpRight, ShieldCheck, AlertTriangle, Info, Copy, Check
+  AlertTriangle,
+  ArrowDownRight,
+  ArrowRightLeft,
+  ArrowUpRight,
+  Check,
+  CheckCircle,
+  Copy,
+  Info,
+  Lock,
+  RefreshCw,
+  ShieldAlert,
+  ShieldCheck,
+  Wallet,
 } from "lucide-react";
 
 interface UserWallet {
@@ -24,24 +35,34 @@ interface VaultTransferLog {
   created_at: string;
 }
 
+function getVaultTransferTxHash(note: string) {
+  const match = note.match(/txHash=(0x[a-fA-F0-9]{64})/);
+  return match ? match[1] : null;
+}
+
+function formatNumber(value: number | null | undefined, digits = 4) {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return "0";
+  }
+
+  return value.toLocaleString("ko-KR", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: digits,
+  });
+}
+
 export default function WalletSweepPage() {
   const [loading, setLoading] = useState(true);
-
-  // ── 실제 DB 데이터 ──
   const [userWallets, setUserWallets] = useState<UserWallet[]>([]);
   const [vaultLogs, setVaultLogs] = useState<VaultTransferLog[]>([]);
 
-  // ── 설정값 (DB system_settings 또는 vault_settings에서 로드) ──
   const [masterHotWallet, setMasterHotWallet] = useState("");
   const [coldVaultAddress, setColdVaultAddress] = useState("");
   const [hotBalanceUSDT, setHotBalanceUSDT] = useState<number | null>(null);
   const [coldBalanceUSDT, setColdBalanceUSDT] = useState<number | null>(null);
-  
-  // ── 수수료 지갑 상태 ──
   const [feeWalletAddress, setFeeWalletAddress] = useState<string | null>(null);
-  const [feeWalletBalance, setFeeWalletBalance] = useState<number>(0);
+  const [feeWalletBalance, setFeeWalletBalance] = useState(0);
 
-  // ── 이체 폼 ──
   const [vaultAsset, setVaultAsset] = useState<"USDT" | "BNB">("USDT");
   const [vaultAmount, setVaultAmount] = useState("");
   const [loadingSweep, setLoadingSweep] = useState<"live" | "dry-run" | null>(null);
@@ -50,14 +71,9 @@ export default function WalletSweepPage() {
   const [vaultMsg, setVaultMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [masterWalletCopied, setMasterWalletCopied] = useState(false);
 
-  // ── 자체 지갑 생성 상태 ──
-
-
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // Both endpoints call BSC. Start them together so a slow RPC affects the
-      // initial dashboard load once rather than serially.
       const [statusResult, feeResult] = await Promise.allSettled([
         fetch("/api/wallet/status").then(async (response) => ({
           ok: response.ok,
@@ -68,191 +84,211 @@ export default function WalletSweepPage() {
           data: await response.json(),
         })),
       ]);
+
       const statusData = statusResult.status === "fulfilled" && statusResult.value.ok
         ? statusResult.value.data
         : null;
-      
-      if (statusData?.success) {
-        // 1. 유저 지갑 및 잔고 설정
-        const mappedWallets = (Array.isArray(statusData.usersWithBalances) ? statusData.usersWithBalances : []).map((u: any) => {
-          const usdtBalanceObj = u.user_balances?.find((b: any) => b.asset_id === 2);
-          const usdt_balance = usdtBalanceObj ? parseFloat(usdtBalanceObj.available_balance) : 0;
-          
-          const wallet_address = u.user_wallets && u.user_wallets.length > 0
-            ? u.user_wallets[0].address
-            : "—";
 
-          return {
-            user_id: u.id,
-            email: u.email ?? "—",
-            wallet_address: wallet_address,
-            usdt_balance: usdt_balance
-          };
-        });
-        mappedWallets.sort((a: any, b: any) => b.usdt_balance - a.usdt_balance);
+      if (statusData?.success) {
+        const mappedWallets = (Array.isArray(statusData.usersWithBalances) ? statusData.usersWithBalances : [])
+          .map((user: any) => {
+            const usdtBalanceRow = Array.isArray(user.user_balances)
+              ? user.user_balances.find((balance: any) => balance.asset_id === 2)
+              : null;
+            const walletAddress = Array.isArray(user.user_wallets) && user.user_wallets.length > 0
+              ? user.user_wallets[0].address
+              : "-";
+
+            return {
+              user_id: user.id,
+              email: user.email ?? user.id,
+              wallet_address: walletAddress,
+              usdt_balance: usdtBalanceRow ? Number.parseFloat(usdtBalanceRow.available_balance) : 0,
+            } satisfies UserWallet;
+          })
+          .sort((a: UserWallet, b: UserWallet) => b.usdt_balance - a.usdt_balance);
+
         setUserWallets(mappedWallets);
 
-        // 2. 시스템 설정 설정
-        if (statusData.settings) {
-          const map: Record<string, string> = {};
-          statusData.settings.forEach((s: { key: string; value: string }) => { map[s.key] = s.value; });
-          setMasterHotWallet(map["master_hot_wallet"] ?? "");
-          setColdVaultAddress(map["cold_vault_address"] ?? "");
-          setHotBalanceUSDT(map["hot_balance_usdt"] ? parseFloat(map["hot_balance_usdt"]) : null);
-          setColdBalanceUSDT(map["cold_balance_usdt"] ? parseFloat(map["cold_balance_usdt"]) : null);
+        if (Array.isArray(statusData.settings)) {
+          const settingsMap = Object.fromEntries(
+            statusData.settings.map((row: { key: string; value: string }) => [row.key, row.value]),
+          );
+          setMasterHotWallet(settingsMap.master_hot_wallet ?? "");
+          setColdVaultAddress(settingsMap.cold_vault_address ?? "");
+          setHotBalanceUSDT(
+            settingsMap.hot_balance_usdt ? Number.parseFloat(settingsMap.hot_balance_usdt) : null,
+          );
+          setColdBalanceUSDT(
+            settingsMap.cold_balance_usdt ? Number.parseFloat(settingsMap.cold_balance_usdt) : null,
+          );
         }
 
-        // 3. 콜드 금고 이체 로그
-        if (statusData.logs) setVaultLogs(statusData.logs as VaultTransferLog[]);
+        setVaultLogs(Array.isArray(statusData.logs) ? statusData.logs : []);
       }
 
-      // 4. 수수료 지갑 잔액 조회
       if (feeResult.status === "fulfilled" && feeResult.value.ok) {
         const feeData = feeResult.value.data;
         if (feeData?.success) {
-          setFeeWalletAddress(feeData.address);
-          setFeeWalletBalance(feeData.balance);
+          setFeeWalletAddress(feeData.address ?? null);
+          setFeeWalletBalance(typeof feeData.balance === "number" ? feeData.balance : 0);
           if (typeof feeData.usdtBalance === "number") {
             setHotBalanceUSDT(feeData.usdtBalance);
           }
         }
-      } else if (feeResult.status === "rejected") {
-        console.error("Fee wallet fetch error:", feeResult.reason);
       }
-
-      if (statusResult.status === "rejected") {
-        console.error("Wallet status fetch error:", statusResult.reason);
-      }
-    } catch (err) {
-      console.error("데이터 로드 오류:", err);
+    } catch (error) {
+      console.error("wallet dashboard fetch error:", error);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    void fetchData();
+  }, [fetchData]);
 
-  const totalSweepable = userWallets.reduce((acc, w) => acc + (w.usdt_balance ?? 0), 0);
+  const totalSweepable = userWallets.reduce((sum, wallet) => sum + (wallet.usdt_balance ?? 0), 0);
+  const estimatedGasNeed = userWallets.length * 0.0005;
 
   const handleCopyMasterWallet = async () => {
     const address = masterHotWallet || feeWalletAddress || "";
-    if (!address) return;
+    if (!address) {
+      return;
+    }
 
     await navigator.clipboard.writeText(address);
     setMasterWalletCopied(true);
-    setTimeout(() => setMasterWalletCopied(false), 2000);
+    window.setTimeout(() => setMasterWalletCopied(false), 2000);
   };
 
   const formatSweepSummary = (data: any, dryRun: boolean) => {
     const summary = data?.summary;
     if (!summary) {
-      return dryRun ? "드라이런 점검이 완료되었습니다." : "스윕이 완료되었습니다.";
+      return dryRun
+        ? "드라이런 응답 요약을 불러오지 못했습니다."
+        : "스윕 결과 요약을 불러오지 못했습니다.";
     }
 
     const head = dryRun
-      ? `드라이런 완료: 대상 ${summary.actionableUsers}개 / 전체 ${summary.totalUsersScanned}개`
-      : `스윕 결과: 성공 ${summary.sweptUsers}개 / 실패 ${summary.failedUsers}개 / 건너뜀 ${summary.skippedUsers}개`;
-    const amountText = `수량 ${Number(summary.totalSweepAmount).toLocaleString()} USDT, 필요 가스 ${Number(summary.requiredGasBnb).toFixed(4)} BNB`;
+      ? `드라이런 완료: 실행 가능 ${summary.actionableUsers}건 / 전체 ${summary.totalUsersScanned}건`
+      : `스윕 완료: 성공 ${summary.sweptUsers}건 / 실패 ${summary.failedUsers}건 / 제외 ${summary.skippedUsers}건`;
+    const amountText = `예상 스윕 ${formatNumber(Number(summary.totalSweepAmount), 6)} USDT, 필요 가스 ${formatNumber(Number(summary.requiredGasBnb), 6)} BNB`;
     const issueText = Array.isArray(summary.issues) && summary.issues.length > 0
-      ? ` 이슈 ${summary.issues.length}건은 sweep 로그에 기록되었습니다.`
+      ? ` 경고 ${summary.issues.length}건이 함께 기록되었습니다.`
       : "";
+
     return `${head}. ${amountText}.${issueText}`;
   };
 
-
-
-  // ── 스윕: API를 통해 DB 트랜잭션 수행 ──
   const handleSweep = async (dryRun = false) => {
     if (totalSweepable <= 0) {
-      setSweepMsg({ type: "err", text: "모으기 가능한 유저 잔액이 없습니다." });
+      setSweepMsg({ type: "err", text: "스윕 가능한 사용자 USDT 잔액이 없습니다." });
       return;
     }
+
     if (!masterHotWallet) {
-      setSweepMsg({ type: "err", text: "마스터 핫 지갑 주소가 생성되지 않았습니다." });
+      setSweepMsg({ type: "err", text: "마스터 핫월렛 주소가 설정되어 있지 않습니다." });
       return;
     }
-    if (!dryRun && !confirm(`유저 개별 지갑 총 ${totalSweepable.toLocaleString()} USDT를 회사지갑(${masterHotWallet})으로 실제 스윕하시겠습니까?\n\n⚠️ 이 작업은 BSC 온체인 트랜잭션을 전송하며, 성공한 지갑만큼 DB 잔액도 차감됩니다.`)) return;
+
+    if (!dryRun) {
+      const confirmed = window.confirm(
+        `총 ${formatNumber(totalSweepable, 6)} USDT를 ${masterHotWallet} 로 실제 스윕할까요?\n\n실행 시 BSC 메인넷 트랜잭션이 전송되고, 성공한 지갑만 DB 잔액이 차감됩니다.`,
+      );
+      if (!confirmed) {
+        return;
+      }
+    }
 
     setLoadingSweep(dryRun ? "dry-run" : "live");
     setSweepMsg(null);
+
     try {
-      const res = await fetch("/api/wallet/sweep", {
+      const response = await fetch("/api/wallet/sweep", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ target_wallet: masterHotWallet, dryRun })
+        body: JSON.stringify({ target_wallet: masterHotWallet, dryRun }),
       });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error);
-      if (dryRun) {
-        setSweepMsg({
-          type: "ok",
-          text: formatSweepSummary(data, true)
-        });
-        return;
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Sweep request failed.");
       }
 
       setSweepMsg({
         type: "ok",
-        text: formatSweepSummary(data, false)
+        text: formatSweepSummary(data, dryRun),
       });
+
       if (!dryRun) {
-        fetchData();
+        void fetchData();
       }
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setSweepMsg({ type: "err", text: `오류: ${msg}` });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      setSweepMsg({ type: "err", text: `오류: ${message}` });
     } finally {
       setLoadingSweep(null);
     }
   };
 
-  // ── 콜드 금고 이체: 실제 블록체인 TX 없음 → vault_transfers에 기록 저장 ──
-  const handleColdTransfer = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const val = parseFloat(vaultAmount);
-    if (isNaN(val) || val <= 0) {
-      setVaultMsg({ type: "err", text: "올바른 이체 수량을 입력해주세요." });
-      return;
-    }
-    if (!coldVaultAddress || coldVaultAddress.trim() === "") {
-      setVaultMsg({ type: "err", text: "콜드 금고 수신 지갑 주소를 입력해주세요." });
-      return;
-    }
-    if (hotBalanceUSDT !== null && vaultAsset === "USDT" && val > hotBalanceUSDT) {
-      setVaultMsg({ type: "err", text: `핫 지갑 잔액(${hotBalanceUSDT.toLocaleString()} USDT)을 초과합니다.` });
+  const handleColdTransfer = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    const amount = Number.parseFloat(vaultAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setVaultMsg({ type: "err", text: "전송할 금액을 올바르게 입력해 주세요." });
       return;
     }
 
-    if (!confirm(
-      `[마스터 핫 지갑 ➔ 오프라인 콜드 금고 이체 기록]\n\n이체 수량: ${val.toLocaleString()} ${vaultAsset}\n수신 지갑: ${coldVaultAddress}\n\n⚠️ 이 버튼은 DB에 이체 기록만 저장합니다.\n실제 블록체인 송금은 해당 지갑 앱에서 직접 실행하세요.\n\n계속하시겠습니까?`
-    )) return;
+    if (!coldVaultAddress.trim()) {
+      setVaultMsg({ type: "err", text: "콜드월렛 주소를 먼저 입력해 주세요." });
+      return;
+    }
+
+    if (vaultAsset === "USDT" && hotBalanceUSDT !== null && amount > hotBalanceUSDT) {
+      setVaultMsg({
+        type: "err",
+        text: `핫월렛 USDT 잔액(${formatNumber(hotBalanceUSDT, 6)} USDT)을 초과했습니다.`,
+      });
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `${amount.toLocaleString("ko-KR")} ${vaultAsset}를 콜드월렛으로 전송할까요?\n\n실행 시 실제 BSC 메인넷 트랜잭션이 전송되며, 성공 시 이력도 함께 기록됩니다.`,
+    );
+    if (!confirmed) {
+      return;
+    }
 
     setLoadingVault(true);
     setVaultMsg(null);
+
     try {
       const response = await fetch("/api/wallet/cold-vault-log", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: val,
+          amount,
           asset: vaultAsset,
           coldVaultAddress,
         }),
       });
       const result = await response.json();
+
       if (!response.ok || !result.success) {
-        throw new Error(result.error || "콜드 금고 이체 기록을 저장하지 못했습니다.");
+        throw new Error(result.error || "Cold vault transfer failed.");
       }
 
       setVaultMsg({
         type: "ok",
-        text: `📋 이체 기록(${val.toLocaleString()} ${vaultAsset} → 콜드 금고)이 저장되었습니다. 실제 블록체인 송금은 지갑 앱에서 직접 실행하세요.`,
+        text: `${amount.toLocaleString("ko-KR")} ${vaultAsset} 콜드월렛 이체가 기록되었습니다. TX: ${result.txHash ?? "-"}`,
       });
       setVaultAmount("");
-      fetchData();
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setVaultMsg({ type: "err", text: `오류: ${msg}` });
+      void fetchData();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      setVaultMsg({ type: "err", text: `오류: ${message}` });
     } finally {
       setLoadingVault(false);
     }
@@ -260,263 +296,268 @@ export default function WalletSweepPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64 text-[#8E8E93] text-sm">
-        <RefreshCw className="animate-spin mr-2" size={18} />
-        DB에서 실제 데이터를 불러오는 중...
+      <div className="flex h-64 items-center justify-center text-sm text-[#8E8E93]">
+        <RefreshCw className="mr-2 animate-spin" size={18} />
+        지갑 현황을 불러오는 중입니다.
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 font-sans relative">
-      {/* Page Header */}
+    <div className="relative space-y-8 font-sans">
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white tracking-tight flex items-center space-x-2">
+          <h2 className="flex items-center space-x-2 text-2xl font-bold tracking-tight text-white">
             <Wallet className="text-[#00D2FF]" />
-            <span>지갑 자산 모으기 &amp; 콜드 금고 이체 관리</span>
+            <span>지갑 Sweep / Cold Vault 관리</span>
           </h2>
-          <p className="text-sm text-[#8E8E93] mt-1">
-            유저 지갑 자산 모으기(Sweep) 및 마스터 핫 지갑과 오프라인 콜드 금고(Cold Vault) 간의 안전 자산 이체 기록을 제어합니다.
+          <p className="mt-1 text-sm text-[#8E8E93]">
+            사용자 입금 지갑의 USDT를 마스터 핫월렛으로 모으고, 필요 시 콜드월렛 이체까지 한 화면에서 관리합니다.
           </p>
         </div>
+
         <button
-          onClick={fetchData}
-          className="flex items-center space-x-1.5 px-3 py-2 bg-[#26262B] hover:bg-[#3A3A40] text-[#8E8E93] rounded-lg text-xs transition-colors cursor-pointer"
+          onClick={() => void fetchData()}
+          className="flex cursor-pointer items-center space-x-1.5 rounded-lg bg-[#26262B] px-3 py-2 text-xs text-[#8E8E93] transition-colors hover:bg-[#3A3A40]"
         >
           <RefreshCw size={13} />
           <span>새로고침</span>
         </button>
       </div>
 
-      {/* ⚠️ 실제 데이터 안내 배너 */}
-      <div className="flex items-start space-x-3 p-4 bg-[#FF9F0A]/10 border border-[#FF9F0A]/30 rounded-xl">
-        <Info size={16} className="text-[#FF9F0A] flex-shrink-0 mt-0.5" />
-        <div className="text-xs text-[#EAECEF] leading-relaxed">
-          <span className="font-bold text-[#FF9F0A]">[중요] </span>
-          이 페이지의 모든 잔액과 지갑 주소는 <strong>DB의 실제 데이터</strong>입니다.
-          &quot;스윕 실행&quot; 및 &quot;콜드 금고 이체&quot; 버튼은 <strong>블록체인에 직접 트랜잭션을 전송하지 않습니다.</strong>
-          &nbsp;DB에 요청/기록을 저장하며, 실제 온체인 실행은 별도 지갑 앱(MetaMask, Trust Wallet 등)에서 직접 수행하세요.
+      <div className="flex items-start space-x-3 rounded-xl border border-[#FF9F0A]/30 bg-[#FF9F0A]/10 p-4">
+        <Info size={16} className="mt-0.5 flex-shrink-0 text-[#FF9F0A]" />
+        <div className="text-xs leading-relaxed text-[#EAECEF]">
+          <span className="font-bold text-[#FF9F0A]">주의</span>
+          {" "}스윕 실행과 콜드월렛 전송은 모두 실제 BSC 메인넷 트랜잭션을 발생시킵니다. 먼저 `Dry Run`으로 대상과 가스비를 점검한 뒤 진행해 주세요.
         </div>
       </div>
 
-      {/* Main Control Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-        {/* Panel 1: User Wallets → Master Hot Wallet Sweep */}
-        <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 shadow-lg space-y-5">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="space-y-5 rounded-2xl border border-[#26262B] bg-[#16161A] p-6 shadow-lg">
           <div className="flex items-center justify-between border-b border-[#26262B] pb-4">
-            <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center space-x-2">
+            <h4 className="flex items-center space-x-2 text-sm font-bold uppercase tracking-wider text-white">
               <ArrowDownRight size={18} className="text-[#00D2FF]" />
-              <span>1단계: 유저 지갑 ➔ 마스터 핫 지갑 모으기</span>
+              <span>1. 사용자 지갑 Sweep</span>
             </h4>
-            <span className="text-[10px] font-bold px-2 py-0.5 bg-[#30D5C8]/10 text-[#30D5C8] rounded border border-[#30D5C8]/20">BSC BEP-20</span>
+            <span className="rounded border border-[#30D5C8]/20 bg-[#30D5C8]/10 px-2 py-0.5 text-[10px] font-bold text-[#30D5C8]">
+              BSC BEP-20
+            </span>
           </div>
 
-          {/* 통합 마스터 핫 지갑 정보 */}
-          <div className="p-4 bg-[#121215] rounded-xl border border-[#26262B] space-y-3">
-            <div className="flex justify-between items-center border-b border-[#26262B] pb-2">
-              <label className="text-[10px] text-[#00D2FF] uppercase font-bold">통합 마스터 핫 지갑 정보</label>
-              <span className="text-[10px] px-2 py-0.5 bg-[#00D2FF]/10 text-[#00D2FF] rounded font-bold">마스터 지갑 단일화</span>
+          <div className="space-y-3 rounded-xl border border-[#26262B] bg-[#121215] p-4">
+            <div className="flex items-center justify-between border-b border-[#26262B] pb-2">
+              <label className="text-[10px] font-bold uppercase text-[#00D2FF]">마스터 핫월렛</label>
+              <span className="rounded bg-[#00D2FF]/10 px-2 py-0.5 text-[10px] font-bold text-[#00D2FF]">
+                Sweep 수령 주소
+              </span>
             </div>
-            
+
             <div className="space-y-1">
-              <p className="text-[10px] text-[#8E8E93] uppercase font-bold flex items-center space-x-1">
-                <span>마스터 지갑 주소 (USDT 수집 및 BNB 가스비 대납)</span>
+              <p className="text-[10px] font-bold uppercase text-[#8E8E93]">
+                가스비 대납 및 Sweep 수령용 지갑
               </p>
-              <div className="flex items-center space-x-2 mt-1">
+              <div className="mt-1 flex items-center space-x-2">
                 <button
                   type="button"
-                  onClick={handleCopyMasterWallet}
+                  onClick={() => void handleCopyMasterWallet()}
                   disabled={!masterHotWallet && !feeWalletAddress}
-                  className="flex-shrink-0 text-[#00D2FF] hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                   title="지갑 주소 복사"
+                  className="flex-shrink-0 cursor-pointer text-[#00D2FF] transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  {masterWalletCopied ? <Check size={16} className="text-[#0ECB81]" /> : <Wallet size={16} />}
+                  {masterWalletCopied ? <Check size={16} className="text-[#0ECB81]" /> : <Copy size={16} />}
                 </button>
-                <span className="text-white font-mono text-xs break-all">
-                  {masterHotWallet || feeWalletAddress || "⚠️ 미등록 (시스템 설정에서 생성/등록 필요)"}
+                <span className="break-all font-mono text-xs text-white">
+                  {masterHotWallet || feeWalletAddress || "설정된 마스터 핫월렛 주소가 없습니다."}
                 </span>
-                {(masterHotWallet || feeWalletAddress) && (
-                  <span className="text-[10px] text-[#8E8E93]">
-                    {masterWalletCopied ? "복사됨!" : <Copy size={12} />}
-                  </span>
-                )}
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3 pt-2">
-              <div className="p-2.5 bg-[#1C1C21] rounded-lg border border-[#26262B]">
-                <p className="text-[9px] text-[#8E8E93] uppercase font-bold">보유 BNB (가스비 잔액)</p>
-                <p className="text-sm font-bold text-[#30D5C8] font-mono mt-1">
-                  {feeWalletBalance.toFixed(4)} BNB
+              <div className="rounded-lg border border-[#26262B] bg-[#1C1C21] p-2.5">
+                <p className="text-[9px] font-bold uppercase text-[#8E8E93]">가스 지갑 BNB</p>
+                <p className="mt-1 font-mono text-sm font-bold text-[#30D5C8]">
+                  {formatNumber(feeWalletBalance, 6)} BNB
                 </p>
               </div>
-              <div className="p-2.5 bg-[#1C1C21] rounded-lg border border-[#26262B]">
-                <p className="text-[9px] text-[#8E8E93] uppercase font-bold">보유 USDT (회사 자산)</p>
-                <p className="text-sm font-bold text-white font-mono mt-1">
-                  {hotBalanceUSDT !== null ? hotBalanceUSDT.toLocaleString() : "0"} USDT
+              <div className="rounded-lg border border-[#26262B] bg-[#1C1C21] p-2.5">
+                <p className="text-[9px] font-bold uppercase text-[#8E8E93]">핫월렛 USDT</p>
+                <p className="mt-1 font-mono text-sm font-bold text-white">
+                  {formatNumber(hotBalanceUSDT, 6)} USDT
                 </p>
               </div>
             </div>
 
-            {feeWalletBalance < (userWallets.length * 0.0005) && userWallets.length > 0 && (
-              <p className="text-[10px] text-[#FF453A] font-semibold mt-2 flex items-start gap-1">
-                <span>⚠️ 경고: 마스터 핫 지갑의 BNB 잔액이 부족하여 스윕이 실패할 수 있습니다. 위 주소로 BNB를 입금하세요.</span>
+            {feeWalletBalance < estimatedGasNeed && userWallets.length > 0 && (
+              <p className="mt-2 flex items-start gap-1 text-[10px] font-semibold text-[#FF453A]">
+                <span>현재 BNB 잔액이 전체 스윕 예상 가스비보다 적습니다. 실행 전 충전이 필요할 수 있습니다.</span>
               </p>
             )}
           </div>
 
-          {/* 모으기 가능 잔액 정보 */}
-          <div className="p-4 bg-[#1C1C21] rounded-xl border border-[#FF9F0A]/30 space-y-4">
-            <div className="flex justify-between items-center">
+          <div className="space-y-4 rounded-xl border border-[#FF9F0A]/30 bg-[#1C1C21] p-4">
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-[10px] text-[#8E8E93] uppercase font-bold flex items-center space-x-1">
+                <p className="flex items-center space-x-1 text-[10px] font-bold uppercase text-[#8E8E93]">
                   <ShieldAlert size={12} className="text-[#FF9F0A]" />
-                  <span>유저 지갑 총 잔액 (DB 실제값)</span>
+                  <span>DB 기준 Sweep 대상 잔액</span>
                 </p>
-                <p className="text-xl font-extrabold text-white mt-1 font-mono">
-                  {totalSweepable.toLocaleString()} <span className="text-xs text-[#8E8E93]">USDT</span>
+                <p className="mt-1 font-mono text-xl font-extrabold text-white">
+                  {formatNumber(totalSweepable, 6)} <span className="text-xs text-[#8E8E93]">USDT</span>
                 </p>
-                <p className="text-[10px] text-[#8E8E93] mt-0.5">{userWallets.length}개 유저 지갑 합산</p>
+                <p className="mt-0.5 text-[10px] text-[#8E8E93]">{userWallets.length}개 사용자 지갑</p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] text-[#8E8E93] uppercase font-bold">총 필요 예상 가스비</p>
-                <p className="text-sm font-bold text-[#FF9F0A] mt-1 font-mono">~{(userWallets.length * 0.0005).toFixed(4)} BNB</p>
-                <p className="text-[10px] text-[#8E8E93] mt-0.5">{userWallets.length} x 0.0005 BNB</p>
+                <p className="text-[10px] font-bold uppercase text-[#8E8E93]">예상 가스비</p>
+                <p className="mt-1 font-mono text-sm font-bold text-[#FF9F0A]">
+                  ~{formatNumber(estimatedGasNeed, 6)} BNB
+                </p>
+                <p className="mt-0.5 text-[10px] text-[#8E8E93]">{userWallets.length} x 0.0005 BNB</p>
               </div>
             </div>
           </div>
 
-          {/* 유저 지갑 목록 */}
           {userWallets.length > 0 ? (
-            <div className="overflow-x-auto max-h-40 overflow-y-auto">
+            <div className="max-h-40 overflow-x-auto overflow-y-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="text-[#8E8E93] border-b border-[#26262B]">
-                    <th className="py-2 px-2 text-left font-semibold">이메일</th>
-                    <th className="py-2 px-2 text-right font-semibold">잔액 (USDT)</th>
+                  <tr className="border-b border-[#26262B] text-[#8E8E93]">
+                    <th className="px-2 py-2 text-left font-semibold">사용자</th>
+                    <th className="px-2 py-2 text-left font-semibold">지갑 주소</th>
+                    <th className="px-2 py-2 text-right font-semibold">잔액 (USDT)</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {userWallets.map((w) => (
-                    <tr key={w.user_id} className="border-b border-[#26262B]/30">
-                      <td className="py-1.5 px-2 text-[#EAECEF]">{w.email}</td>
-                      <td className="py-1.5 px-2 text-right font-mono font-bold text-white">{w.usdt_balance.toLocaleString()}</td>
+                  {userWallets.map((wallet) => (
+                    <tr key={wallet.user_id} className="border-b border-[#26262B]/30">
+                      <td className="px-2 py-1.5 text-[#EAECEF]">{wallet.email}</td>
+                      <td className="px-2 py-1.5 font-mono text-[10px] text-[#8E8E93]">
+                        {wallet.wallet_address}
+                      </td>
+                      <td className="px-2 py-1.5 text-right font-mono font-bold text-white">
+                        {formatNumber(wallet.usdt_balance, 6)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           ) : (
-            <p className="text-xs text-[#8E8E93] text-center py-4">유저 지갑 데이터 없음</p>
+            <p className="py-4 text-center text-xs text-[#8E8E93]">Sweep 대상 지갑이 없습니다.</p>
           )}
 
           {sweepMsg && (
-            <div className={`flex items-start space-x-2 p-3 rounded-lg text-xs ${sweepMsg.type === "ok" ? "bg-[#30D5C8]/10 border border-[#30D5C8]/30 text-[#30D5C8]" : "bg-[#FF453A]/10 border border-[#FF453A]/30 text-[#FF453A]"}`}>
-              {sweepMsg.type === "ok" ? <CheckCircle size={14} className="flex-shrink-0 mt-0.5" /> : <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" />}
+            <div className={`flex items-start space-x-2 rounded-lg border p-3 text-xs ${
+              sweepMsg.type === "ok"
+                ? "border-[#30D5C8]/30 bg-[#30D5C8]/10 text-[#30D5C8]"
+                : "border-[#FF453A]/30 bg-[#FF453A]/10 text-[#FF453A]"
+            }`}
+            >
+              {sweepMsg.type === "ok"
+                ? <CheckCircle size={14} className="mt-0.5 flex-shrink-0" />
+                : <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />}
               <span>{sweepMsg.text}</span>
             </div>
           )}
 
-          <div className="rounded-xl border border-[#26262B] bg-[#121215] p-3 text-[11px] text-[#8E8E93] space-y-1.5">
+          <div className="space-y-1.5 rounded-xl border border-[#26262B] bg-[#121215] p-3 text-[11px] text-[#8E8E93]">
             <p className="font-semibold text-white">Sweep 체크리스트</p>
-            <p>1. 먼저 `Dry Run`으로 대상 수량, 주소 불일치, 부족 잔액을 점검하세요.</p>
-            <p>2. 마스터 지갑의 BNB가 예상 가스비 이상인지 확인하세요.</p>
-            <p>3. 실제 실행 후에는 잔액과 로그를 새로고침해서 다시 확인하세요.</p>
+            <p>1. 먼저 `Dry Run`으로 실행 대상, 예상 스윕 수량, 필요 가스비를 확인하세요.</p>
+            <p>2. 가스 지갑의 BNB가 부족하면 실제 Sweep은 중간에 실패할 수 있습니다.</p>
+            <p>3. 실제 실행 후에는 성공한 건만 DB 잔액과 원장 이력이 갱신됩니다.</p>
           </div>
 
           <button
-            onClick={() => handleSweep(true)}
+            onClick={() => void handleSweep(true)}
             disabled={loadingSweep !== null || totalSweepable <= 0}
-            className="w-full py-3.5 bg-[#26262B] hover:bg-[#303038] text-white font-bold rounded-xl transition-all flex items-center justify-center space-x-2 disabled:opacity-40 text-xs cursor-pointer"
+            className="flex w-full cursor-pointer items-center justify-center space-x-2 rounded-xl bg-[#26262B] py-3.5 text-xs font-bold text-white transition-all hover:bg-[#303038] disabled:opacity-40"
           >
-            {loadingSweep === "dry-run" ? <RefreshCw size={16} className="animate-spin" /> : (
+            {loadingSweep === "dry-run" ? (
+              <RefreshCw size={16} className="animate-spin" />
+            ) : (
               <>
                 <Info size={16} />
-                <span>Dry Run 점검</span>
+                <span>Dry Run 실행</span>
               </>
             )}
           </button>
 
           <button
-            onClick={() => handleSweep(false)}
+            onClick={() => void handleSweep(false)}
             disabled={loadingSweep !== null || totalSweepable <= 0}
-            className="w-full py-3.5 bg-gradient-to-r from-[#00D2FF] to-[#BF5AF2] hover:opacity-90 text-white font-bold rounded-xl transition-all flex items-center justify-center space-x-2 shadow-[0_0_15px_rgba(0,210,255,0.2)] disabled:opacity-40 text-xs cursor-pointer"
+            className="flex w-full cursor-pointer items-center justify-center space-x-2 rounded-xl bg-gradient-to-r from-[#00D2FF] to-[#BF5AF2] py-3.5 text-xs font-bold text-white shadow-[0_0_15px_rgba(0,210,255,0.2)] transition-all hover:opacity-90 disabled:opacity-40"
           >
-            {loadingSweep === "live" ? <RefreshCw size={16} className="animate-spin" /> : (
+            {loadingSweep === "live" ? (
+              <RefreshCw size={16} className="animate-spin" />
+            ) : (
               <>
-                <span>Sweep 실행 (온체인)</span>
+                <span>Sweep 실제 실행</span>
                 <ArrowRightLeft size={16} />
               </>
             )}
           </button>
         </div>
 
-        {/* Panel 2: Master Hot Wallet → Cold Vault Transfer */}
-        <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 shadow-lg space-y-5">
+        <div className="space-y-5 rounded-2xl border border-[#26262B] bg-[#16161A] p-6 shadow-lg">
           <div className="flex items-center justify-between border-b border-[#26262B] pb-4">
-            <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center space-x-2">
+            <h4 className="flex items-center space-x-2 text-sm font-bold uppercase tracking-wider text-white">
               <Lock size={18} className="text-[#30D5C8]" />
-              <span>2단계: 핫 지갑 ➔ 오프라인 콜드 금고 이체</span>
+              <span>2. Cold Vault 이체</span>
             </h4>
-            <span className="text-[10px] font-bold px-2 py-0.5 bg-[#BF5AF2]/10 text-[#BF5AF2] rounded border border-[#BF5AF2]/20">기록만 저장</span>
+            <span className="rounded border border-[#BF5AF2]/20 bg-[#BF5AF2]/10 px-2 py-0.5 text-[10px] font-bold text-[#BF5AF2]">
+              실트랜잭션
+            </span>
           </div>
 
-          {/* 핫/콜드 잔액 */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 bg-[#121215] rounded-xl border border-[#26262B]">
-              <p className="text-[10px] text-[#8E8E93] uppercase font-bold">핫 지갑 잔액</p>
-              {hotBalanceUSDT !== null ? (
-                <p className="text-base font-extrabold text-[#30D5C8] mt-1 font-mono">{hotBalanceUSDT.toLocaleString()} USDT</p>
-              ) : (
-                <p className="text-xs text-[#8E8E93] mt-1">미설정</p>
-              )}
-              <p className="text-[10px] text-[#8E8E93] mt-0.5">system_settings</p>
+            <div className="rounded-xl border border-[#26262B] bg-[#121215] p-3">
+              <p className="text-[10px] font-bold uppercase text-[#8E8E93]">핫월렛 USDT 잔액</p>
+              <p className="mt-1 font-mono text-base font-extrabold text-[#30D5C8]">
+                {formatNumber(hotBalanceUSDT, 6)} USDT
+              </p>
+              <p className="mt-0.5 text-[10px] text-[#8E8E93]">온체인 기준</p>
             </div>
-            <div className="p-3 bg-[#121215] rounded-xl border border-[#26262B]">
-              <p className="text-[10px] text-[#8E8E93] uppercase font-bold">콜드 금고 보관 기록</p>
-              {coldBalanceUSDT !== null ? (
-                <p className="text-base font-extrabold text-[#BF5AF2] mt-1 font-mono">{coldBalanceUSDT.toLocaleString()} USDT</p>
-              ) : (
-                <p className="text-xs text-[#8E8E93] mt-1">미설정</p>
-              )}
-              <p className="text-[10px] text-[#8E8E93] mt-0.5">누적 이체 기록 합산</p>
+            <div className="rounded-xl border border-[#26262B] bg-[#121215] p-3">
+              <p className="text-[10px] font-bold uppercase text-[#8E8E93]">누적 Cold Vault USDT</p>
+              <p className="mt-1 font-mono text-base font-extrabold text-[#BF5AF2]">
+                {formatNumber(coldBalanceUSDT, 6)} USDT
+              </p>
+              <p className="mt-0.5 text-[10px] text-[#8E8E93]">로그 기준 누적값</p>
             </div>
           </div>
 
-          <form onSubmit={handleColdTransfer} className="space-y-4">
-            {/* 콜드 금고 수신 주소 */}
+          <form onSubmit={(event) => void handleColdTransfer(event)} className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-[10px] text-[#8E8E93] uppercase font-bold">
-                콜드 금고 수신 지갑 주소 <span className="text-[#FF453A]">(직접 입력)</span>
+              <label className="text-[10px] font-bold uppercase text-[#8E8E93]">
+                콜드월렛 주소 <span className="text-[#FF453A]">(필수)</span>
               </label>
-              <div className="flex items-center space-x-2 p-2.5 bg-[#1C1C21] border border-[#26262B] focus-within:border-[#30D5C8] rounded-xl transition-colors">
-                <ShieldCheck size={16} className="text-[#30D5C8] flex-shrink-0" />
+              <div className="flex items-center space-x-2 rounded-xl border border-[#26262B] bg-[#1C1C21] p-2.5 transition-colors focus-within:border-[#30D5C8]">
+                <ShieldCheck size={16} className="flex-shrink-0 text-[#30D5C8]" />
                 <input
                   type="text"
                   value={coldVaultAddress}
-                  onChange={(e) => setColdVaultAddress(e.target.value)}
-                  placeholder="0x... (실제 오프라인 콜드 지갑 주소 입력)"
-                  className="bg-transparent border-none text-white font-mono text-xs focus:outline-none w-full placeholder:text-[#555]"
+                  onChange={(event) => setColdVaultAddress(event.target.value)}
+                  placeholder="0x... 콜드월렛 주소 입력"
+                  className="w-full bg-transparent font-mono text-xs text-white placeholder:text-[#555] focus:outline-none"
                 />
               </div>
               {!coldVaultAddress && (
-                <p className="text-[10px] text-[#FF9F0A]">⚠️ 주소가 비어 있습니다. 실제 콜드 지갑 주소를 입력하세요.</p>
+                <p className="text-[10px] text-[#FF9F0A]">
+                  아직 콜드월렛 주소가 비어 있습니다. 전송 전에 정확한 주소를 입력해 주세요.
+                </p>
               )}
             </div>
 
-            {/* 이체 수량 */}
             <div className="space-y-1.5">
-              <div className="flex justify-between items-center text-[10px] text-[#8E8E93]">
-                <label className="uppercase font-bold">이체 수량</label>
+              <div className="flex items-center justify-between text-[10px] text-[#8E8E93]">
+                <label className="font-bold uppercase">전송 금액</label>
                 {hotBalanceUSDT !== null && (
                   <button
                     type="button"
                     onClick={() => setVaultAmount(hotBalanceUSDT.toString())}
-                    className="text-[#00D2FF] font-bold hover:underline cursor-pointer"
+                    className="cursor-pointer font-bold text-[#00D2FF] hover:underline"
                   >
-                    [전액 선택: {hotBalanceUSDT.toLocaleString()} USDT]
+                    [최대값 입력]
                   </button>
                 )}
               </div>
@@ -527,14 +568,14 @@ export default function WalletSweepPage() {
                   step="any"
                   required
                   value={vaultAmount}
-                  onChange={(e) => setVaultAmount(e.target.value)}
-                  placeholder="이체할 수량 입력"
-                  className="w-full bg-[#1C1C21] border border-[#26262B] focus:border-[#30D5C8] pl-3 pr-20 py-2.5 rounded-xl text-sm font-bold text-white font-mono outline-none placeholder:font-normal placeholder:text-[#555]"
+                  onChange={(event) => setVaultAmount(event.target.value)}
+                  placeholder="전송할 금액 입력"
+                  className="w-full rounded-xl border border-[#26262B] bg-[#1C1C21] py-2.5 pl-3 pr-20 font-mono text-sm font-bold text-white outline-none placeholder:font-normal placeholder:text-[#555] focus:border-[#30D5C8]"
                 />
                 <select
                   value={vaultAsset}
-                  onChange={(e) => setVaultAsset(e.target.value as "USDT" | "BNB")}
-                  className="absolute right-2 top-2 bg-[#26262B] text-xs font-bold text-[#30D5C8] rounded px-2 py-1 border-none focus:outline-none"
+                  onChange={(event) => setVaultAsset(event.target.value as "USDT" | "BNB")}
+                  className="absolute right-2 top-2 rounded bg-[#26262B] px-2 py-1 text-xs font-bold text-[#30D5C8] focus:outline-none"
                 >
                   <option value="USDT">USDT</option>
                   <option value="BNB">BNB</option>
@@ -542,10 +583,16 @@ export default function WalletSweepPage() {
               </div>
             </div>
 
-            {/* 오류/성공 메시지 */}
             {vaultMsg && (
-              <div className={`flex items-start space-x-2 p-3 rounded-lg text-xs ${vaultMsg.type === "ok" ? "bg-[#30D5C8]/10 border border-[#30D5C8]/30 text-[#30D5C8]" : "bg-[#FF453A]/10 border border-[#FF453A]/30 text-[#FF453A]"}`}>
-                {vaultMsg.type === "ok" ? <CheckCircle size={14} className="flex-shrink-0 mt-0.5" /> : <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" />}
+              <div className={`flex items-start space-x-2 rounded-lg border p-3 text-xs ${
+                vaultMsg.type === "ok"
+                  ? "border-[#30D5C8]/30 bg-[#30D5C8]/10 text-[#30D5C8]"
+                  : "border-[#FF453A]/30 bg-[#FF453A]/10 text-[#FF453A]"
+              }`}
+              >
+                {vaultMsg.type === "ok"
+                  ? <CheckCircle size={14} className="mt-0.5 flex-shrink-0" />
+                  : <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />}
                 <span>{vaultMsg.text}</span>
               </div>
             )}
@@ -553,12 +600,14 @@ export default function WalletSweepPage() {
             <button
               type="submit"
               disabled={loadingVault || !coldVaultAddress}
-              className="w-full py-3.5 bg-gradient-to-r from-[#30D5C8] to-[#BF5AF2] hover:opacity-90 text-white font-black rounded-xl transition-all flex items-center justify-center space-x-2 shadow-[0_0_15px_rgba(48,213,200,0.2)] disabled:opacity-40 text-xs cursor-pointer"
+              className="flex w-full cursor-pointer items-center justify-center space-x-2 rounded-xl bg-gradient-to-r from-[#30D5C8] to-[#BF5AF2] py-3.5 text-xs font-black text-white shadow-[0_0_15px_rgba(48,213,200,0.2)] transition-all hover:opacity-90 disabled:opacity-40"
             >
-              {loadingVault ? <RefreshCw size={16} className="animate-spin" /> : (
+              {loadingVault ? (
+                <RefreshCw size={16} className="animate-spin" />
+              ) : (
                 <>
                   <Lock size={16} />
-                  <span>이체 기록 저장 (실제 TX는 지갑 앱에서 직접 실행)</span>
+                  <span>콜드월렛 이체 실행</span>
                 </>
               )}
             </button>
@@ -566,55 +615,75 @@ export default function WalletSweepPage() {
         </div>
       </div>
 
-      {/* Transfer History Log */}
-      <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 shadow-lg space-y-4">
-        <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center space-x-2">
+      <div className="space-y-4 rounded-2xl border border-[#26262B] bg-[#16161A] p-6 shadow-lg">
+        <h4 className="flex items-center space-x-2 text-sm font-bold uppercase tracking-wider text-white">
           <CheckCircle size={16} className="text-[#30D5C8]" />
-          <span>콜드 금고 이체 기록 로그 (DB vault_transfers)</span>
+          <span>Cold Vault 이체 로그</span>
         </h4>
 
         {vaultLogs.length === 0 ? (
-          <div className="py-10 text-center text-[#8E8E93] text-xs">
+          <div className="py-10 text-center text-xs text-[#8E8E93]">
             <ArrowUpRight size={24} className="mx-auto mb-2 opacity-30" />
-            아직 이체 기록이 없습니다.
+            아직 기록된 콜드월렛 이체 내역이 없습니다.
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full border-collapse text-left text-xs">
               <thead>
-                <tr className="border-b border-[#26262B] text-[#8E8E93] font-semibold uppercase tracking-wider">
-                  <th className="py-3 px-4">출발 지갑</th>
-                  <th className="py-3 px-4">도착 (콜드 금고)</th>
-                  <th className="py-3 px-4">이체 수량</th>
-                  <th className="py-3 px-4">수신 주소</th>
-                  <th className="py-3 px-4 text-right">이체 시각</th>
+                <tr className="border-b border-[#26262B] font-semibold uppercase tracking-wider text-[#8E8E93]">
+                  <th className="px-4 py-3">출발</th>
+                  <th className="px-4 py-3">도착</th>
+                  <th className="px-4 py-3">금액</th>
+                  <th className="px-4 py-3">주소</th>
+                  <th className="px-4 py-3">TX</th>
+                  <th className="px-4 py-3 text-right">기록 시각</th>
                 </tr>
               </thead>
               <tbody>
-                {vaultLogs.map((log) => (
-                  <tr key={log.id} className="border-b border-[#26262B]/40 hover:bg-[#1C1C21]/30 transition-all">
-                    <td className="py-3 px-4 text-white font-medium">{log.from_label}</td>
-                    <td className="py-3 px-4 text-[#BF5AF2] font-medium">{log.to_label}</td>
-                    <td className="py-3 px-4 font-mono font-extrabold text-[#30D5C8]">
-                      {log.amount.toLocaleString()} {log.asset}
-                    </td>
-                    <td className="py-3 px-4 font-mono text-[#8E8E93] text-[10px]">
-                      {log.cold_vault_address
-                        ? `${log.cold_vault_address.slice(0, 10)}...${log.cold_vault_address.slice(-6)}`
-                        : "—"}
-                    </td>
-                    <td className="py-3 px-4 text-right text-[#8E8E93]">
-                      {new Date(log.created_at).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                    </td>
-                  </tr>
-                ))}
+                {vaultLogs.map((log) => {
+                  const txHash = getVaultTransferTxHash(log.note ?? "");
+                  return (
+                    <tr key={log.id} className="border-b border-[#26262B]/40 transition-all hover:bg-[#1C1C21]/30">
+                      <td className="px-4 py-3 font-medium text-white">{log.from_label}</td>
+                      <td className="px-4 py-3 font-medium text-[#BF5AF2]">{log.to_label}</td>
+                      <td className="px-4 py-3 font-mono font-extrabold text-[#30D5C8]">
+                        {formatNumber(log.amount, 6)} {log.asset}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-[10px] text-[#8E8E93]">
+                        {log.cold_vault_address
+                          ? `${log.cold_vault_address.slice(0, 10)}...${log.cold_vault_address.slice(-6)}`
+                          : "-"}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-[10px]">
+                        {txHash ? (
+                          <a
+                            href={`https://bscscan.com/tx/${txHash}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[#00D2FF] underline underline-offset-2 hover:text-white"
+                          >
+                            {`${txHash.slice(0, 8)}...${txHash.slice(-6)}`}
+                          </a>
+                        ) : (
+                          <span className="text-[#8E8E93]">-</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right text-[#8E8E93]">
+                        {new Date(log.created_at).toLocaleString("ko-KR", {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </div>
-
-
     </div>
   );
 }
