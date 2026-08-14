@@ -85,7 +85,9 @@ export async function GET() {
         amount: Number(row.amount),
         txType: row.tx_type,
         status: row.status,
-        txHash: row.tx_hash,
+        // A ledger key can be synthetic when one BSC transaction emitted more
+        // than one Transfer log. The canonical chain hash stays in details.
+        txHash: details.chain_tx_hash || row.tx_hash,
         symbol: row.symbol ?? "USDT",
         details,
         createdAt: row.created_at,

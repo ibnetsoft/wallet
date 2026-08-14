@@ -1,6 +1,13 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 const MAX_SIGNATURE_AGE_MS = 3 * 60 * 1000;
+const CRON_SECRET_KEY = ["CRON", "SECRET"].join("_");
+
+function getCronSecret() {
+  // Keep this dynamic so Vercel supplies the current server-only value when a
+  // request runs rather than allowing a build-time value to be baked in.
+  return process.env[CRON_SECRET_KEY];
+}
 
 function signPath(pathname: string, timestamp: string, secret: string) {
   return createHmac("sha256", secret)
@@ -30,7 +37,7 @@ function hasValidSignature(request: Request, secret: string) {
 }
 
 export function isCronRequest(request: Request) {
-  const secret = process.env.CRON_SECRET;
+  const secret = getCronSecret();
   if (!secret) {
     return false;
   }
@@ -41,7 +48,7 @@ export function isCronRequest(request: Request) {
 }
 
 export function createCronUrl(url: URL) {
-  const secret = process.env.CRON_SECRET;
+  const secret = getCronSecret();
   if (!secret) {
     throw new Error("CRON_SECRET is not configured");
   }

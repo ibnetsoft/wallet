@@ -10,6 +10,9 @@ const RPC_URL = process.env.RPC_URL || '';
 const MASTER_MNEMONIC = process.env.MASTER_MNEMONIC || '';
 const CONTRACT_USDT = process.env.CONTRACT_USDT || '';
 const CONTRACT_URC = process.env.CONTRACT_URC || '';
+// Confirmed-block polling in apps/admin is now the authoritative USDT credit
+// path. Keep this legacy listener opt-in so it cannot race the durable indexer.
+const LEGACY_USDT_EVENT_LISTENER_ENABLED = process.env.LEGACY_USDT_EVENT_LISTENER_ENABLED === 'true';
 
 const DATABASE_URL = process.env.DATABASE_URL || '';
 
@@ -178,7 +181,7 @@ async function main() {
   // 3. Setup BEP-20 Token Event Subscriptions
   console.log('\n🕵️ Setting up on-chain Transfer Event listeners...');
   
-  if (CONTRACT_USDT && ethers.isAddress(CONTRACT_USDT)) {
+  if (LEGACY_USDT_EVENT_LISTENER_ENABLED && CONTRACT_USDT && ethers.isAddress(CONTRACT_USDT)) {
     const usdtContract = new ethers.Contract(CONTRACT_USDT, ERC20_ABI, provider);
     console.log(`   - USDT Contract target: ${CONTRACT_USDT}`);
     
@@ -190,7 +193,7 @@ async function main() {
       handleOnChainDeposit('USDT', from, to, formattedAmount, event.log.transactionHash);
     });
   } else {
-    console.log('   ⚠️ CONTRACT_USDT is empty or invalid. Skipping USDT subscription.');
+    console.log('   USDT live listener is disabled. Use the admin BSC USDT deposit sync instead.');
   }
 
   if (CONTRACT_URC && ethers.isAddress(CONTRACT_URC)) {

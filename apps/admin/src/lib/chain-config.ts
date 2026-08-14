@@ -18,6 +18,17 @@ export function getBscRpcUrl() {
   );
 }
 
+// Deposit indexing must never inherit a browser-facing testnet endpoint.
+// A missing server-side endpoint deliberately falls back to BSC mainnet.
+export function getBscDepositRpcUrl() {
+  return (
+    normalizedSetting(process.env.BSC_DEPOSIT_RPC_URL)
+    || normalizedSetting(process.env.BSC_RPC_URL)
+    || normalizedSetting(process.env.BNB_TRANSFER_RPC_URL)
+    || DEFAULT_BSC_MAINNET_RPC_URL
+  );
+}
+
 export function getBscUsdtContract() {
   return (
     normalizedSetting(process.env.USDT_CONTRACT_ADDRESS) ||
