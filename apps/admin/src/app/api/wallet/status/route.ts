@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { Pool } from "pg";
-import { Contract, JsonRpcProvider, formatEther, formatUnits } from "ethers";
-import { getBscRpcUrl, getBscUsdtContract } from "@/lib/chain-config";
+import { Contract, formatEther, formatUnits } from "ethers";
+import { createBscReadProvider, getBscUsdtContract } from "@/lib/chain-config";
 import { getAdminUser } from "@/lib/admin-auth";
 import { resolveMasterHotWallet } from "@/lib/master-hot-wallet";
 
@@ -12,7 +12,6 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-const BSC_RPC_URL = getBscRpcUrl();
 const USDT_CONTRACT = getBscUsdtContract();
 const ERC20_ABI = ["function balanceOf(address account) view returns (uint256)"];
 const CLIENT_VISIBLE_SETTING_KEYS = [
@@ -100,7 +99,7 @@ export async function GET() {
         }
 
         if (masterHotWallet.address) {
-          const provider = new JsonRpcProvider(BSC_RPC_URL);
+          const provider = createBscReadProvider();
           const [bnbRaw, usdtRaw] = await Promise.all([
             provider.getBalance(masterHotWallet.address),
             new Contract(USDT_CONTRACT, ERC20_ABI, provider).balanceOf(masterHotWallet.address),

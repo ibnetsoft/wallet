@@ -1,6 +1,10 @@
+import { FetchRequest, JsonRpcProvider } from "ethers";
+
 export const DEFAULT_BSC_MAINNET_RPC_URL = "https://bsc-dataseed.binance.org";
 export const DEFAULT_BSC_MAINNET_USDT_CONTRACT =
   "0x55d398326f99059fF775485246999027B3197955";
+const BSC_MAINNET_CHAIN_ID = 56;
+const DEFAULT_BSC_READ_TIMEOUT_MS = 5_000;
 
 // Keep admin chain settings centralized so Vercel monorepo deploys always include this path.
 
@@ -35,4 +39,15 @@ export function getBscUsdtContract() {
     normalizedSetting(process.env.NEXT_PUBLIC_USDT_CONTRACT) ||
     DEFAULT_BSC_MAINNET_USDT_CONTRACT
   );
+}
+
+// Read-only dashboard calls should not wait indefinitely on an unavailable RPC.
+// Supplying the known network also avoids a separate eth_chainId round trip.
+export function createBscReadProvider(timeoutMs = DEFAULT_BSC_READ_TIMEOUT_MS) {
+  const request = new FetchRequest(getBscRpcUrl());
+  request.timeout = timeoutMs;
+
+  return new JsonRpcProvider(request, BSC_MAINNET_CHAIN_ID, {
+    staticNetwork: true,
+  });
 }

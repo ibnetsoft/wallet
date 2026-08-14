@@ -55,12 +55,25 @@ export default function WalletSweepPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const statusRes = await fetch("/api/wallet/status");
-      const statusData = await statusRes.json();
+      // Both endpoints call BSC. Start them together so a slow RPC affects the
+      // initial dashboard load once rather than serially.
+      const [statusResult, feeResult] = await Promise.allSettled([
+        fetch("/api/wallet/status").then(async (response) => ({
+          ok: response.ok,
+          data: await response.json(),
+        })),
+        fetch("/api/wallet/fee-status").then(async (response) => ({
+          ok: response.ok,
+          data: await response.json(),
+        })),
+      ]);
+      const statusData = statusResult.status === "fulfilled" && statusResult.value.ok
+        ? statusResult.value.data
+        : null;
       
-      if (statusData.success) {
+      if (statusData?.success) {
         // 1. 유저 지갑 및 잔고 설정
-        const mappedWallets = statusData.usersWithBalances.map((u: any) => {
+        const mappedWallets = (Array.isArray(statusData.usersWithBalances) ? statusData.usersWithBalances : []).map((u: any) => {
           const usdtBalanceObj = u.user_balances?.find((b: any) => b.asset_id === 2);
           const usdt_balance = usdtBalanceObj ? parseFloat(usdtBalanceObj.available_balance) : 0;
           
@@ -93,18 +106,21 @@ export default function WalletSweepPage() {
       }
 
       // 4. 수수료 지갑 잔액 조회
-      try {
-        const feeRes = await fetch("/api/wallet/fee-status");
-        const feeData = await feeRes.json();
-        if (feeData.success) {
+      if (feeResult.status === "fulfilled" && feeResult.value.ok) {
+        const feeData = feeResult.value.data;
+        if (feeData?.success) {
           setFeeWalletAddress(feeData.address);
           setFeeWalletBalance(feeData.balance);
           if (typeof feeData.usdtBalance === "number") {
             setHotBalanceUSDT(feeData.usdtBalance);
           }
         }
-      } catch (err) {
-        console.error("Fee wallet fetch error:", err);
+      } else if (feeResult.status === "rejected") {
+        console.error("Fee wallet fetch error:", feeResult.reason);
+      }
+
+      if (statusResult.status === "rejected") {
+        console.error("Wallet status fetch error:", statusResult.reason);
       }
     } catch (err) {
       console.error("데이터 로드 오류:", err);

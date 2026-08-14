@@ -1,5 +1,7 @@
 import { createBrowserClient } from "@supabase/ssr";
 
+let browserClient: ReturnType<typeof createBrowserClient> | null = null;
+
 export function createClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -86,7 +88,13 @@ export function createClient() {
     return mockClient as any;
   }
 
-  return createBrowserClient(supabaseUrl, supabaseKey);
+  // A single client owns the browser auth cookie. Creating one client per
+  // component can race session persistence immediately after sign-in.
+  if (!browserClient) {
+    browserClient = createBrowserClient(supabaseUrl, supabaseKey);
+  }
+
+  return browserClient;
 }
 
 export const supabase = createClient();

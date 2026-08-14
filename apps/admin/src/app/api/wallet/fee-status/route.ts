@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { Contract, JsonRpcProvider, formatEther, formatUnits } from "ethers";
+import { Contract, formatEther, formatUnits } from "ethers";
 import { Pool } from "pg";
 import { getAdminUser } from "@/lib/admin-auth";
-import { getBscRpcUrl, getBscUsdtContract } from "@/lib/chain-config";
+import { createBscReadProvider, getBscUsdtContract } from "@/lib/chain-config";
 import { resolveMasterHotWallet } from "@/lib/master-hot-wallet";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +33,7 @@ export async function GET() {
       );
     }
 
-    const provider = new JsonRpcProvider(getBscRpcUrl());
+    const provider = createBscReadProvider();
     const [balanceWei, usdtRaw] = await Promise.all([
       provider.getBalance(masterHotWallet.address),
       new Contract(getBscUsdtContract(), ERC20_ABI, provider).balanceOf(masterHotWallet.address),
