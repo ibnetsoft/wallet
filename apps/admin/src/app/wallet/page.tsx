@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Wallet, ArrowRightLeft, ShieldAlert, CheckCircle, RefreshCw,
-  Lock, ArrowDownRight, ArrowUpRight, ShieldCheck, AlertTriangle, Info
+  Lock, ArrowDownRight, ArrowUpRight, ShieldCheck, AlertTriangle, Info, Copy, Check
 } from "lucide-react";
 
 interface UserWallet {
@@ -48,6 +48,7 @@ export default function WalletSweepPage() {
   const [loadingVault, setLoadingVault] = useState(false);
   const [sweepMsg, setSweepMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [vaultMsg, setVaultMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [masterWalletCopied, setMasterWalletCopied] = useState(false);
 
   // ── 자체 지갑 생성 상태 ──
 
@@ -132,6 +133,15 @@ export default function WalletSweepPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const totalSweepable = userWallets.reduce((acc, w) => acc + (w.usdt_balance ?? 0), 0);
+
+  const handleCopyMasterWallet = async () => {
+    const address = masterHotWallet || feeWalletAddress || "";
+    if (!address) return;
+
+    await navigator.clipboard.writeText(address);
+    setMasterWalletCopied(true);
+    setTimeout(() => setMasterWalletCopied(false), 2000);
+  };
 
 
 
@@ -290,10 +300,23 @@ export default function WalletSweepPage() {
                 <span>마스터 지갑 주소 (USDT 수집 및 BNB 가스비 대납)</span>
               </p>
               <div className="flex items-center space-x-2 mt-1">
-                <Wallet size={16} className="text-[#00D2FF] flex-shrink-0" />
+                <button
+                  type="button"
+                  onClick={handleCopyMasterWallet}
+                  disabled={!masterHotWallet && !feeWalletAddress}
+                  className="flex-shrink-0 text-[#00D2FF] hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  title="지갑 주소 복사"
+                >
+                  {masterWalletCopied ? <Check size={16} className="text-[#0ECB81]" /> : <Wallet size={16} />}
+                </button>
                 <span className="text-white font-mono text-xs break-all">
                   {masterHotWallet || feeWalletAddress || "⚠️ 미등록 (시스템 설정에서 생성/등록 필요)"}
                 </span>
+                {(masterHotWallet || feeWalletAddress) && (
+                  <span className="text-[10px] text-[#8E8E93]">
+                    {masterWalletCopied ? "복사됨!" : <Copy size={12} />}
+                  </span>
+                )}
               </div>
             </div>
 
