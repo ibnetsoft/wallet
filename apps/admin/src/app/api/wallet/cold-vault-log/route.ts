@@ -218,14 +218,32 @@ export async function POST(request: Request) {
     await client.query("BEGIN");
     await client.query(
       `INSERT INTO public.vault_transfers
-        (from_label, to_label, amount, asset, cold_vault_address, note)
-       VALUES ($1, 'Offline cold vault', $2, $3, $4, $5)`,
+        (
+          from_label,
+          to_label,
+          amount,
+          asset,
+          cold_vault_address,
+          tx_hash,
+          note,
+          status,
+          requested_by,
+          network,
+          transfer_kind,
+          source_address,
+          confirmed_at,
+          updated_at
+        )
+       VALUES ($1, 'Offline cold vault', $2, $3, $4, $5, $6, 'CONFIRMED', $7, 'BSC', 'COLD_VAULT', $8, NOW(), NOW())`,
       [
         `Master hot wallet (${sourceAddress.slice(0, 8)}...)`,
         amountText,
         asset,
         recipientAddress,
+        txHash,
         `On-chain transfer by ${admin.email} | txHash=${txHash}`,
+        admin.email,
+        sourceAddress,
       ],
     );
     await client.query(

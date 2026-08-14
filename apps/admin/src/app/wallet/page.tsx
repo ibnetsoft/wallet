@@ -31,13 +31,18 @@ interface VaultTransferLog {
   amount: number;
   asset: string;
   cold_vault_address: string;
+  tx_hash?: string | null;
   note: string;
   created_at: string;
 }
 
-function getVaultTransferTxHash(note: string) {
-  const match = note.match(/txHash=(0x[a-fA-F0-9]{64})/);
-  return match ? match[1] : null;
+function getVaultTransferTxHash(log: VaultTransferLog) {
+  if (typeof log.tx_hash === "string" && /^0x[a-fA-F0-9]{64}$/.test(log.tx_hash)) {
+    return log.tx_hash;
+  }
+
+  const match = String(log.note ?? "").match(/0x[a-fA-F0-9]{64}/);
+  return match ? match[0] : null;
 }
 
 function formatNumber(value: number | null | undefined, digits = 4) {
@@ -641,7 +646,7 @@ export default function WalletSweepPage() {
               </thead>
               <tbody>
                 {vaultLogs.map((log) => {
-                  const txHash = getVaultTransferTxHash(log.note ?? "");
+                  const txHash = getVaultTransferTxHash(log);
                   return (
                     <tr key={log.id} className="border-b border-[#26262B]/40 transition-all hover:bg-[#1C1C21]/30">
                       <td className="px-4 py-3 font-medium text-white">{log.from_label}</td>
