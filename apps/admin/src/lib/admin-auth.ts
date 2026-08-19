@@ -1,15 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
+import { isAuthorizedAdmin, normalizeEmail } from "@/lib/admin-access";
 
 export interface AdminUser {
   id: string;
   email: string;
-}
-
-function configuredAdminEmails(value: string | undefined) {
-  return (value ?? "")
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
+  role: string;
+  permissions: string[];
 }
 
 // Route handlers also verify the admin session instead of relying only on the
@@ -21,12 +17,18 @@ export async function getAdminUser(): Promise<AdminUser | null> {
     error,
   } = await supabase.auth.getUser();
 
-  const email = user?.email?.trim().toLowerCase();
-  const adminEmails = configuredAdminEmails(process.env.ADMIN_EMAILS);
+  const email = normalizeEmail(user?.email);
 
-  if (error || !user || !email || !adminEmails.includes(email)) {
+  if (error || !user || !email || !isAuthorizedAdmin(user)) {
     return null;
   }
 
-  return { id: user.id, email };
+  return {
+    id: user.id,
+    email,
+    role: typeof user.app_metadata?.adminRole === "string" ? user.app_metadata.adminRole : "SUPER_ADMIN",
+    permissions: Array.isArray(user.app_metadata?.adminPermissions)
+      ? user.app_metadata.adminPermissions.filter((value): value is string => typeof value === "string")
+      : [],
+  };
 }
