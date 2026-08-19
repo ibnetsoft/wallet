@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
+import { Pool, PoolClient } from "pg";
 import { getAdminPermissions, getAdminRole, isConfiguredAdminEmail, normalizeEmail } from "@/lib/admin-access";
 import { getAdminUser } from "@/lib/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
 
 function requireSuperAdmin(email: string) {
   return isConfiguredAdminEmail(email);
@@ -21,6 +27,18 @@ function mapPermissionLabels(permissions: string[]) {
         return "회원 조회";
     }
   });
+}
+
+async function findAuthUserIdByEmail(client: PoolClient, email: string) {
+  const result = await client.query<{ id: string }>(
+    `SELECT id
+     FROM auth.users
+     WHERE lower(email) = $1
+     LIMIT 1`,
+    [email],
+  );
+
+  return result.rows[0]?.id ?? null;
 }
 
 export async function GET() {
@@ -79,17 +97,50 @@ export async function POST(request: Request) {
 
   const permissions = ["member.read", ...requestedPermissions.filter((value) => value !== "member.read")];
   const uniquePermissions = [...new Set(permissions)];
+  const adminMetadata = {
+    adminConsole: true,
+    adminRole: "SUB_ADMIN",
+    adminPermissions: uniquePermissions,
+  };
 
-  const { data, error } = await supabaseAdmin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    app_metadata: {
-      adminConsole: true,
-      adminRole: "SUB_ADMIN",
-      adminPermissions: uniquePermissions,
-    },
-  });
+  const client = await pool.connect();
+  let existingUserId: string | null = null;
+
+  try {
+    existingUserId = await findAuthUserIdByEmail(client, email);
+  } finally {
+    client.release();
+  }
+
+  let data: { user: { id: string; created_at?: string | null } | null };
+  let error: { message: string } | null = null;
+
+  if (existingUserId) {
+    const updateResult = await supabaseAdmin.auth.admin.updateUserById(existingUserId, {
+      password,
+      email_confirm: true,
+      app_metadata: adminMetadata,
+    });
+    data = {
+      user: updateResult.data.user
+        ? { id: updateResult.data.user.id, created_at: updateResult.data.user.created_at }
+        : null,
+    };
+    error = updateResult.error ? { message: updateResult.error.message } : null;
+  } else {
+    const createResult = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      app_metadata: adminMetadata,
+    });
+    data = {
+      user: createResult.data.user
+        ? { id: createResult.data.user.id, created_at: createResult.data.user.created_at }
+        : null,
+    };
+    error = createResult.error ? { message: createResult.error.message } : null;
+  }
 
   if (error || !data.user) {
     return NextResponse.json(
