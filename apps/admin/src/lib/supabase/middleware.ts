@@ -1,11 +1,17 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { isAuthorizedAdmin } from "@/lib/admin-access";
+import {
+  isAuthorizedAdmin,
+  isSubAdmin,
+  isSubAdminRestrictedApiPath,
+  isSubAdminRestrictedPath,
+} from "@/lib/admin-access";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   });
+  const pathname = request.nextUrl.pathname;
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-anon-key";
@@ -40,8 +46,8 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Protect all routes except /login and /api/auth/callback
-  const isLoginPage = request.nextUrl.pathname.startsWith("/login");
-  const isCallbackPage = request.nextUrl.pathname.startsWith("/api/auth/callback");
+  const isLoginPage = pathname.startsWith("/login");
+  const isCallbackPage = pathname.startsWith("/api/auth/callback");
 
   if (!isLoginPage && !isCallbackPage) {
     if (!user) {
@@ -60,6 +66,21 @@ export async function updateSession(request: NextRequest) {
         // await supabase.auth.signOut();
         
         return NextResponse.redirect(url);
+      }
+
+      if (isSubAdmin(user)) {
+        if (isSubAdminRestrictedApiPath(pathname)) {
+          return NextResponse.json(
+            { success: false, error: "Forbidden" },
+            { status: 403 }
+          );
+        }
+
+        if (isSubAdminRestrictedPath(pathname)) {
+          const url = request.nextUrl.clone();
+          url.pathname = "/";
+          return NextResponse.redirect(url);
+        }
       }
     }
   }

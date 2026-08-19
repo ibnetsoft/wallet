@@ -10,6 +10,19 @@ type AdminLikeUser = {
 };
 
 export const DEFAULT_SUBADMIN_PERMISSIONS = ["member.read"] as const;
+export const SUPER_ADMIN_ROLE = "SUPER_ADMIN";
+export const SUB_ADMIN_RESTRICTED_PAGE_PATHS = [
+  "/withdrawals",
+  "/wallet",
+  "/bnb-transfer",
+  "/settings",
+] as const;
+export const SUB_ADMIN_RESTRICTED_API_PREFIXES = [
+  "/api/withdrawals",
+  "/api/wallet",
+  "/api/bnb-transfer",
+  "/api/settings",
+] as const;
 
 export function normalizeEmail(email: string | null | undefined) {
   return email?.trim().toLowerCase() ?? "";
@@ -59,9 +72,27 @@ export function isAuthorizedAdmin(user: AdminLikeUser | null | undefined) {
 
 export function getAdminRole(user: AdminLikeUser | null | undefined) {
   if (isConfiguredAdminEmail(user?.email)) {
-    return "SUPER_ADMIN";
+    return SUPER_ADMIN_ROLE;
   }
 
   const role = user?.app_metadata?.adminRole;
   return typeof role === "string" && role.trim() ? role.trim() : "SUB_ADMIN";
+}
+
+export function isSuperAdmin(user: AdminLikeUser | null | undefined) {
+  return getAdminRole(user) === SUPER_ADMIN_ROLE;
+}
+
+export function isSubAdmin(user: AdminLikeUser | null | undefined) {
+  return isAuthorizedAdmin(user) && !isSuperAdmin(user);
+}
+
+export function isSubAdminRestrictedPath(pathname: string) {
+  return SUB_ADMIN_RESTRICTED_PAGE_PATHS.includes(
+    pathname as (typeof SUB_ADMIN_RESTRICTED_PAGE_PATHS)[number]
+  );
+}
+
+export function isSubAdminRestrictedApiPath(pathname: string) {
+  return SUB_ADMIN_RESTRICTED_API_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  Settings, Shield, UserPlus, Trash2, Key,
+  Settings, Shield, UserPlus, Trash2, Key, Calculator, Coins, Percent, Receipt,
   Wallet, Lock, CheckCircle, AlertTriangle, RefreshCw, Eye, EyeOff, Save, PlusCircle
 } from "lucide-react";
 import { Wallet as EthersWallet } from "ethers";
@@ -17,12 +17,34 @@ interface SubAdminRow {
   createdAt: string;
 }
 
+interface AllowanceSummary {
+  totalProductSales: number;
+  totalGameWagers: number;
+  salesRate: number;
+  gameRate: number;
+  salesAllowanceAmount: number;
+  gameAllowanceAmount: number;
+  totalAllowanceAmount: number;
+}
+
+function formatUsdt(value: number) {
+  return value.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
 export default function SettingsPage() {
   // ── 수수료 설정 ──
   const [swapFee, setSwapFee] = useState("0.1");
   const [withdrawalFee, setWithdrawalFee] = useState("3.0");
   const [savingFees, setSavingFees] = useState(false);
   const [feeMsg, setFeeMsg] = useState<MsgState | null>(null);
+  const [salesAllowanceRate, setSalesAllowanceRate] = useState("0");
+  const [gameAllowanceRate, setGameAllowanceRate] = useState("0");
+  const [savingAllowance, setSavingAllowance] = useState(false);
+  const [allowanceMsg, setAllowanceMsg] = useState<MsgState | null>(null);
+  const [allowanceSummary, setAllowanceSummary] = useState<AllowanceSummary | null>(null);
 
   // ── 지갑 주소 설정 ──
   const [hotWallet, setHotWallet] = useState("");
@@ -119,10 +141,25 @@ export default function SettingsPage() {
     }
   }, []);
 
+  const loadAllowanceSummary = useCallback(async () => {
+    try {
+      const res = await fetch("/api/allowances/summary", { cache: "no-store" });
+      const data = await res.json();
+      if (data.success && data.summary) {
+        setAllowanceSummary(data.summary);
+        setSalesAllowanceRate(String(data.summary.salesRate ?? 0));
+        setGameAllowanceRate(String(data.summary.gameRate ?? 0));
+      }
+    } catch (error) {
+      console.error("Failed to load allowance summary:", error);
+    }
+  }, []);
+
   useEffect(() => {
     loadSettings();
     loadSubAdmins();
-  }, [loadSettings, loadSubAdmins]);
+    loadAllowanceSummary();
+  }, [loadSettings, loadSubAdmins, loadAllowanceSummary]);
 
   const handleCreateSubAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -263,6 +300,32 @@ export default function SettingsPage() {
   };
 
   // ── 지갑 주소 저장 ──
+  const handleSaveAllowance = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingAllowance(true);
+    setAllowanceMsg(null);
+    try {
+      const rows = [
+        { key: "sales_allowance_rate", value: salesAllowanceRate, description: "매출배당 비율(%)" },
+        { key: "game_allowance_rate", value: gameAllowanceRate, description: "게임배당 비율(%)" },
+      ];
+      const saveRes = await fetch("/api/settings/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rows })
+      });
+      const saveData = await saveRes.json();
+      if (!saveData.success) throw new Error(saveData.error);
+
+      await loadAllowanceSummary();
+      setAllowanceMsg({ type: "ok", text: "배당 비율이 저장되었습니다." });
+    } catch (err: unknown) {
+      setAllowanceMsg({ type: "err", text: err instanceof Error ? err.message : "저장 실패" });
+    } finally {
+      setSavingAllowance(false);
+    }
+  };
+
   const handleSaveWallets = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingWallets(true);
@@ -363,6 +426,7 @@ export default function SettingsPage() {
           onClick={() => {
             void loadSettings();
             void loadSubAdmins();
+            void loadAllowanceSummary();
           }}
           className="flex items-center space-x-1.5 px-3 py-2 bg-[#26262B] hover:bg-[#3A3A40] text-[#8E8E93] rounded-lg text-xs transition-colors"
         >
@@ -603,6 +667,90 @@ export default function SettingsPage() {
           {/* ━━━━ 섹션 2 & 3: 수수료 + 서브관리자 ━━━━ */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="space-y-6">
+              <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 shadow-lg">
+                <h4 className="mb-6 flex items-center text-sm font-bold uppercase tracking-wider text-white">
+                  <Calculator size={16} className="mr-2 text-[#00D2FF]" />
+                  추가 보너스 배당 설정
+                </h4>
+                <div className="mb-5 grid grid-cols-1 gap-3">
+                  <div className="rounded-xl border border-[#30D5C8]/20 bg-[#30D5C8]/5 p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#8E8E93]">전체 회원 누적 상품매출</p>
+                        <p className="mt-2 font-mono text-xl font-extrabold text-white">
+                          {allowanceSummary ? `${formatUsdt(allowanceSummary.totalProductSales)} USDT` : "-"}
+                        </p>
+                      </div>
+                      <Receipt size={18} className="text-[#30D5C8]" />
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-[#F0B90B]/20 bg-[#F0B90B]/5 p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#8E8E93]">전체 회원 누적 게임배팅금액</p>
+                        <p className="mt-2 font-mono text-xl font-extrabold text-white">
+                          {allowanceSummary ? `${formatUsdt(allowanceSummary.totalGameWagers)} USDT` : "-"}
+                        </p>
+                      </div>
+                      <Coins size={18} className="text-[#F0B90B]" />
+                    </div>
+                  </div>
+                </div>
+                <form onSubmit={handleSaveAllowance} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-[#8E8E93] uppercase font-bold">1. 매출배당 : 전체회원들의 상품구매금액의 몇 %</label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        required
+                        value={salesAllowanceRate}
+                        onChange={e => setSalesAllowanceRate(e.target.value)}
+                        className="w-full bg-[#1C1C21] border border-[#26262B] focus:border-[#30D5C8] pl-3 pr-8 py-2.5 rounded-lg text-sm text-white outline-none font-mono"
+                      />
+                      <span className="absolute right-3 top-2.5 text-[#8E8E93] text-sm">%</span>
+                    </div>
+                    <p className="text-[10px] text-[#8E8E93]">
+                      예상 배당금: {allowanceSummary ? `${formatUsdt(allowanceSummary.totalProductSales * (Number.parseFloat(salesAllowanceRate || "0") / 100))} USDT` : "-"}
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-[#8E8E93] uppercase font-bold">2. 게임배당 : 전체회원들의 게임배팅금액의 몇 %</label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        required
+                        value={gameAllowanceRate}
+                        onChange={e => setGameAllowanceRate(e.target.value)}
+                        className="w-full bg-[#1C1C21] border border-[#26262B] focus:border-[#F0B90B] pl-3 pr-8 py-2.5 rounded-lg text-sm text-white outline-none font-mono"
+                      />
+                      <span className="absolute right-3 top-2.5 text-[#8E8E93] text-sm">%</span>
+                    </div>
+                    <p className="text-[10px] text-[#8E8E93]">
+                      예상 배당금: {allowanceSummary ? `${formatUsdt(allowanceSummary.totalGameWagers * (Number.parseFloat(gameAllowanceRate || "0") / 100))} USDT` : "-"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-[#00D2FF]/20 bg-[#00D2FF]/5 px-3 py-2 text-xs text-[#8EDFFF]">
+                    배당내역 페이지에서 현재 저장된 비율과 누적 배당 금액을 슈퍼/서브 관리자 모두 확인할 수 있습니다.
+                  </div>
+                  {allowanceMsg && <MsgBox msg={allowanceMsg} />}
+                  <button
+                    type="submit"
+                    disabled={savingAllowance}
+                    className="mt-2 flex w-full items-center justify-center space-x-2 rounded-lg bg-[#00D2FF] py-3 text-sm font-bold text-[#0B0E11] transition-colors hover:bg-[#19bde5] disabled:opacity-50"
+                  >
+                    {savingAllowance
+                      ? <><RefreshCw size={14} className="animate-spin" /><span>저장 중..</span></>
+                      : <><Percent size={14} /><span>배당 비율 저장 (DB)</span></>
+                    }
+                  </button>
+                </form>
+              </div>
               {/* 수수료 설정 */}
               <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 shadow-lg">
                 <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center mb-6">

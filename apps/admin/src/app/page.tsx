@@ -7,6 +7,8 @@ import {
   Users, Clock, ArrowDownLeft, ArrowUpRight, 
   CheckCircle, XCircle, RefreshCw, ChevronRight, Percent, ExternalLink
 } from "lucide-react";
+import { isSuperAdmin } from "@/lib/admin-access";
+import { createClient } from "@/lib/supabase/client";
 
 interface PendingWithdrawal {
   id: string;
@@ -83,6 +85,7 @@ function statusLabel(status: string) {
 }
 
 export default function DashboardPage() {
+  const [canManageRestrictedSections, setCanManageRestrictedSections] = useState(false);
   const [timeLeft, setTimeLeft] = useState("");
   const [loadingWithdrawals, setLoadingWithdrawals] = useState(false);
   const [pendingWithdrawals, setPendingWithdrawals] = useState<PendingWithdrawal[]>([]);
@@ -98,13 +101,36 @@ export default function DashboardPage() {
   const [autoDrawEnabled, setAutoDrawEnabled] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+
+    async function loadAdminRole() {
+      const supabase = createClient();
+      const { data } = await supabase.auth.getUser();
+
+      if (mounted) {
+        setCanManageRestrictedSections(isSuperAdmin(data.user));
+      }
+    }
+
+    loadAdminRole().catch(console.error);
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!canManageRestrictedSections) {
+      return;
+    }
+
     fetch('/api/settings/auto-draw')
       .then(res => res.json())
       .then(data => {
         if (data.success) setAutoDrawEnabled(data.enabled);
       })
       .catch(console.error);
-  }, []);
+  }, [canManageRestrictedSections]);
 
   const toggleAutoDraw = async () => {
     const newVal = !autoDrawEnabled;
@@ -182,9 +208,11 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    fetchPendingWithdrawals();
+    if (canManageRestrictedSections) {
+      fetchPendingWithdrawals();
+    }
     fetchStats();
-  }, []);
+  }, [canManageRestrictedSections]);
 
   const handleApprove = async (id: string) => {
     if (!confirm(`출금 요청 ${id}을(를) 승인하시겠습니까?`)) return;
