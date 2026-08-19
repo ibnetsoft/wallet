@@ -9,6 +9,13 @@ import { Wallet as EthersWallet } from "ethers";
 import { createClient } from "@/lib/supabase/client";
 
 interface MsgState { type: "ok" | "err"; text: string }
+interface SubAdminRow {
+  id: string | number;
+  email: string;
+  role: string;
+  permissions: string[];
+  createdAt: string;
+}
 
 export default function SettingsPage() {
   // ── 수수료 설정 ──
@@ -34,7 +41,7 @@ export default function SettingsPage() {
   const [generatedWallet, setGeneratedWallet] = useState<{ address: string; privateKey: string } | null>(null);
 
   // ── 서브 관리자 ──
-  const [subAdmins, setSubAdmins] = useState<{ id: number; email: string; role: string; permissions: string[]; createdAt: string }[]>([]);
+  const [subAdmins, setSubAdmins] = useState<SubAdminRow[]>([]);
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [perms, setPerms] = useState({ withdraw: false, wallet: false });
@@ -100,7 +107,83 @@ export default function SettingsPage() {
     }
   }, []);
 
-  useEffect(() => { loadSettings(); }, [loadSettings]);
+  const loadSubAdmins = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admins", { cache: "no-store" });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.subAdmins)) {
+        setSubAdmins(data.subAdmins);
+      }
+    } catch (error) {
+      console.error("Failed to load sub admins:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSettings();
+    loadSubAdmins();
+  }, [loadSettings, loadSubAdmins]);
+
+  const handleCreateSubAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newEmail || !newPassword) return;
+
+    setAddingAdmin(true);
+    setAdminMsg(null);
+
+    try {
+      const permissions = [];
+      if (perms.withdraw) permissions.push("withdraw.manage");
+      if (perms.wallet) permissions.push("wallet.manage");
+
+      const res = await fetch("/api/admins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: newEmail,
+          password: newPassword,
+          permissions,
+        }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.error || "관리자 계정을 생성하지 못했습니다.");
+      }
+
+      await loadSubAdmins();
+      setNewEmail("");
+      setNewPassword("");
+      setPerms({ withdraw: false, wallet: false });
+      setAdminMsg({ type: "ok", text: `${newEmail} 서브 관리자 계정을 생성했습니다.` });
+    } catch (err: unknown) {
+      setAdminMsg({ type: "err", text: err instanceof Error ? err.message : "추가 실패" });
+    } finally {
+      setAddingAdmin(false);
+    }
+  };
+
+  const handleRemoveSubAdmin = async (id: string | number) => {
+    if (!confirm("?뺣쭚濡????쒕툕 愿由ъ옄 怨꾩젙????젣?섏떆寃좎뒿?덇퉴?")) {
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/admins", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: String(id) }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.error || "관리자 계정을 삭제하지 못했습니다.");
+      }
+
+      setSubAdmins((prev) => prev.filter((admin) => String(admin.id) !== String(id)));
+      setAdminMsg({ type: "ok", text: "서브 관리자 계정을 삭제했습니다." });
+    } catch (err: unknown) {
+      setAdminMsg({ type: "err", text: err instanceof Error ? err.message : "삭제 실패" });
+    }
+  };
 
   // ── 지갑 자체 생성 로직 ──
   const handleGenerateWallet = () => {
@@ -252,6 +335,9 @@ export default function SettingsPage() {
     }
   };
 
+  void handleAddSubAdmin;
+  void handleDeleteAdmin;
+
   const MsgBox = ({ msg }: { msg: MsgState }) => (
     <div className={`flex items-start space-x-2 p-3 rounded-lg text-xs mt-3 ${msg.type === "ok"
       ? "bg-[#30D5C8]/10 border border-[#30D5C8]/30 text-[#30D5C8]"
@@ -274,7 +360,10 @@ export default function SettingsPage() {
           </p>
         </div>
         <button
-          onClick={loadSettings}
+          onClick={() => {
+            void loadSettings();
+            void loadSubAdmins();
+          }}
           className="flex items-center space-x-1.5 px-3 py-2 bg-[#26262B] hover:bg-[#3A3A40] text-[#8E8E93] rounded-lg text-xs transition-colors"
         >
           <RefreshCw size={13} />
@@ -565,7 +654,7 @@ export default function SettingsPage() {
                   <UserPlus size={16} className="mr-2 text-[#BF5AF2]" />
                   서브 관리자 추가
                 </h4>
-                <form onSubmit={handleAddSubAdmin} className="space-y-4">
+                <form onSubmit={handleCreateSubAdmin} className="space-y-4">
                   <div className="space-y-1.5">
                     <label className="text-[10px] text-[#8E8E93] uppercase font-bold">계정 이메일</label>
                     <input
@@ -666,7 +755,7 @@ export default function SettingsPage() {
                           </div>
                         </td>
                         <td className="py-4 px-4 text-center">
-                          <button onClick={() => handleDeleteAdmin(admin.id)} className="text-[#FF453A] hover:opacity-80 p-1">
+                          <button onClick={() => void handleRemoveSubAdmin(admin.id)} className="text-[#FF453A] hover:opacity-80 p-1">
                             <Trash2 size={14} />
                           </button>
                         </td>

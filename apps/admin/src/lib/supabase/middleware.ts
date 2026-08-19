@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isAuthorizedAdmin } from "@/lib/admin-access";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -18,7 +19,7 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value));
+          cookiesToSet.forEach((cookie) => request.cookies.set(cookie.name, cookie.value));
           supabaseResponse = NextResponse.next({
             request,
           });
@@ -49,9 +50,7 @@ export async function updateSession(request: NextRequest) {
       url.pathname = "/login";
       return NextResponse.redirect(url);
     } else {
-      // Check if user is in ADMIN_EMAILS
-      const adminEmails = (process.env.ADMIN_EMAILS || "").split(",").map(e => e.trim().toLowerCase());
-      if (user.email && !adminEmails.includes(user.email.toLowerCase())) {
+      if (!isAuthorizedAdmin(user)) {
         // Not an admin
         const url = request.nextUrl.clone();
         url.pathname = "/login";
@@ -67,8 +66,7 @@ export async function updateSession(request: NextRequest) {
 
   // If user is logged in and tries to access /login, redirect to /
   if (user && isLoginPage) {
-    const adminEmails = (process.env.ADMIN_EMAILS || "").split(",").map(e => e.trim().toLowerCase());
-    if (user.email && adminEmails.includes(user.email.toLowerCase())) {
+    if (isAuthorizedAdmin(user)) {
       const url = request.nextUrl.clone();
       url.pathname = "/";
       return NextResponse.redirect(url);
