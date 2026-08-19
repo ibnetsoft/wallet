@@ -95,7 +95,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: "This email is already configured as a super admin." }, { status: 400 });
   }
 
-  const permissions = ["member.read", ...requestedPermissions.filter((value) => value !== "member.read")];
+  const permissions = [
+    "member.read",
+    ...requestedPermissions.filter((value: string) => value !== "member.read"),
+  ];
   const uniquePermissions = [...new Set(permissions)];
   const adminMetadata = {
     adminConsole: true,
