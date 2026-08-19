@@ -1,4 +1,4 @@
-type AdminMetadata = {
+type AdminMetadata = Record<string, unknown> & {
   adminConsole?: boolean;
   adminRole?: string;
   adminPermissions?: unknown;
