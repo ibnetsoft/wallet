@@ -23,27 +23,41 @@ export async function GET() {
   const dbClient = await pool.connect();
   try {
     const masterHotWallet = await resolveMasterHotWallet(dbClient);
-    if (!masterHotWallet.address || masterHotWallet.issues.length > 0) {
+    if (!masterHotWallet.address) {
       return NextResponse.json(
         {
           success: false,
-          error: masterHotWallet.issues.join(" ") || "Master hot wallet is not configured.",
+          error: "Master hot wallet is not configured.",
         },
         { status: 503 }
       );
     }
 
-    const provider = createBscReadProvider();
-    const [balanceWei, usdtRaw] = await Promise.all([
-      provider.getBalance(masterHotWallet.address),
-      new Contract(getBscUsdtContract(), ERC20_ABI, provider).balanceOf(masterHotWallet.address),
-    ]);
+    let balance: number | null = null;
+    let usdtBalance: number | null = null;
+    let balanceLookupFailed = false;
+
+    try {
+      const provider = createBscReadProvider();
+      const [balanceWei, usdtRaw] = await Promise.all([
+        provider.getBalance(masterHotWallet.address),
+        new Contract(getBscUsdtContract(), ERC20_ABI, provider).balanceOf(masterHotWallet.address),
+      ]);
+
+      balance = parseFloat(formatEther(balanceWei));
+      usdtBalance = parseFloat(formatUnits(usdtRaw, 18));
+    } catch (balanceError) {
+      balanceLookupFailed = true;
+      console.error("GET api/wallet/fee-status balance lookup error:", balanceError);
+    }
 
     return NextResponse.json({
       success: true,
       address: masterHotWallet.address,
-      balance: parseFloat(formatEther(balanceWei)),
-      usdtBalance: parseFloat(formatUnits(usdtRaw, 18)),
+      balance,
+      usdtBalance,
+      issues: masterHotWallet.issues,
+      balanceLookupFailed,
     });
   } catch (err: unknown) {
     console.error("GET api/wallet/fee-status error:", err);

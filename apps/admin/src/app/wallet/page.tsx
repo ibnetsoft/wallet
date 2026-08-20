@@ -39,7 +39,8 @@ export default function WalletSweepPage() {
   
   // ── 수수료 지갑 상태 ──
   const [feeWalletAddress, setFeeWalletAddress] = useState<string | null>(null);
-  const [feeWalletBalance, setFeeWalletBalance] = useState<number>(0);
+  const [feeWalletBalance, setFeeWalletBalance] = useState<number | null>(null);
+  const [feeWalletBalanceLookupFailed, setFeeWalletBalanceLookupFailed] = useState(false);
 
   // ── 이체 폼 ──
   const [vaultAsset, setVaultAsset] = useState<"USDT" | "BNB">("USDT");
@@ -111,7 +112,8 @@ export default function WalletSweepPage() {
         const feeData = feeResult.value.data;
         if (feeData?.success) {
           setFeeWalletAddress(feeData.address);
-          setFeeWalletBalance(feeData.balance);
+          setFeeWalletBalance(typeof feeData.balance === "number" ? feeData.balance : null);
+          setFeeWalletBalanceLookupFailed(Boolean(feeData.balanceLookupFailed));
           if (typeof feeData.usdtBalance === "number") {
             setHotBalanceUSDT(feeData.usdtBalance);
           }
@@ -324,7 +326,7 @@ export default function WalletSweepPage() {
               <div className="p-2.5 bg-[#1C1C21] rounded-lg border border-[#26262B]">
                 <p className="text-[9px] text-[#8E8E93] uppercase font-bold">보유 BNB (가스비 잔액)</p>
                 <p className="text-sm font-bold text-[#30D5C8] font-mono mt-1">
-                  {feeWalletBalance.toFixed(4)} BNB
+                  {feeWalletBalance !== null ? `${feeWalletBalance.toFixed(4)} BNB` : "조회 실패"}
                 </p>
               </div>
               <div className="p-2.5 bg-[#1C1C21] rounded-lg border border-[#26262B]">
@@ -335,7 +337,7 @@ export default function WalletSweepPage() {
               </div>
             </div>
 
-            {feeWalletBalance < (userWallets.length * 0.0005) && userWallets.length > 0 && (
+            {feeWalletBalance !== null && feeWalletBalance < (userWallets.length * 0.0005) && userWallets.length > 0 && (
               <p className="text-[10px] text-[#FF453A] font-semibold mt-2 flex items-start gap-1">
                 <span>⚠️ 경고: 마스터 핫 지갑의 BNB 잔액이 부족하여 스윕이 실패할 수 있습니다. 위 주소로 BNB를 입금하세요.</span>
               </p>

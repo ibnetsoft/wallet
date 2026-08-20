@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import { createClient } from "@/lib/supabase/client";
-import { isSuperAdmin } from "@/lib/admin-access";
 
 type NavItem = {
   href: string;
@@ -116,9 +115,12 @@ export default function AdminLayoutWrapper({
     async function loadAdminRole() {
       const supabase = createClient();
       const { data } = await supabase.auth.getUser();
+      const role = typeof data.user?.app_metadata?.adminRole === "string"
+        ? data.user.app_metadata.adminRole
+        : "SUPER_ADMIN";
 
       if (mounted) {
-        setCanViewRestrictedMenu(isSuperAdmin(data.user));
+        setCanViewRestrictedMenu(role !== "SUB_ADMIN");
       }
     }
 
