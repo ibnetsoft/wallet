@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { Contract, formatEther, formatUnits } from "ethers";
 import { Pool } from "pg";
 import { getAdminUser } from "@/lib/admin-auth";
-import { createBscReadProvider, getBscUsdtContract } from "@/lib/chain-config";
+import { getBscUsdtContract, withBscReadProviderFallback } from "@/lib/chain-config";
 import { resolveMasterHotWallet } from "@/lib/master-hot-wallet";
 
 export const dynamic = "force-dynamic";
@@ -32,20 +32,30 @@ export async function GET() {
         { status: 503 }
       );
     }
+    const masterHotWalletAddress = masterHotWallet.address;
 
     let balance: number | null = null;
     let usdtBalance: number | null = null;
     let balanceLookupFailed = false;
+    let balanceRpcUrl: string | null = null;
 
     try {
-      const provider = createBscReadProvider();
-      const [balanceWei, usdtRaw] = await Promise.all([
-        provider.getBalance(masterHotWallet.address),
-        new Contract(getBscUsdtContract(), ERC20_ABI, provider).balanceOf(masterHotWallet.address),
-      ]);
+      const result = await withBscReadProviderFallback(async (provider, rpcUrl) => {
+        const [balanceWei, usdtRaw] = await Promise.all([
+          provider.getBalance(masterHotWalletAddress),
+          new Contract(getBscUsdtContract(), ERC20_ABI, provider).balanceOf(masterHotWalletAddress),
+        ]);
 
-      balance = parseFloat(formatEther(balanceWei));
-      usdtBalance = parseFloat(formatUnits(usdtRaw, 18));
+        return {
+          balance: parseFloat(formatEther(balanceWei)),
+          usdtBalance: parseFloat(formatUnits(usdtRaw, 18)),
+          rpcUrl,
+        };
+      });
+
+      balance = result.balance;
+      usdtBalance = result.usdtBalance;
+      balanceRpcUrl = result.rpcUrl;
     } catch (balanceError) {
       balanceLookupFailed = true;
       console.error("GET api/wallet/fee-status balance lookup error:", balanceError);
@@ -53,11 +63,12 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      address: masterHotWallet.address,
+      address: masterHotWalletAddress,
       balance,
       usdtBalance,
       issues: masterHotWallet.issues,
       balanceLookupFailed,
+      balanceRpcUrl,
     });
   } catch (err: unknown) {
     console.error("GET api/wallet/fee-status error:", err);

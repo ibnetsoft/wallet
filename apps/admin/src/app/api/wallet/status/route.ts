@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { Pool } from "pg";
 import { Contract, formatEther, formatUnits } from "ethers";
-import { createBscReadProvider, getBscUsdtContract } from "@/lib/chain-config";
+import { getBscUsdtContract, withBscReadProviderFallback } from "@/lib/chain-config";
 import { getAdminUser } from "@/lib/admin-auth";
 import { resolveMasterHotWallet } from "@/lib/master-hot-wallet";
 
@@ -99,16 +99,23 @@ export async function GET() {
         }
 
         if (masterHotWallet.address) {
-          const provider = createBscReadProvider();
-          const [bnbRaw, usdtRaw] = await Promise.all([
-            provider.getBalance(masterHotWallet.address),
-            new Contract(USDT_CONTRACT, ERC20_ABI, provider).balanceOf(masterHotWallet.address),
-          ]);
+          const masterHotWalletAddress = masterHotWallet.address;
+          const snapshot = await withBscReadProviderFallback(async (provider) => {
+            const [bnbRaw, usdtRaw] = await Promise.all([
+              provider.getBalance(masterHotWalletAddress),
+              new Contract(USDT_CONTRACT, ERC20_ABI, provider).balanceOf(masterHotWalletAddress),
+            ]);
+
+            return {
+              bnbBalance: parseFloat(formatEther(bnbRaw)),
+              usdtBalance: parseFloat(formatUnits(usdtRaw, 18)),
+            };
+          });
 
           walletSnapshot = {
-            address: masterHotWallet.address,
-            bnbBalance: parseFloat(formatEther(bnbRaw)),
-            usdtBalance: parseFloat(formatUnits(usdtRaw, 18)),
+            address: masterHotWalletAddress,
+            bnbBalance: snapshot.bnbBalance,
+            usdtBalance: snapshot.usdtBalance,
           };
 
           settingsMap["hot_balance_usdt"] = walletSnapshot.usdtBalance.toString();
