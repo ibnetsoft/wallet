@@ -11,40 +11,26 @@ type AdminLikeUser = {
 
 export const DEFAULT_SUBADMIN_PERMISSIONS = ["member.read"] as const;
 export const SUPER_ADMIN_ROLE = "SUPER_ADMIN";
-export const ADMIN_PERMISSIONS = {
-  MEMBER_READ: "member.read",
-  WITHDRAW_MANAGE: "withdraw.manage",
-  WALLET_MANAGE: "wallet.manage",
-} as const;
-
-export type AdminPermission = (typeof ADMIN_PERMISSIONS)[keyof typeof ADMIN_PERMISSIONS];
-
 const PAGE_PERMISSION_RULES: Array<{
   prefix: string;
-  permissions?: AdminPermission[];
   superAdminOnly?: boolean;
 }> = [
   { prefix: "/settings", superAdminOnly: true },
-  { prefix: "/withdrawals", permissions: [ADMIN_PERMISSIONS.WITHDRAW_MANAGE] },
-  { prefix: "/wallet", permissions: [ADMIN_PERMISSIONS.WALLET_MANAGE] },
-  { prefix: "/bnb-transfer", permissions: [ADMIN_PERMISSIONS.WALLET_MANAGE] },
+  { prefix: "/withdrawals", superAdminOnly: true },
+  { prefix: "/wallet", superAdminOnly: true },
+  { prefix: "/bnb-transfer", superAdminOnly: true },
 ];
 
 const API_PERMISSION_RULES: Array<{
   prefix: string;
-  permissions?: AdminPermission[];
   superAdminOnly?: boolean;
 }> = [
   { prefix: "/api/admins", superAdminOnly: true },
   { prefix: "/api/settings", superAdminOnly: true },
   { prefix: "/api/game-rounds", superAdminOnly: true },
-  {
-    prefix: "/api/wallet/fee-status",
-    permissions: [ADMIN_PERMISSIONS.WITHDRAW_MANAGE, ADMIN_PERMISSIONS.WALLET_MANAGE],
-  },
-  { prefix: "/api/withdrawals", permissions: [ADMIN_PERMISSIONS.WITHDRAW_MANAGE] },
-  { prefix: "/api/wallet", permissions: [ADMIN_PERMISSIONS.WALLET_MANAGE] },
-  { prefix: "/api/bnb-transfer", permissions: [ADMIN_PERMISSIONS.WALLET_MANAGE] },
+  { prefix: "/api/withdrawals", superAdminOnly: true },
+  { prefix: "/api/wallet", superAdminOnly: true },
+  { prefix: "/api/bnb-transfer", superAdminOnly: true },
 ];
 
 export function normalizeEmail(email: string | null | undefined) {
@@ -135,8 +121,7 @@ function canAccessByRules(
     return false;
   }
 
-  const granted = new Set(getAdminPermissions(user?.app_metadata));
-  return rule.permissions?.some((permission) => granted.has(permission)) ?? true;
+  return true;
 }
 
 export function canAccessAdminPage(

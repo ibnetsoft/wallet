@@ -18,17 +18,12 @@ import {
 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import { createClient } from "@/lib/supabase/client";
-import {
-  ADMIN_PERMISSIONS,
-  SUPER_ADMIN_ROLE,
-  type AdminPermission,
-} from "@/lib/admin-access";
+import { SUPER_ADMIN_ROLE } from "@/lib/admin-access";
 
 type NavItem = {
   href: string;
   label: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
-  permission?: AdminPermission;
   superAdminOnly?: boolean;
   activeClassName: string;
   inactiveClassName: string;
@@ -46,7 +41,7 @@ const NAV_ITEMS: NavItem[] = [
     href: "/withdrawals",
     label: "출금 승인 심사 관리",
     icon: ArrowUpRight,
-    permission: ADMIN_PERMISSIONS.WITHDRAW_MANAGE,
+    superAdminOnly: true,
     activeClassName: "border border-[#FF9F0A]/20 bg-[#FF9F0A]/10 text-[#FF9F0A]",
     inactiveClassName: "text-[#8E8E93] hover:bg-[#1C1C21] hover:text-[#FF9F0A]",
   },
@@ -61,7 +56,7 @@ const NAV_ITEMS: NavItem[] = [
     href: "/wallet",
     label: "지갑 & 모으기 관리",
     icon: Wallet,
-    permission: ADMIN_PERMISSIONS.WALLET_MANAGE,
+    superAdminOnly: true,
     activeClassName: "border border-[#00D2FF]/20 bg-[#00D2FF]/10 text-[#00D2FF]",
     inactiveClassName: "text-[#8E8E93] hover:bg-[#1C1C21] hover:text-[#FFFFFF]",
   },
@@ -69,7 +64,7 @@ const NAV_ITEMS: NavItem[] = [
     href: "/bnb-transfer",
     label: "BNB 송금",
     icon: Send,
-    permission: ADMIN_PERMISSIONS.WALLET_MANAGE,
+    superAdminOnly: true,
     activeClassName: "border border-[#F0B90B]/20 bg-[#F0B90B]/10 text-[#F0B90B]",
     inactiveClassName: "text-[#8E8E93] hover:bg-[#1C1C21] hover:text-[#F0B90B]",
   },
@@ -118,13 +113,11 @@ export default function AdminLayoutWrapper({
   const isLoginPage = pathname === "/login";
   const [adminRole, setAdminRole] = useState<string | null>(null);
   const [adminEmail, setAdminEmail] = useState("");
-  const [adminPermissions, setAdminPermissions] = useState<string[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const resetAdminState = useCallback(() => {
     setAdminRole(null);
     setAdminEmail("");
-    setAdminPermissions([]);
   }, []);
 
   const fetchAdminData = useCallback(async () => {
@@ -139,7 +132,6 @@ export default function AdminLayoutWrapper({
 
       setAdminRole(data.admin.role);
       setAdminEmail(data.admin.email);
-      setAdminPermissions(data.admin.permissions ?? []);
     } catch {
       resetAdminState();
     }
@@ -209,7 +201,7 @@ export default function AdminLayoutWrapper({
     if (item.superAdminOnly) {
       return false;
     }
-    return !item.permission || adminPermissions.includes(item.permission);
+    return true;
   });
   const accountLabel = isSuperAdmin ? "최고 관리자" : "관리자";
   const accountDescription = isSuperAdmin

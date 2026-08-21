@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { Pool, PoolClient } from "pg";
-import { getAdminPermissions, getAdminRole, isConfiguredAdminEmail, normalizeEmail } from "@/lib/admin-access";
+import { DEFAULT_SUBADMIN_PERMISSIONS, getAdminRole, isConfiguredAdminEmail, normalizeEmail } from "@/lib/admin-access";
 import { getAdminUser } from "@/lib/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -55,12 +55,11 @@ export async function GET() {
   const subAdmins = data.users
     .filter((user) => user.app_metadata?.adminConsole === true && !isConfiguredAdminEmail(user.email))
     .map((user) => {
-      const permissions = getAdminPermissions(user.app_metadata);
       return {
         id: user.id,
         email: normalizeEmail(user.email),
         role: getAdminRole(user),
-        permissions: mapPermissionLabels(permissions),
+        permissions: mapPermissionLabels([...DEFAULT_SUBADMIN_PERMISSIONS]),
         createdAt: user.created_at ? new Date(user.created_at).toISOString().split("T")[0] : "",
       };
     })
@@ -81,9 +80,6 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const email = normalizeEmail(typeof body?.email === "string" ? body.email : "");
   const password = typeof body?.password === "string" ? body.password : "";
-  const requestedPermissions = Array.isArray(body?.permissions)
-    ? body.permissions.filter((value: unknown): value is string => typeof value === "string")
-    : [];
 
   if (!email) {
     return NextResponse.json({ success: false, error: "Email is required." }, { status: 400 });
@@ -95,15 +91,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: "This email is already configured as a super admin." }, { status: 400 });
   }
 
-  const permissions = [
-    "member.read",
-    ...requestedPermissions.filter((value: string) => value !== "member.read"),
-  ];
-  const uniquePermissions = [...new Set(permissions)];
+  const permissions = [...DEFAULT_SUBADMIN_PERMISSIONS];
   const adminMetadata = {
     adminConsole: true,
     adminRole: "SUB_ADMIN",
-    adminPermissions: uniquePermissions,
+    adminPermissions: permissions,
   };
 
   const client = await pool.connect();
@@ -158,7 +150,7 @@ export async function POST(request: Request) {
       id: data.user.id,
       email,
       role: "SUB_ADMIN",
-      permissions: mapPermissionLabels(uniquePermissions),
+      permissions: mapPermissionLabels(permissions),
       createdAt: data.user.created_at ? new Date(data.user.created_at).toISOString().split("T")[0] : "",
     },
   });

@@ -68,7 +68,6 @@ export default function SettingsPage() {
   const [subAdmins, setSubAdmins] = useState<SubAdminRow[]>([]);
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [perms, setPerms] = useState({ withdraw: false, wallet: false });
   const [addingAdmin, setAddingAdmin] = useState(false);
   const [adminMsg, setAdminMsg] = useState<MsgState | null>(null);
 
@@ -188,17 +187,12 @@ export default function SettingsPage() {
     setAdminMsg(null);
 
     try {
-      const permissions = [];
-      if (perms.withdraw) permissions.push("withdraw.manage");
-      if (perms.wallet) permissions.push("wallet.manage");
-
       const res = await fetch("/api/admins", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: newEmail,
           password: newPassword,
-          permissions,
         }),
       });
       const data = await res.json();
@@ -209,7 +203,6 @@ export default function SettingsPage() {
       await loadSubAdmins();
       setNewEmail("");
       setNewPassword("");
-      setPerms({ withdraw: false, wallet: false });
       setAdminMsg({ type: "ok", text: `${newEmail} 서브 관리자 계정을 생성했습니다.` });
     } catch (err: unknown) {
       setAdminMsg({ type: "err", text: err instanceof Error ? err.message : "추가 실패" });
@@ -381,44 +374,6 @@ export default function SettingsPage() {
       setSavingWallets(false);
     }
   };
-
-  // ── 서브 관리자 추가 ──
-  const handleAddSubAdmin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newEmail || !newPassword) return;
-    setAddingAdmin(true);
-    setAdminMsg(null);
-    try {
-      const permList = ["회원 조회"];
-      if (perms.withdraw) permList.push("출금 승인");
-      if (perms.wallet) permList.push("지갑 모으기");
-
-      setSubAdmins(prev => [...prev, {
-        id: Date.now(),
-        email: newEmail,
-        role: "서브 관리자",
-        permissions: permList,
-        createdAt: new Date().toISOString().split("T")[0],
-      }]);
-      setNewEmail("");
-      setNewPassword("");
-      setPerms({ withdraw: false, wallet: false });
-      setAdminMsg({ type: "ok", text: `${newEmail} 서브 관리자가 추가되었습니다.` });
-    } catch (err: unknown) {
-      setAdminMsg({ type: "err", text: err instanceof Error ? err.message : "추가 실패" });
-    } finally {
-      setAddingAdmin(false);
-    }
-  };
-
-  const handleDeleteAdmin = (id: number) => {
-    if (confirm("정말로 이 서브 관리자 계정을 삭제하시겠습니까?")) {
-      setSubAdmins(prev => prev.filter(a => a.id !== id));
-    }
-  };
-
-  void handleAddSubAdmin;
-  void handleDeleteAdmin;
 
   const MsgBox = ({ msg }: { msg: MsgState }) => (
     <div className={`flex items-start space-x-2 p-3 rounded-lg text-xs mt-3 ${msg.type === "ok"
@@ -857,18 +812,9 @@ export default function SettingsPage() {
                       <input type="checkbox" checked disabled className="accent-[#BF5AF2]" />
                       <span className="text-xs text-[#EAECEF]">유저 조회 (기본)</span>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <input type="checkbox" checked={perms.withdraw}
-                        onChange={e => setPerms({ ...perms, withdraw: e.target.checked })}
-                        className="accent-[#BF5AF2]" />
-                      <span className="text-xs text-[#EAECEF]">출금 승인 및 반려</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input type="checkbox" checked={perms.wallet}
-                        onChange={e => setPerms({ ...perms, wallet: e.target.checked })}
-                        className="accent-[#BF5AF2]" />
-                      <span className="text-xs text-[#FF453A] font-bold">지갑 모으기 권한 (위험)</span>
-                    </div>
+                    <p className="text-[10px] leading-relaxed text-[#8E8E93]">
+                      출금 승인, 지갑 관리, BNB 송금은 최고 관리자 전용입니다.
+                    </p>
                   </div>
                   {adminMsg && <MsgBox msg={adminMsg} />}
                   <button
