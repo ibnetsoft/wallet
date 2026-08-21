@@ -342,6 +342,11 @@ export default function WalletSweepPage() {
                 <span>⚠️ 경고: 마스터 핫 지갑의 BNB 잔액이 부족하여 스윕이 실패할 수 있습니다. 위 주소로 BNB를 입금하세요.</span>
               </p>
             )}
+            {feeWalletBalanceLookupFailed && (
+              <p className="text-[10px] text-[#FF9F0A] font-semibold mt-2 flex items-start gap-1">
+                <span>RPC유료사이트결제 체크해주세요</span>
+              </p>
+            )}
           </div>
 
           {/* 모으기 가능 잔액 정보 */}

@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { isAuthorizedAdmin, normalizeEmail } from "@/lib/admin-access";
+import { getAdminRole, isAuthorizedAdmin, normalizeEmail } from "@/lib/admin-access";
 
 export interface AdminUser {
   id: string;
@@ -26,7 +26,7 @@ export async function getAdminUser(): Promise<AdminUser | null> {
   return {
     id: user.id,
     email,
-    role: typeof user.app_metadata?.adminRole === "string" ? user.app_metadata.adminRole : "SUPER_ADMIN",
+    role: getAdminRole(user),
     permissions: Array.isArray(user.app_metadata?.adminPermissions)
       ? user.app_metadata.adminPermissions.filter((value): value is string => typeof value === "string")
       : [],

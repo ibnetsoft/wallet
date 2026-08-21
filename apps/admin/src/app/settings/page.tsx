@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   Settings, Shield, UserPlus, Trash2, Key, Calculator, Coins, Percent, Receipt,
   Wallet, Lock, CheckCircle, AlertTriangle, RefreshCw, Eye, EyeOff, Save, PlusCircle
 } from "lucide-react";
 import { Wallet as EthersWallet } from "ethers";
-import { createClient } from "@/lib/supabase/client";
+import { SUPER_ADMIN_ROLE } from "@/lib/admin-access";
 
 interface MsgState { type: "ok" | "err"; text: string }
 interface SubAdminRow {
@@ -35,6 +36,7 @@ function formatUsdt(value: number) {
 }
 
 export default function SettingsPage() {
+  const router = useRouter();
   // ── 수수료 설정 ──
   const [swapFee, setSwapFee] = useState("0.1");
   const [withdrawalFee, setWithdrawalFee] = useState("3.0");
@@ -71,21 +73,34 @@ export default function SettingsPage() {
   const [adminMsg, setAdminMsg] = useState<MsgState | null>(null);
 
   const [currentUserEmail, setCurrentUserEmail] = useState("admin@hongbou.com");
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const supabase = createClient();
-        const { data } = await supabase.auth.getUser();
-        if (data?.user?.email) {
-          setCurrentUserEmail(data.user.email);
+        const response = await fetch("/api/admin/me", { cache: "no-store" });
+        const data = await response.json();
+
+        if (!response.ok || !data.success || !data.admin) {
+          throw new Error(data.error || "관리자 정보를 불러오지 못했습니다.");
+        }
+
+        if (data.admin.email) {
+          setCurrentUserEmail(data.admin.email);
+        }
+        setCurrentUserRole(data.admin.role);
+
+        if (data.admin.role !== SUPER_ADMIN_ROLE) {
+          router.replace("/");
         }
       } catch (err) {
         console.error("Failed to fetch user:", err);
+        setCurrentUserRole("SUB_ADMIN");
+        router.replace("/");
       }
     };
-    fetchUser();
-  }, []);
+    void fetchUser();
+  }, [router]);
 
   // ── 설정값 DB 로드 ──
   const loadSettings = useCallback(async () => {
@@ -156,10 +171,14 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
+    if (currentUserRole !== SUPER_ADMIN_ROLE) {
+      return;
+    }
+
     loadSettings();
     loadSubAdmins();
     loadAllowanceSummary();
-  }, [loadSettings, loadSubAdmins, loadAllowanceSummary]);
+  }, [currentUserRole, loadSettings, loadSubAdmins, loadAllowanceSummary]);
 
   const handleCreateSubAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -411,6 +430,17 @@ export default function SettingsPage() {
       <span>{msg.text}</span>
     </div>
   );
+
+  if (currentUserRole !== SUPER_ADMIN_ROLE) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <div className="rounded-2xl border border-[#26262B] bg-[#16161A] px-6 py-5 text-center shadow-lg">
+          <p className="text-sm font-semibold text-white">시스템 환경 설정은 최고 관리자 전용입니다.</p>
+          <p className="mt-2 text-xs text-[#8E8E93]">권한을 확인하는 중이거나 접근이 제한된 계정입니다.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 font-sans">
@@ -878,7 +908,9 @@ export default function SettingsPage() {
                         </div>
                       </td>
                       <td className="py-4 px-4">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#FF9F0A]/20 text-[#FF9F0A]">SUPER_ADMIN</span>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#FF9F0A]/20 text-[#FF9F0A]">
+                          {currentUserRole}
+                        </span>
                       </td>
                       <td className="py-4 px-4 text-[#8E8E93] text-[10px]">ALL_ACCESS</td>
                       <td className="py-4 px-4 text-center text-[#8E8E93] text-[10px]">—</td>

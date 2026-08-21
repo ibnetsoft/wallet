@@ -1,10 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import {
+  canAccessAdminApi,
+  canAccessAdminPage,
   isAuthorizedAdmin,
-  isSubAdmin,
-  isSubAdminRestrictedApiPath,
-  isSubAdminRestrictedPath,
 } from "@/lib/admin-access";
 
 export async function updateSession(request: NextRequest) {
@@ -68,19 +67,18 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url);
       }
 
-      if (isSubAdmin(user)) {
-        if (isSubAdminRestrictedApiPath(pathname)) {
-          return NextResponse.json(
-            { success: false, error: "Forbidden" },
-            { status: 403 }
-          );
-        }
+      if (pathname.startsWith("/api/") && !canAccessAdminApi(user, pathname)) {
+        return NextResponse.json(
+          { success: false, error: "Forbidden" },
+          { status: 403 }
+        );
+      }
 
-        if (isSubAdminRestrictedPath(pathname)) {
-          const url = request.nextUrl.clone();
-          url.pathname = "/";
-          return NextResponse.redirect(url);
-        }
+      if (!pathname.startsWith("/api/") && !canAccessAdminPage(user, pathname)) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/";
+        url.searchParams.set("access", "denied");
+        return NextResponse.redirect(url);
       }
     }
   }
