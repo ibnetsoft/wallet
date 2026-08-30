@@ -12,7 +12,7 @@ const pool = new Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorize
 // ═══════════════════════════════════════════════════════════
 //  BONUS CONSTANTS  (v1.1 Final Spec)
 // ═══════════════════════════════════════════════════════════
-const REFERRAL_BONUS_RATE = 0.20;   // 추천보너스: 직추천 1대 매출의 20%
+const REFERRAL_BONUS_RATE = 0.30;   // 추천보너스: 직추천 1대 매출의 30%
 const FOSTER_BONUS_RATE   = 0.10;   // 육성보너스: 후원 1대 매출의 10%
 // 엄마보너스: 육성보너스 금액의 100% 매칭 (별도 상수 불필요)
 const CHEOTAN_POOL_RATE   = 0.10;   // 최탄보너스 pool: 전체 매출의 10%
@@ -23,17 +23,6 @@ const CHEOTAN_TICKETS: Record<number, number> = {
   2: 1, // $500 → 1장
   3: 3, // $1,000 → 3장
 };
-
-// 직급보너스 풀 (전체 매출 대비 %, 최소 직급 이상 모두 참여)
-const RANK_BONUS_POOLS = [
-  { pool: '1star', rate: 0.05, minStars: 1 }, // 1스타 이상 전체, 5%
-  { pool: '2star', rate: 0.04, minStars: 2 }, // 2스타 이상, 4%
-  { pool: '3star', rate: 0.02, minStars: 3 }, // 3스타 이상, 2%
-  { pool: '4star', rate: 0.01, minStars: 4 }, // 4스타 이상, 1%
-  { pool: '5star', rate: 0.01, minStars: 5 }, // 5스타 이상, 1%
-  { pool: '6star', rate: 0.01, minStars: 6 }, // 6스타 이상, 1%
-  { pool: '7star', rate: 0.01, minStars: 7 }, // 7스타만, 1%
-];
 
 // 직급 달성 기준 (직추천 산하 누적 매출, 한번 달성 시 유지)
 const RANK_THRESHOLDS = [
@@ -173,7 +162,7 @@ async function triggerMamaBonus(
 
 // ═══════════════════════════════════════════════════════════
 //  STEP 1: Process individual purchase bonuses (real-time style)
-//  추천보너스 20% + 육성보너스 10% + 엄마보너스 100% 매칭
+//  추천보너스 30% + 육성보너스 10% + 엄마보너스 100% 매칭
 // ═══════════════════════════════════════════════════════════
 async function processReferralAndFosterBonusesDeprecated(
   client: PoolClient,
@@ -200,12 +189,12 @@ async function processReferralAndFosterBonusesDeprecated(
     const price = Number(purchase_price);
     console.log(`\n   → machine ${machine_id} | $${price} | pkg_level ${package_level}`);
 
-    // ── 추천보너스 20% → recommender_id ──────────────────────────
+    // ── 추천보너스 30% → recommender_id ──────────────────────────
     if (recommender_id) {
       const referralBonus = price * REFERRAL_BONUS_RATE;
       await creditBonus(
         client, recommender_id, usdtAssetId, referralBonus, 'REFERRAL_BONUS',
-        `추천보너스 20% from machine ${machine_id}`,
+        `추천보너스 30% from machine ${machine_id}`,
         `REF-${machine_id}`
       );
       // 추천인의 accumulated_revenue 누적 (직급 산정 기준)
@@ -368,45 +357,15 @@ async function settleCheotanBonus(
 }
 
 // ═══════════════════════════════════════════════════════════
-//  STEP 4: 직급보너스 7-Pool 분배 (일마감)
+//  STEP 4: 직급보너스 비활성화
 // ═══════════════════════════════════════════════════════════
 async function settleRankBonuses(
-  client: PoolClient,
-  usdtAssetId: number,
-  dailySalesTotal: number
+  _client: PoolClient,
+  _usdtAssetId: number,
+  _dailySalesTotal: number
 ): Promise<number> {
-  if (dailySalesTotal <= 0) return 0;
-
-  let totalPaid = 0;
-  const today = new Date().toISOString().split('T')[0];
-
-  for (const pool of RANK_BONUS_POOLS) {
-    const poolAmount = dailySalesTotal * pool.rate;
-
-    // 해당 pool 자격자: minStars 이상인 ACTIVE 유저
-    const eligibleRes = await client.query(
-      `SELECT id FROM public.users WHERE status = 'ACTIVE' AND star_level >= $1`,
-      [pool.minStars]
-    );
-    const n = eligibleRes.rows.length;
-    if (n === 0) {
-      console.log(`   ℹ️  ${pool.pool} pool ($${poolAmount.toFixed(2)}): 자격자 없음`);
-      continue;
-    }
-
-    const perPerson = poolAmount / n;
-    console.log(`   🌟 ${pool.pool} pool: $${poolAmount.toFixed(2)} ÷ ${n}명 = $${perPerson.toFixed(2)}/인`);
-
-    for (const user of eligibleRes.rows) {
-      await creditBonus(
-        client, user.id, usdtAssetId, perPerson, 'RANK_STAR_BONUS',
-        `직급보너스 ${pool.pool} (${pool.rate * 100}%/${n}명)`,
-        `RANK-${pool.pool}-${today}-${user.id.substring(0,8)}`
-      );
-      totalPaid += perPerson;
-    }
-  }
-  return totalPaid;
+  console.log('   ℹ️  직급보너스 지급이 비활성화되어 건너뜁니다.');
+  return 0;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -450,8 +409,8 @@ async function runDailySettlement() {
     console.log('\n[3/4] 최탄보너스 분배...');
     const cheotanPaid = await settleCheotanBonus(client, usdtAssetId, dailySalesTotal);
 
-    // --- Step 4: 직급보너스 7-Pool ---
-    console.log('\n[4/4] 직급보너스 7-Pool 분배...');
+    // --- Step 4: 직급보너스 비활성화 ---
+    console.log('\n[4/4] 직급보너스 지급 건너뜀...');
     const rankBonusPaid = await settleRankBonuses(client, usdtAssetId, dailySalesTotal);
 
     await client.query('COMMIT');

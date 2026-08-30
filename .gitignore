@@ -6,3 +6,6 @@ dist/
 *.log
 
 .vercel
+.vercel-cli-cache/
+.vercel-cli-home/
+apps/admin/.vercel-cli-home/

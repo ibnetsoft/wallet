@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   Activity,
   ArrowUpRight,
+  BarChart3,
   Bell,
   Calculator,
   LayoutDashboard,
@@ -74,6 +75,13 @@ const NAV_ITEMS: NavItem[] = [
     icon: Activity,
     activeClassName: "border border-[#30D5C8]/20 bg-[#30D5C8]/10 text-[#30D5C8]",
     inactiveClassName: "text-[#8E8E93] hover:bg-[#1C1C21] hover:text-[#FFFFFF]",
+  },
+  {
+    href: "/betting-daily",
+    label: "일별 배팅 총액",
+    icon: BarChart3,
+    activeClassName: "border border-[#26A17B]/20 bg-[#26A17B]/10 text-[#26A17B]",
+    inactiveClassName: "text-[#8E8E93] hover:bg-[#1C1C21] hover:text-[#26A17B]",
   },
   {
     href: "/allowances",
