@@ -11,6 +11,7 @@ import {
   RefreshCw,
   Search,
 } from "lucide-react";
+import { adminApi } from "@/lib/admin-path";
 
 interface Transaction {
   id: string;
@@ -88,7 +89,7 @@ export default function TransactionsPage() {
   const fetchTransactions = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/transactions?limit=200", { cache: "no-store" });
+      const response = await fetch(adminApi("/api/transactions?limit=200"), { cache: "no-store" });
       const data = await response.json();
       setTransactions(data.success && data.transactions ? data.transactions : []);
     } catch (error) {
@@ -103,7 +104,7 @@ export default function TransactionsPage() {
     setSyncing(true);
     setSyncMessage(null);
     try {
-      const response = await fetch("/api/deposits/sync", {
+      const response = await fetch(adminApi("/api/deposits/sync"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });

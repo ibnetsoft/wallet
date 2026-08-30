@@ -7,15 +7,30 @@ type RegisterTokenPayload = {
   expiresAt: number;
 };
 
+function normalizePhoneNumber(value: string) {
+  return value.replace(/[^\d+]/g, "");
+}
+
 export async function POST(req: Request) {
   try {
-    const { token, password, nickname, referralCode } = await req.json();
+    const { token, password, nickname, fullName, phoneNumber, referralCode } = await req.json();
 
-    if (!token || !password || !nickname) {
+    if (!token || !password || !nickname || !fullName || !phoneNumber) {
       return NextResponse.json(
         { error: "?몄쬆 ?좏겙, 鍮꾨?踰덊샇, ?됰꽕?꾩쓣 紐⑤몢 ?낅젰?댁＜?몄슂." },
         { status: 400 }
       );
+    }
+
+    const trimmedFullName = String(fullName).trim();
+    const normalizedPhoneNumber = normalizePhoneNumber(String(phoneNumber));
+
+    if (trimmedFullName.length < 2 || trimmedFullName.length > 50) {
+      return NextResponse.json({ error: "Invalid full name" }, { status: 400 });
+    }
+
+    if (!/^\+?\d{8,15}$/.test(normalizedPhoneNumber)) {
+      return NextResponse.json({ error: "Invalid phone number" }, { status: 400 });
     }
 
     let email = "";
@@ -97,6 +112,8 @@ export async function POST(req: Request) {
       email_confirm: true,
       user_metadata: {
         nickname,
+        full_name: trimmedFullName,
+        phone_number: normalizedPhoneNumber,
         real_email: email,
       },
     });
@@ -113,6 +130,8 @@ export async function POST(req: Request) {
       id: userId,
       email,
       nickname,
+      full_name: trimmedFullName,
+      phone_number: normalizedPhoneNumber,
       status: "PENDING",
     };
 

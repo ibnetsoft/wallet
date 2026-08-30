@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Wallet as EthersWallet } from "ethers";
 import { SUPER_ADMIN_ROLE } from "@/lib/admin-access";
+import { adminApi, adminPath } from "@/lib/admin-path";
 
 interface MsgState { type: "ok" | "err"; text: string }
 interface SubAdminRow {
@@ -77,7 +78,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch("/api/admin/me", { cache: "no-store" });
+        const response = await fetch(adminApi("/api/admin/me"), { cache: "no-store" });
         const data = await response.json();
 
         if (!response.ok || !data.success || !data.admin) {
@@ -90,12 +91,12 @@ export default function SettingsPage() {
         setCurrentUserRole(data.admin.role);
 
         if (data.admin.role !== SUPER_ADMIN_ROLE) {
-          router.replace("/");
+          router.replace(adminPath("/"));
         }
       } catch (err) {
         console.error("Failed to fetch user:", err);
         setCurrentUserRole("SUB_ADMIN");
-        router.replace("/");
+        router.replace(adminPath("/"));
       }
     };
     void fetchUser();
@@ -105,7 +106,7 @@ export default function SettingsPage() {
   const loadSettings = useCallback(async () => {
     setSettingsLoading(true);
     try {
-      const res = await fetch("/api/wallet/status");
+      const res = await fetch(adminApi("/api/wallet/status"));
       const data = await res.json();
       
       if (data.success && data.settings) {
@@ -145,7 +146,7 @@ export default function SettingsPage() {
 
   const loadSubAdmins = useCallback(async () => {
     try {
-      const res = await fetch("/api/admins", { cache: "no-store" });
+      const res = await fetch(adminApi("/api/admins"), { cache: "no-store" });
       const data = await res.json();
       if (data.success && Array.isArray(data.subAdmins)) {
         setSubAdmins(data.subAdmins);
@@ -157,7 +158,7 @@ export default function SettingsPage() {
 
   const loadAllowanceSummary = useCallback(async () => {
     try {
-      const res = await fetch("/api/allowances/summary", { cache: "no-store" });
+      const res = await fetch(adminApi("/api/allowances/summary"), { cache: "no-store" });
       const data = await res.json();
       if (data.success && data.summary) {
         setAllowanceSummary(data.summary);
@@ -187,7 +188,7 @@ export default function SettingsPage() {
     setAdminMsg(null);
 
     try {
-      const res = await fetch("/api/admins", {
+      const res = await fetch(adminApi("/api/admins"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -217,7 +218,7 @@ export default function SettingsPage() {
     }
 
     try {
-      const res = await fetch("/api/admins", {
+      const res = await fetch(adminApi("/api/admins"), {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: String(id) }),
@@ -264,7 +265,7 @@ export default function SettingsPage() {
         { key: "master_hot_wallet_private_key", value: newPk, description: "마스터 핫 지갑 개인키" },
         { key: "hot_wallet_history", value: JSON.stringify(newHistory), description: "핫 지갑 생성 이력" }
       ];
-      const saveRes = await fetch("/api/settings/save", {
+      const saveRes = await fetch(adminApi("/api/settings/save"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rows })
@@ -295,7 +296,7 @@ export default function SettingsPage() {
         { key: "swap_fee_rate", value: swapFee, description: "스왑 수수료 (%)" },
         { key: "withdrawal_fee_rate", value: withdrawalFee, description: "출금 수수료 (%)" },
       ];
-      const saveRes = await fetch("/api/settings/save", {
+      const saveRes = await fetch(adminApi("/api/settings/save"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rows })
@@ -321,7 +322,7 @@ export default function SettingsPage() {
         { key: "sales_allowance_rate", value: salesAllowanceRate, description: "매출배당 비율(%)" },
         { key: "game_allowance_rate", value: gameAllowanceRate, description: "게임배당 비율(%)" },
       ];
-      const saveRes = await fetch("/api/settings/save", {
+      const saveRes = await fetch(adminApi("/api/settings/save"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rows })
@@ -356,7 +357,7 @@ export default function SettingsPage() {
           description: "마스터 핫 지갑 개인키",
         });
       }
-      const saveRes = await fetch("/api/settings/save", {
+      const saveRes = await fetch(adminApi("/api/settings/save"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rows })

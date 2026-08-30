@@ -3,11 +3,14 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Users, Search, Activity, PowerOff, Copy, Check, FileText, X, Gamepad2, Ticket, Gift } from "lucide-react";
+import { adminApi } from "@/lib/admin-path";
 
 interface UserProfile {
   id: string;
   email: string;
   nickname: string;
+  fullName: string;
+  phoneNumber: string;
   memberNumber: number;
   code: string;
   joinedAt: string;
@@ -43,7 +46,7 @@ export default function UsersPage() {
     setSelectedUser(user);
     setDetailsLoading(true);
     try {
-      const res = await fetch(`/api/users/${user.id}/details`);
+      const res = await fetch(adminApi(`/api/users/${user.id}/details`));
       const data = await res.json();
       if (data.success) {
         setUserDetails(data.details);
@@ -65,7 +68,7 @@ export default function UsersPage() {
     const fetchUsers = async () => {
       setLoading(true);
       try {
-        const res = await fetch("/api/users");
+        const res = await fetch(adminApi("/api/users"));
         const data = await res.json();
 
         if (data.success && data.users) {
@@ -88,7 +91,7 @@ export default function UsersPage() {
     if (!confirm(`정말 '${nickname}' 회원을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없으며 관련 데이터가 모두 삭제됩니다.`)) return;
     
     try {
-      const res = await fetch("/api/users", {
+      const res = await fetch(adminApi("/api/users"), {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId })
@@ -184,6 +187,11 @@ export default function UsersPage() {
                       <span className="font-mono text-[#BF5AF2] text-[10px]">({user.code})</span>
                     </div>
                     <div className="text-[10px] text-[#8E8E93] mt-1">{user.email}</div>
+                    {(user.fullName || user.phoneNumber) && (
+                      <div className="text-[10px] text-[#8E8E93] mt-1">
+                        {user.fullName || "-"} {user.phoneNumber ? `· ${user.phoneNumber}` : ""}
+                      </div>
+                    )}
                   </td>
 
                   {/* 지갑 주소 */}
@@ -333,6 +341,12 @@ export default function UsersPage() {
                 </h3>
                 <p className="text-xs text-[#8E8E93] mt-1 mb-3">상세 활동 내역 및 이력 조회</p>
                 <div className="bg-[#1C1C21] p-3 rounded-lg border border-[#26262B] space-y-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#8E8E93]">이름 / 휴대폰</span>
+                    <span className="text-white font-semibold">
+                      {selectedUser.fullName || "-"} {selectedUser.phoneNumber ? `/ ${selectedUser.phoneNumber}` : ""}
+                    </span>
+                  </div>
                   <div className="flex items-center justify-between">
                     <span className="text-[#8E8E93]">상위 스폰서</span>
                     <span className="text-white font-semibold">

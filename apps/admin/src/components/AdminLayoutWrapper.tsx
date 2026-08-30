@@ -20,6 +20,7 @@ import {
 import LogoutButton from "@/components/LogoutButton";
 import { createClient } from "@/lib/supabase/client";
 import { SUPER_ADMIN_ROLE } from "@/lib/admin-access";
+import { adminApi, stripAdminBasePath } from "@/lib/admin-path";
 
 type NavItem = {
   href: string;
@@ -109,7 +110,7 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 function isActivePath(pathname: string, href: string) {
-  return pathname === href;
+  return stripAdminBasePath(pathname) === href;
 }
 
 export default function AdminLayoutWrapper({
@@ -118,7 +119,7 @@ export default function AdminLayoutWrapper({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const isLoginPage = pathname === "/login";
+  const isLoginPage = stripAdminBasePath(pathname) === "/login";
   const [adminRole, setAdminRole] = useState<string | null>(null);
   const [adminEmail, setAdminEmail] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -130,7 +131,7 @@ export default function AdminLayoutWrapper({
 
   const fetchAdminData = useCallback(async () => {
     try {
-      const response = await fetch("/api/admin/me", { cache: "no-store" });
+      const response = await fetch(adminApi("/api/admin/me"), { cache: "no-store" });
       const data = await response.json();
 
       if (!response.ok || !data.success || !data.admin) {

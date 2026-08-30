@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { ArrowUpRight, CheckCircle, XCircle, RefreshCw, ExternalLink, ShieldAlert } from "lucide-react";
+import { adminApi } from "@/lib/admin-path";
 
 interface WithdrawalRecord {
   id: string;
@@ -28,7 +29,7 @@ export default function WithdrawalAuditPage() {
   const fetchWalletInfo = async () => {
     setWalletLoading(true);
     try {
-      const res = await fetch("/api/wallet/fee-status");
+      const res = await fetch(adminApi("/api/wallet/fee-status"));
       const data = await res.json();
       if (data.success) {
         setWalletAddress(data.address || "");
@@ -42,7 +43,7 @@ export default function WithdrawalAuditPage() {
   const fetchPendingWithdrawals = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/withdrawals");
+      const res = await fetch(adminApi("/api/withdrawals"));
       const result = await res.json();
       if (result.success && result.withdrawals) {
         setWithdrawals(result.withdrawals);
@@ -99,7 +100,7 @@ export default function WithdrawalAuditPage() {
     if (!confirm(`[출금 수동 승인]\n\n회원: ${email}\n신청금액: ${amount} ${asset}\n\n정말로 바이낸스 스마트 체인(BSC) 온체인 출금을 승인 처리하시겠습니까?`)) return;
     
     try {
-      const res = await fetch("/api/withdrawals", {
+      const res = await fetch(adminApi("/api/withdrawals"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ withdrawalId: id, action: "APPROVE" })
@@ -122,7 +123,7 @@ export default function WithdrawalAuditPage() {
     if (reason === null) return;
 
     try {
-      const res = await fetch("/api/withdrawals", {
+      const res = await fetch(adminApi("/api/withdrawals"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ withdrawalId: id, action: "REJECT", reason })
@@ -157,7 +158,7 @@ export default function WithdrawalAuditPage() {
 
     for (const w of withdrawals) {
       try {
-        const res = await fetch("/api/withdrawals", {
+        const res = await fetch(adminApi("/api/withdrawals"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ withdrawalId: w.id, action: "APPROVE" })

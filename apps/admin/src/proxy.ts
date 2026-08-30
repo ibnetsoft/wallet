@@ -1,8 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "./lib/supabase/middleware";
+import { stripAdminBasePath } from "./lib/admin-path";
 
 export async function proxy(request: NextRequest) {
-  const pathname = request.nextUrl.pathname;
+  const pathname = stripAdminBasePath(request.nextUrl.pathname);
   // The route handlers require either an authenticated admin or a signed cron
   // request. Skip session refresh so the signed scheduler request can reach it.
   if (pathname.startsWith("/api/cron/") || pathname === "/api/game-rounds/draw") {

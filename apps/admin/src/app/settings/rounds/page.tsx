@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Plus, Trash2, Edit2, Clock, Play, Save, X, AlertCircle, RefreshCw } from "lucide-react";
+import { adminApi } from "@/lib/admin-path";
 
 interface GameRound {
   id?: number;
@@ -51,7 +52,7 @@ export default function GameRoundsPage() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/game-rounds");
+      const res = await fetch(adminApi("/api/game-rounds"));
       const data = await res.json();
       if (data.success) {
         setRounds(data.rounds);
@@ -99,7 +100,7 @@ export default function GameRoundsPage() {
 
     try {
       const method = modalMode === "add" ? "POST" : "PUT";
-      const res = await fetch("/api/game-rounds", {
+      const res = await fetch(adminApi("/api/game-rounds"), {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

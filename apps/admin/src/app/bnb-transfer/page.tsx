@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Wallet,
 } from "lucide-react";
+import { adminApi } from "@/lib/admin-path";
 
 type TransferStatus = "PROCESSING" | "BROADCAST" | "CONFIRMED" | "FAILED";
 
@@ -115,7 +116,7 @@ export default function BnbTransferPage() {
     setLoadError(null);
 
     try {
-      const response = await fetch("/api/bnb-transfer", { cache: "no-store" });
+      const response = await fetch(adminApi("/api/bnb-transfer"), { cache: "no-store" });
       const result = (await response.json()) as BnbTransferResponse;
       if (!response.ok || !result.success) {
         throw new Error(result.error || "Unable to load the BNB transfer page.");
@@ -169,7 +170,7 @@ export default function BnbTransferPage() {
     setSubmitting(true);
 
     try {
-      const response = await fetch("/api/bnb-transfer", {
+      const response = await fetch(adminApi("/api/bnb-transfer"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

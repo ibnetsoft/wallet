@@ -3,6 +3,7 @@
 import { LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { adminPath } from "@/lib/admin-path";
 
 export default function LogoutButton() {
   const router = useRouter();
@@ -13,7 +14,7 @@ export default function LogoutButton() {
     
     await supabase.auth.signOut();
     router.refresh(); // This will trigger middleware again
-    router.push("/login");
+    router.push(adminPath("/login"));
   };
 
   return (

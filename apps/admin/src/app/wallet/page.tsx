@@ -5,6 +5,7 @@ import {
   Wallet, ArrowRightLeft, ShieldAlert, CheckCircle, RefreshCw,
   Lock, ArrowDownRight, ArrowUpRight, ShieldCheck, AlertTriangle, Info, Copy, Check
 } from "lucide-react";
+import { adminApi } from "@/lib/admin-path";
 
 interface UserWallet {
   user_id: string;
@@ -60,11 +61,11 @@ export default function WalletSweepPage() {
       // Both endpoints call BSC. Start them together so a slow RPC affects the
       // initial dashboard load once rather than serially.
       const [statusResult, feeResult] = await Promise.allSettled([
-        fetch("/api/wallet/status").then(async (response) => ({
+        fetch(adminApi("/api/wallet/status")).then(async (response) => ({
           ok: response.ok,
           data: await response.json(),
         })),
-        fetch("/api/wallet/fee-status").then(async (response) => ({
+        fetch(adminApi("/api/wallet/fee-status")).then(async (response) => ({
           ok: response.ok,
           data: await response.json(),
         })),
@@ -162,7 +163,7 @@ export default function WalletSweepPage() {
     setLoadingSweep(true);
     setSweepMsg(null);
     try {
-      const res = await fetch("/api/wallet/sweep", {
+      const res = await fetch(adminApi("/api/wallet/sweep"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ target_wallet: masterHotWallet })
@@ -207,7 +208,7 @@ export default function WalletSweepPage() {
     setLoadingVault(true);
     setVaultMsg(null);
     try {
-      const response = await fetch("/api/wallet/cold-vault-log", {
+      const response = await fetch(adminApi("/api/wallet/cold-vault-log"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

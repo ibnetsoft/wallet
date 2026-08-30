@@ -8,6 +8,7 @@ import {
   CheckCircle, XCircle, RefreshCw, ChevronRight, Percent, ExternalLink
 } from "lucide-react";
 import { isSuperAdmin } from "@/lib/admin-access";
+import { adminApi } from "@/lib/admin-path";
 import { createClient } from "@/lib/supabase/client";
 
 interface PendingWithdrawal {
@@ -124,7 +125,7 @@ export default function DashboardPage() {
       return;
     }
 
-    fetch('/api/settings/auto-draw')
+    fetch(adminApi("/api/settings/auto-draw"))
       .then(res => res.json())
       .then(data => {
         if (data.success) setAutoDrawEnabled(data.enabled);
@@ -136,7 +137,7 @@ export default function DashboardPage() {
     const newVal = !autoDrawEnabled;
     setAutoDrawEnabled(newVal);
     try {
-      await fetch('/api/settings/auto-draw', {
+      await fetch(adminApi("/api/settings/auto-draw"), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled: newVal })
@@ -180,7 +181,7 @@ export default function DashboardPage() {
 
   const fetchStats = async () => {
     try {
-      const res = await fetch("/api/dashboard/stats");
+      const res = await fetch(adminApi("/api/dashboard/stats"));
       const result = await res.json();
       if (result.success) {
         if (result.stats) setStats(result.stats);
@@ -195,7 +196,7 @@ export default function DashboardPage() {
   const fetchPendingWithdrawals = async () => {
     setLoadingWithdrawals(true);
     try {
-      const res = await fetch("/api/withdrawals");
+      const res = await fetch(adminApi("/api/withdrawals"));
       const result = await res.json();
       if (result.success && result.withdrawals) {
         setPendingWithdrawals(result.withdrawals);
@@ -218,7 +219,7 @@ export default function DashboardPage() {
     if (!confirm(`출금 요청 ${id}을(를) 승인하시겠습니까?`)) return;
     
     try {
-      const res = await fetch("/api/withdrawals", {
+      const res = await fetch(adminApi("/api/withdrawals"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ withdrawalId: id, action: "APPROVE" })
@@ -241,7 +242,7 @@ export default function DashboardPage() {
     if (reason === null) return;
 
     try {
-      const res = await fetch("/api/withdrawals", {
+      const res = await fetch(adminApi("/api/withdrawals"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ withdrawalId: id, action: "REJECT", reason })

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, Lock, Mail, User, Shield, AlertCircle, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Lock, Mail, User, Shield, AlertCircle, CheckCircle2, Phone } from "lucide-react";
 import Link from "next/link";
 
 /* 닉네임 유효성: 영문으로 시작, 영문+숫자, 3~20자 */
@@ -17,10 +17,37 @@ function validateNickname(value: string, lang: string): string {
   return "";
 }
 
+function validateFullName(value: string, lang: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return lang === "ko" ? "이름을 입력하세요" : lang === "en" ? "Enter your name" : "请输入姓名";
+  if (trimmed.length < 2) return lang === "ko" ? "이름은 2자 이상이어야 합니다" : lang === "en" ? "Name must be at least 2 characters" : "姓名至少需要2个字符";
+  if (trimmed.length > 50) return lang === "ko" ? "이름은 50자 이하로 입력하세요" : lang === "en" ? "Name must be 50 characters or fewer" : "姓名最多50个字符";
+  return "";
+}
+
+function normalizePhone(value: string) {
+  return value.replace(/[^\d+]/g, "");
+}
+
+function validatePhoneNumber(value: string, lang: string): string {
+  const normalized = normalizePhone(value);
+  if (!normalized) return lang === "ko" ? "휴대폰번호를 입력하세요" : lang === "en" ? "Enter your phone number" : "请输入手机号";
+  if (!/^\+?\d{8,15}$/.test(normalized)) {
+    return lang === "ko"
+      ? "휴대폰번호 형식이 올바르지 않습니다"
+      : lang === "en"
+      ? "Phone number format is invalid"
+      : "手机号格式不正确";
+  }
+  return "";
+}
+
 function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [nickname, setNickname] = useState("");
   const [nicknameError, setNicknameError] = useState("");
   const [nicknameTouched, setNicknameTouched] = useState(false);
@@ -158,6 +185,18 @@ function RegisterForm() {
       return;
     }
 
+    const fullNameError = validateFullName(fullName, lang);
+    if (fullNameError) {
+      setError(fullNameError);
+      return;
+    }
+
+    const phoneError = validatePhoneNumber(phoneNumber, lang);
+    if (phoneError) {
+      setError(phoneError);
+      return;
+    }
+
     if (!referralCode.trim()) {
       setError(lang === "ko" ? "추천코드는 필수 입력 항목입니다!" : lang === "en" ? "Referral code is required!" : "邀请码是必填项，没有邀请码无法注册！");
       return;
@@ -168,7 +207,14 @@ function RegisterForm() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, password, nickname, referralCode }),
+        body: JSON.stringify({
+          token,
+          password,
+          nickname,
+          fullName: fullName.trim(),
+          phoneNumber: normalizePhone(phoneNumber),
+          referralCode,
+        }),
       });
 
       const data = await res.json();
@@ -279,6 +325,50 @@ function RegisterForm() {
         {/* 2단계: 이메일 인증이 완료되면 나머지 가입 양식 표시 */}
         {verified ? (
           <form onSubmit={handleRegister} className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1 flex items-center gap-1.5">
+                {lang === "ko" ? "이름" : lang === "en" ? "Full Name" : "姓名"}
+                <span className="text-[#F6465D] font-black">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#848E9C]">
+                  <User size={16} />
+                </div>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                  maxLength={50}
+                  autoComplete="name"
+                  placeholder={lang === "ko" ? "실명을 입력해주세요" : lang === "en" ? "Enter your full name" : "请输入您的姓名"}
+                  className="w-full bg-[#1E2329] border border-[#2B3139] focus:border-[#FCD535] pl-11 pr-4 py-3 rounded text-sm text-[#EAECEF] font-semibold outline-none transition-colors"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1 flex items-center gap-1.5">
+                {lang === "ko" ? "휴대폰번호" : lang === "en" ? "Phone Number" : "手机号"}
+                <span className="text-[#F6465D] font-black">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#848E9C]">
+                  <Phone size={16} />
+                </div>
+                <input
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  required
+                  maxLength={20}
+                  autoComplete="tel"
+                  placeholder={lang === "ko" ? "예: 01012345678 또는 +821012345678" : lang === "en" ? "e.g. 01012345678 or +821012345678" : "例如: 01012345678 或 +821012345678"}
+                  className="w-full bg-[#1E2329] border border-[#2B3139] focus:border-[#FCD535] pl-11 pr-4 py-3 rounded text-sm text-[#EAECEF] font-semibold outline-none transition-colors"
+                />
+              </div>
+            </div>
+
             {/* 닉네임(ID) */}
             <div className="space-y-1">
               <label className="text-[10px] text-[#848E9C] uppercase font-bold ml-1 flex items-center gap-1.5">
@@ -433,7 +523,7 @@ function RegisterForm() {
           <div className="p-4 bg-[#1E2329]/50 border border-[#2B3139] rounded-xl text-center">
             <p className="text-xs text-[#848E9C]">
               {lang === "ko"
-                ? "이메일 인증을 완료한 후에 가입 정보(닉네임, 비밀번호)를 입력하실 수 있습니다."
+                ? "이메일 인증을 완료한 후에 가입 정보(이름, 휴대폰번호, 닉네임, 비밀번호)를 입력하실 수 있습니다."
                 : "You can enter details after verifying your email address."}
             </p>
           </div>

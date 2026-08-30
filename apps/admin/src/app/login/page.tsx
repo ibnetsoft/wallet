@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Shield, Mail, Lock, AlertCircle, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { adminPath } from "@/lib/admin-path";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -31,7 +32,7 @@ export default function LoginPage() {
       } else {
         // Successful login, refresh router to apply middleware
         router.refresh();
-        router.push("/");
+        router.push(adminPath("/"));
       }
     } catch (err: unknown) {
       setError((err as Error).message || "An unknown error occurred");

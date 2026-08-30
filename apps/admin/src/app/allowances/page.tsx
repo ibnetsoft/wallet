@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { adminApi } from "@/lib/admin-path";
 import { Calculator, Coins, Percent, Receipt, RefreshCw } from "lucide-react";
 
 interface AllowanceSummary {
@@ -27,7 +28,7 @@ export default function AllowancesPage() {
   const loadSummary = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/allowances/summary", { cache: "no-store" });
+      const response = await fetch(adminApi("/api/allowances/summary"), { cache: "no-store" });
       const data = await response.json();
       setSummary(data.success ? data.summary : null);
     } catch (error) {
