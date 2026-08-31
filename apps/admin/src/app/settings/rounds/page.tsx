@@ -122,7 +122,7 @@ export default function GameRoundsPage() {
     if (!confirm("정말로 이 게임 회차를 삭제하시겠습니까?")) return;
     setError("");
     try {
-      const res = await fetch(`/api/game-rounds?id=${id}`, {
+      const res = await fetch(adminApi(`/api/game-rounds?id=${id}`), {
         method: "DELETE",
       });
       const data = await res.json();

@@ -25,19 +25,13 @@ export async function GET(request: Request) {
       ? Math.min(Math.max(requestedDays, 1), 365)
       : 30;
 
-    const result = await pool.query<{
+    const bettingResult = await pool.query<{
       bet_date: string;
-      total_tickets: string | number;
       total_bet_amount: string | number;
-      participants_count: string | number;
-      rounds_count: string | number;
     }>(
       `SELECT
          gp.round_date::text AS bet_date,
-         COALESCE(SUM(gp.tickets_count), 0) AS total_tickets,
-         COALESCE(SUM(gp.tickets_count * $1), 0) AS total_bet_amount,
-         COUNT(DISTINCT gp.user_id) AS participants_count,
-         COUNT(DISTINCT gp.round_id) AS rounds_count
+         COALESCE(SUM(gp.tickets_count * $1), 0) AS total_bet_amount
        FROM public.game_participants AS gp
        WHERE gp.round_date >= ((now() AT TIME ZONE 'Asia/Shanghai')::date - ($2::int - 1))
          AND gp.status <> 'REFUNDED'
@@ -46,28 +40,64 @@ export async function GET(request: Request) {
       [BET_AMOUNT_PER_TICKET_USDT, days]
     );
 
-    const dailyTotals = result.rows.map((row) => ({
-      date: row.bet_date,
-      totalTickets: Number(row.total_tickets),
-      totalBetAmount: Number(row.total_bet_amount),
-      participantsCount: Number(row.participants_count),
-      roundsCount: Number(row.rounds_count),
-    }));
+    const purchaseResult = await pool.query<{
+      purchase_date: string;
+      total_product_purchase_amount: string | number;
+    }>(
+      `SELECT
+         ((ugm.created_at AT TIME ZONE 'Asia/Shanghai')::date)::text AS purchase_date,
+         COALESCE(SUM(ugm.purchase_price), 0) AS total_product_purchase_amount
+       FROM public.user_game_machines AS ugm
+       WHERE (ugm.created_at AT TIME ZONE 'Asia/Shanghai')::date >= ((now() AT TIME ZONE 'Asia/Shanghai')::date - ($1::int - 1))
+       GROUP BY (ugm.created_at AT TIME ZONE 'Asia/Shanghai')::date
+       ORDER BY (ugm.created_at AT TIME ZONE 'Asia/Shanghai')::date DESC`,
+      [days]
+    );
+
+    const dailyTotalsMap = new Map<string, {
+      date: string;
+      totalProductPurchaseAmount: number;
+      totalBetAmount: number;
+    }>();
+
+    for (const row of purchaseResult.rows) {
+      dailyTotalsMap.set(row.purchase_date, {
+        date: row.purchase_date,
+        totalProductPurchaseAmount: Number(row.total_product_purchase_amount),
+        totalBetAmount: 0,
+      });
+    }
+
+    for (const row of bettingResult.rows) {
+      const existing = dailyTotalsMap.get(row.bet_date);
+      if (existing) {
+        existing.totalBetAmount = Number(row.total_bet_amount);
+        continue;
+      }
+
+      dailyTotalsMap.set(row.bet_date, {
+        date: row.bet_date,
+        totalProductPurchaseAmount: 0,
+        totalBetAmount: Number(row.total_bet_amount),
+      });
+    }
+
+    const dailyTotals = [...dailyTotalsMap.values()].sort((a, b) => b.date.localeCompare(a.date));
 
     const summary = dailyTotals.reduce(
       (acc, row) => {
+        acc.totalProductPurchaseAmount += row.totalProductPurchaseAmount;
         acc.totalBetAmount += row.totalBetAmount;
-        acc.totalTickets += row.totalTickets;
-        acc.totalParticipants += row.participantsCount;
-        if (!acc.peakDay || row.totalBetAmount > acc.peakDay.totalBetAmount) {
+        acc.totalCombinedAmount += row.totalProductPurchaseAmount + row.totalBetAmount;
+        if (!acc.peakDay || (row.totalProductPurchaseAmount + row.totalBetAmount) > (acc.peakDay.totalProductPurchaseAmount + acc.peakDay.totalBetAmount)) {
           acc.peakDay = row;
         }
         return acc;
       },
       {
+        totalProductPurchaseAmount: 0,
         totalBetAmount: 0,
-        totalTickets: 0,
-        totalParticipants: 0,
+        totalCombinedAmount: 0,
         peakDay: null as null | (typeof dailyTotals)[number],
       }
     );
@@ -78,11 +108,11 @@ export async function GET(request: Request) {
       unitBetAmount: BET_AMOUNT_PER_TICKET_USDT,
       dailyTotals,
       summary: {
+        totalProductPurchaseAmount: summary.totalProductPurchaseAmount,
         totalBetAmount: summary.totalBetAmount,
-        totalTickets: summary.totalTickets,
-        totalParticipants: summary.totalParticipants,
+        totalCombinedAmount: summary.totalCombinedAmount,
         daysWithData: dailyTotals.length,
-        averageDailyBetAmount: dailyTotals.length > 0 ? summary.totalBetAmount / dailyTotals.length : 0,
+        averageDailyCombinedAmount: dailyTotals.length > 0 ? summary.totalCombinedAmount / dailyTotals.length : 0,
         peakDay: summary.peakDay,
       },
     });

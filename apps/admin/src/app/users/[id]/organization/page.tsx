@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { adminApi, adminPath } from "@/lib/admin-path";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -78,7 +79,7 @@ function MemberCard({ member, showDepth = false }: { member: OrganizationMember;
 
   return (
     <Link
-      href={`/users/${member.id}/organization`}
+      href={adminPath(`/users/${member.id}/organization`)}
       className="group block rounded-xl border border-[#26262B] bg-[#1C1C21] p-4 transition-colors hover:border-[#00D2FF]/60 hover:bg-[#202027]"
     >
       <div className="flex items-start justify-between gap-3">
@@ -146,7 +147,7 @@ export default function UserOrganizationPage() {
     setError(null);
 
     try {
-      const response = await fetch(`/api/users/${encodeURIComponent(userId)}/organization`, {
+      const response = await fetch(adminApi(`/api/users/${encodeURIComponent(userId)}/organization`), {
         cache: "no-store",
       });
       const result = (await response.json()) as {
@@ -193,7 +194,7 @@ export default function UserOrganizationPage() {
           </div>
         </div>
         <div className="flex gap-3">
-          <Link href="/users" className="rounded-lg border border-[#26262B] bg-[#1C1C21] px-4 py-2 text-sm font-bold text-white hover:border-[#00D2FF]">
+          <Link href={adminPath("/users")} className="rounded-lg border border-[#26262B] bg-[#1C1C21] px-4 py-2 text-sm font-bold text-white hover:border-[#00D2FF]">
             회원 목록으로
           </Link>
           <button
@@ -216,7 +217,7 @@ export default function UserOrganizationPage() {
     <div className="mx-auto max-w-6xl space-y-6 font-sans">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <Link href="/users" className="inline-flex items-center gap-1.5 text-xs font-bold text-[#8E8E93] hover:text-[#00D2FF]">
+          <Link href={adminPath("/users")} className="inline-flex items-center gap-1.5 text-xs font-bold text-[#8E8E93] hover:text-[#00D2FF]">
             <ArrowLeft size={14} />
             회원 목록
           </Link>
@@ -295,7 +296,7 @@ export default function UserOrganizationPage() {
               <div key={ancestor.id} className="contents">
                 {index > 0 && <ChevronRight size={14} className="text-[#48484A]" />}
                 <Link
-                  href={`/users/${ancestor.id}/organization`}
+                  href={adminPath(`/users/${ancestor.id}/organization`)}
                   className="rounded-lg border border-[#BF5AF2]/25 bg-[#BF5AF2]/10 px-3 py-2 font-bold text-[#EAECEF] hover:border-[#BF5AF2]"
                 >
                   {ancestor.nickname}
