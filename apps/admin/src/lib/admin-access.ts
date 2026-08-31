@@ -66,6 +66,10 @@ export function getAdminPermissions(metadata: AdminMetadata | null | undefined) 
   return permissions.length > 0 ? permissions : [...DEFAULT_SUBADMIN_PERMISSIONS];
 }
 
+function hasSuperAdminMetadata(user: AdminLikeUser | null | undefined) {
+  return user?.app_metadata?.adminRole === SUPER_ADMIN_ROLE;
+}
+
 export function isAuthorizedAdmin(user: AdminLikeUser | null | undefined) {
   const email = normalizeEmail(user?.email);
   if (!email) {
@@ -76,11 +80,15 @@ export function isAuthorizedAdmin(user: AdminLikeUser | null | undefined) {
     return true;
   }
 
+  if (hasSuperAdminMetadata(user)) {
+    return true;
+  }
+
   return user?.app_metadata?.adminConsole === true;
 }
 
 export function getAdminRole(user: AdminLikeUser | null | undefined) {
-  if (isConfiguredAdminEmail(user?.email)) {
+  if (isConfiguredAdminEmail(user?.email) || hasSuperAdminMetadata(user)) {
     return SUPER_ADMIN_ROLE;
   }
 
