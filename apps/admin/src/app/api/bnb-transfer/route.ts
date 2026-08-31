@@ -11,7 +11,10 @@ import {
   parseEther,
 } from "ethers";
 import { getBnbTransferAdmin } from "@/lib/bnb-transfer-admin";
-import { getBscRpcUrl } from "@/lib/chain-config";
+import {
+  createBscReadProviderFromUrl,
+  getBscReadRpcUrls,
+} from "@/lib/chain-config";
 import {
   DEFAULT_MASTER_HOT_WALLET_ADDRESS,
   resolveMasterHotWallet,
@@ -36,7 +39,7 @@ type TransferStatus = "PROCESSING" | "BROADCAST" | "CONFIRMED" | "FAILED";
 
 interface TransferSettings {
   issues: string[];
-  rpcUrl: string | null;
+  rpcUrls: string[];
   maxAmountWei: bigint | null;
   gasReserveWei: bigint | null;
   recipientAllowlist: Set<string>;
@@ -94,7 +97,7 @@ function parseRecipientAllowlist(value: string | undefined) {
 
 function getTransferSettings(): TransferSettings {
   const issues: string[] = [];
-  const rpcUrl = getBscRpcUrl().trim() || null;
+  const rpcUrls = getBscReadRpcUrls();
   const maxAmountWei = parsePositiveBnb(process.env.BNB_TRANSFER_MAX_AMOUNT);
   const gasReserveWei = parsePositiveBnb(
     process.env.BNB_TRANSFER_GAS_RESERVE ?? DEFAULT_GAS_RESERVE
@@ -107,7 +110,7 @@ function getTransferSettings(): TransferSettings {
   if (process.env.BNB_TRANSFER_CHAIN_ID !== String(BSC_MAINNET_CHAIN_ID)) {
     issues.push("BNB_TRANSFER_CHAIN_ID=56 is required.");
   }
-  if (!rpcUrl) {
+  if (rpcUrls.length === 0) {
     issues.push("A server-side BSC RPC URL is required.");
   }
   if (!process.env.DATABASE_URL?.trim()) {
@@ -125,11 +128,37 @@ function getTransferSettings(): TransferSettings {
 
   return {
     issues,
-    rpcUrl,
+    rpcUrls,
     maxAmountWei,
     gasReserveWei,
     recipientAllowlist: recipientAllowlist.addresses,
   };
+}
+
+async function resolveHealthyBscProvider(rpcUrls: string[]) {
+  const rpcErrors: Array<{ rpcUrl: string; error: unknown }> = [];
+
+  for (const rpcUrl of rpcUrls) {
+    try {
+      const provider = createBscReadProviderFromUrl(rpcUrl);
+      const network = await provider.getNetwork();
+      if (network.chainId !== BigInt(BSC_MAINNET_CHAIN_ID)) {
+        rpcErrors.push({
+          rpcUrl,
+          error: new Error("The configured BSC RPC URL is not connected to BSC mainnet."),
+        });
+        continue;
+      }
+
+      return { provider, rpcUrl };
+    } catch (error) {
+      rpcErrors.push({ rpcUrl, error });
+    }
+  }
+
+  const fallbackError = new Error("All configured BSC transfer RPC endpoints failed.");
+  (fallbackError as Error & { cause?: unknown }).cause = rpcErrors;
+  throw fallbackError;
 }
 
 function transferResponse(row: Record<string, unknown>, idempotent = false) {
@@ -366,16 +395,11 @@ export async function GET() {
     }
   }
 
-  if (settings.rpcUrl && sourceAddress) {
+  if (settings.rpcUrls.length > 0 && sourceAddress) {
     try {
-      provider = new JsonRpcProvider(settings.rpcUrl);
-      const network = await provider.getNetwork();
-      if (network.chainId !== BigInt(BSC_MAINNET_CHAIN_ID)) {
-        settings.issues.push("The configured BSC RPC URL is not connected to BSC mainnet.");
-        provider = null;
-      } else {
-        sourceBalance = formatEther(await provider.getBalance(sourceAddress));
-      }
+      const resolved = await resolveHealthyBscProvider(settings.rpcUrls);
+      provider = resolved.provider;
+      sourceBalance = formatEther(await provider.getBalance(sourceAddress));
     } catch {
       settings.issues.push("Unable to read the BNB transfer wallet from the configured RPC.");
     }
@@ -439,7 +463,7 @@ export async function POST(request: Request) {
   }
 
   const settings = getTransferSettings();
-  if (settings.issues.length > 0 || !settings.rpcUrl || !settings.maxAmountWei || !settings.gasReserveWei) {
+  if (settings.issues.length > 0 || settings.rpcUrls.length === 0 || !settings.maxAmountWei || !settings.gasReserveWei) {
     return errorResponse(settings.issues.join(" "), 403);
   }
 
@@ -493,7 +517,12 @@ export async function POST(request: Request) {
     return errorResponse("The recipient is not in BNB_TRANSFER_RECIPIENT_ALLOWLIST.", 403);
   }
 
-  const provider = new JsonRpcProvider(settings.rpcUrl);
+  let provider: JsonRpcProvider;
+  try {
+    ({ provider } = await resolveHealthyBscProvider(settings.rpcUrls));
+  } catch {
+    return errorResponse("Unable to read the BNB transfer wallet from the configured RPC.", 503);
+  }
   let client: PoolClient;
   try {
     client = await pool.connect();
@@ -521,12 +550,6 @@ export async function POST(request: Request) {
     if (recipientAddress === ZeroAddress || recipientAddress.toLowerCase() === sourceAddress.toLowerCase()) {
       return errorResponse("The recipient must be a different non-zero BSC address.");
     }
-
-    const network = await provider.getNetwork();
-    if (network.chainId !== BigInt(BSC_MAINNET_CHAIN_ID)) {
-      return errorResponse("The configured BSC RPC URL is not connected to BSC mainnet.", 503);
-    }
-
     const existing = await client.query(
       `SELECT id, amount, recipient_address, source_address, status, tx_hash,
               failure_reason, confirmed_at, created_at
