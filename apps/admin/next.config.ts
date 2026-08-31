@@ -10,6 +10,18 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        source: `${adminBasePath}${adminBasePath}/:path*`,
+        destination: `${adminBasePath}/:path*`,
+        permanent: false,
+        basePath: false,
+      },
+      {
+        source: `${adminBasePath}${adminBasePath}`,
+        destination: adminBasePath,
+        permanent: false,
+        basePath: false,
+      },
+      {
         source: "/",
         destination: adminBasePath,
         permanent: false,
