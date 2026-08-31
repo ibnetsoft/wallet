@@ -19,7 +19,12 @@ import {
 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import { createClient } from "@/lib/supabase/client";
-import { SUPER_ADMIN_ROLE } from "@/lib/admin-access";
+import {
+  SUPER_ADMIN_ROLE,
+  getAdminRole,
+  isAuthorizedAdmin,
+  normalizeEmail,
+} from "@/lib/admin-access";
 import { adminApi, stripAdminBasePath } from "@/lib/admin-path";
 
 type NavItem = {
@@ -130,19 +135,38 @@ export default function AdminLayoutWrapper({
   }, []);
 
   const fetchAdminData = useCallback(async () => {
+    const supabase = createClient();
+
     try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user && isAuthorizedAdmin(user)) {
+        setAdminRole(getAdminRole(user));
+        setAdminEmail(normalizeEmail(user.email));
+      }
+
       const response = await fetch(adminApi("/api/admin/me"), { cache: "no-store" });
       const data = await response.json();
 
       if (!response.ok || !data.success || !data.admin) {
-        resetAdminState();
+        if (!user || !isAuthorizedAdmin(user)) {
+          resetAdminState();
+        }
         return;
       }
 
       setAdminRole(data.admin.role);
       setAdminEmail(data.admin.email);
     } catch {
-      resetAdminState();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user || !isAuthorizedAdmin(user)) {
+        resetAdminState();
+      }
     }
   }, [resetAdminState]);
 

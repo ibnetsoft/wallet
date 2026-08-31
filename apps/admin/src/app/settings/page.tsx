@@ -7,8 +7,14 @@ import {
   Wallet, Lock, CheckCircle, AlertTriangle, RefreshCw, Eye, EyeOff, Save, PlusCircle
 } from "lucide-react";
 import { Wallet as EthersWallet } from "ethers";
-import { SUPER_ADMIN_ROLE } from "@/lib/admin-access";
+import {
+  SUPER_ADMIN_ROLE,
+  getAdminRole,
+  isAuthorizedAdmin,
+  normalizeEmail,
+} from "@/lib/admin-access";
 import { adminApi, adminPath } from "@/lib/admin-path";
+import { createClient } from "@/lib/supabase/client";
 
 interface MsgState { type: "ok" | "err"; text: string }
 interface SubAdminRow {
@@ -77,7 +83,18 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const fetchUser = async () => {
+      const supabase = createClient();
+
       try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user && isAuthorizedAdmin(user)) {
+          setCurrentUserEmail(normalizeEmail(user.email));
+          setCurrentUserRole(getAdminRole(user));
+        }
+
         const response = await fetch(adminApi("/api/admin/me"), { cache: "no-store" });
         const data = await response.json();
 
@@ -95,6 +112,22 @@ export default function SettingsPage() {
         }
       } catch (err) {
         console.error("Failed to fetch user:", err);
+
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user && isAuthorizedAdmin(user)) {
+          const resolvedRole = getAdminRole(user);
+          setCurrentUserEmail(normalizeEmail(user.email));
+          setCurrentUserRole(resolvedRole);
+
+          if (resolvedRole !== SUPER_ADMIN_ROLE) {
+            router.replace(adminPath("/"));
+          }
+          return;
+        }
+
         setCurrentUserRole("SUB_ADMIN");
         router.replace(adminPath("/"));
       }

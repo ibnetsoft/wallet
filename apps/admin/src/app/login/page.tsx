@@ -59,7 +59,9 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-5">
+        <form onSubmit={handleLogin} className="space-y-5" autoComplete="off" data-form-type="other">
+          <input type="text" name="edge-guard-user" autoComplete="off" className="hidden" tabIndex={-1} aria-hidden="true" />
+          <input type="password" name="edge-guard-pass" autoComplete="new-password" className="hidden" tabIndex={-1} aria-hidden="true" />
           {error && (
             <div className="p-3 bg-[#FF453A]/10 border border-[#FF453A]/20 rounded-xl flex items-start space-x-2 text-[#FF453A]">
               <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
@@ -77,10 +79,14 @@ export default function LoginPage() {
               </div>
               <input
                 type="email"
+                name="admin-login-email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="admin@example.com"
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
                 className="w-full bg-[#1C1C1E] border border-[#2C2C2E] focus:border-[#00D2FF] pl-11 pr-4 py-3.5 rounded-xl text-sm text-[#F2F2F7] font-semibold outline-none transition-colors"
               />
             </div>
@@ -96,10 +102,13 @@ export default function LoginPage() {
               </div>
               <input
                 type="password"
+                name="admin-login-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 placeholder="••••••••"
+                autoComplete="new-password"
+                data-form-type="other"
                 className="w-full bg-[#1C1C1E] border border-[#2C2C2E] focus:border-[#00D2FF] pl-11 pr-4 py-3.5 rounded-xl text-sm text-[#F2F2F7] font-semibold outline-none transition-colors tracking-widest"
               />
             </div>
