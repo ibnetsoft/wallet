@@ -5,7 +5,7 @@ import {
   canAccessAdminPage,
   isAuthorizedAdmin,
 } from "@/lib/admin-access";
-import { adminRedirectPath, stripAdminBasePath } from "@/lib/admin-path";
+import { adminPath, stripAdminBasePath } from "@/lib/admin-path";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -48,36 +48,45 @@ export async function updateSession(request: NextRequest) {
   // Protect all routes except /login and /api/auth/callback
   const isLoginPage = pathname.startsWith("/login");
   const isCallbackPage = pathname.startsWith("/api/auth/callback");
+  const isApiRequest = pathname.startsWith("/api/");
 
   if (!isLoginPage && !isCallbackPage) {
     if (!user) {
-      // no user, redirect to login
+      if (isApiRequest) {
+        return NextResponse.json(
+          { success: false, error: "Unauthorized" },
+          { status: 401 }
+        );
+      }
+
       const url = request.nextUrl.clone();
-      url.pathname = adminRedirectPath("/login");
+      url.pathname = adminPath("/login");
       return NextResponse.redirect(url);
     } else {
       if (!isAuthorizedAdmin(user)) {
-        // Not an admin
+        if (isApiRequest) {
+          return NextResponse.json(
+            { success: false, error: "Access Denied. You are not an administrator." },
+            { status: 403 }
+          );
+        }
+
         const url = request.nextUrl.clone();
-        url.pathname = adminRedirectPath("/login");
+        url.pathname = adminPath("/login");
         url.searchParams.set("error", "Access Denied. You are not an administrator.");
-        
-        // Optionally sign out the non-admin user
-        // await supabase.auth.signOut();
-        
         return NextResponse.redirect(url);
       }
 
-      if (pathname.startsWith("/api/") && !canAccessAdminApi(user, pathname)) {
+      if (isApiRequest && !canAccessAdminApi(user, pathname)) {
         return NextResponse.json(
           { success: false, error: "Forbidden" },
           { status: 403 }
         );
       }
 
-      if (!pathname.startsWith("/api/") && !canAccessAdminPage(user, pathname)) {
+      if (!isApiRequest && !canAccessAdminPage(user, pathname)) {
         const url = request.nextUrl.clone();
-        url.pathname = adminRedirectPath("/");
+        url.pathname = adminPath("/");
         url.searchParams.set("access", "denied");
         return NextResponse.redirect(url);
       }
@@ -88,7 +97,7 @@ export async function updateSession(request: NextRequest) {
   if (user && isLoginPage) {
     if (isAuthorizedAdmin(user)) {
       const url = request.nextUrl.clone();
-      url.pathname = adminRedirectPath("/");
+      url.pathname = adminPath("/");
       return NextResponse.redirect(url);
     }
   }

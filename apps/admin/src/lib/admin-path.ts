@@ -29,7 +29,13 @@ export function adminRedirectPath(path: string) {
 }
 
 export function adminApi(path: string) {
-  return adminPath(path);
+  const normalizedPath = normalizePath(path);
+
+  if (normalizedPath === ADMIN_BASE_PATH || normalizedPath.startsWith(`${ADMIN_BASE_PATH}/`)) {
+    return normalizedPath;
+  }
+
+  return normalizedPath === "/" ? ADMIN_BASE_PATH : `${ADMIN_BASE_PATH}${normalizedPath}`;
 }
 
 export function stripAdminBasePath(pathname: string) {
