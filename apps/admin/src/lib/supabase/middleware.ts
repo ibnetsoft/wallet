@@ -5,7 +5,7 @@ import {
   canAccessAdminPage,
   isAuthorizedAdmin,
 } from "@/lib/admin-access";
-import { adminPath, stripAdminBasePath } from "@/lib/admin-path";
+import { adminRedirectPath, stripAdminBasePath } from "@/lib/admin-path";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -53,13 +53,13 @@ export async function updateSession(request: NextRequest) {
     if (!user) {
       // no user, redirect to login
       const url = request.nextUrl.clone();
-      url.pathname = adminPath("/login");
+      url.pathname = adminRedirectPath("/login");
       return NextResponse.redirect(url);
     } else {
       if (!isAuthorizedAdmin(user)) {
         // Not an admin
         const url = request.nextUrl.clone();
-        url.pathname = adminPath("/login");
+        url.pathname = adminRedirectPath("/login");
         url.searchParams.set("error", "Access Denied. You are not an administrator.");
         
         // Optionally sign out the non-admin user
@@ -77,7 +77,7 @@ export async function updateSession(request: NextRequest) {
 
       if (!pathname.startsWith("/api/") && !canAccessAdminPage(user, pathname)) {
         const url = request.nextUrl.clone();
-        url.pathname = adminPath("/");
+        url.pathname = adminRedirectPath("/");
         url.searchParams.set("access", "denied");
         return NextResponse.redirect(url);
       }
@@ -88,7 +88,7 @@ export async function updateSession(request: NextRequest) {
   if (user && isLoginPage) {
     if (isAuthorizedAdmin(user)) {
       const url = request.nextUrl.clone();
-      url.pathname = adminPath("/");
+      url.pathname = adminRedirectPath("/");
       return NextResponse.redirect(url);
     }
   }
