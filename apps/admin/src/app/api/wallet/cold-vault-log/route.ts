@@ -11,6 +11,7 @@ const pool = new Pool({
 });
 
 const SUPPORTED_ASSETS = new Set(["USDT", "BNB"]);
+const MAX_USDT_TRANSFER_RATIO = 0.85;
 
 export async function POST(request: Request) {
   const admin = await getAdminUser();
@@ -41,6 +42,34 @@ export async function POST(request: Request) {
     const masterHotWallet = await resolveMasterHotWallet(client);
     if (!masterHotWallet.address) {
       return NextResponse.json({ success: false, error: "Master hot wallet is not configured." }, { status: 503 });
+    }
+
+    if (asset === "USDT") {
+      const hotBalanceResult = await client.query<{ value: string }>(
+        `SELECT value
+         FROM public.system_settings
+         WHERE key = 'hot_balance_usdt'
+         LIMIT 1`
+      );
+      const hotBalanceUsdt = Number(hotBalanceResult.rows[0]?.value ?? NaN);
+
+      if (!Number.isFinite(hotBalanceUsdt) || hotBalanceUsdt <= 0) {
+        return NextResponse.json(
+          { success: false, error: "Unable to verify the current hot wallet USDT balance." },
+          { status: 503 }
+        );
+      }
+
+      const maxTransferableUsdt = Number((hotBalanceUsdt * MAX_USDT_TRANSFER_RATIO).toFixed(6));
+      if (amount > maxTransferableUsdt) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `A single cold vault transfer cannot exceed 85% of the current hot wallet USDT balance (${maxTransferableUsdt} USDT).`,
+          },
+          { status: 400 }
+        );
+      }
     }
 
     await client.query("BEGIN");

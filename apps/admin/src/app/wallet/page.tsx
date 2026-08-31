@@ -25,6 +25,8 @@ interface VaultTransferLog {
   created_at: string;
 }
 
+const MAX_COLD_TRANSFER_RATIO = 0.85;
+
 export default function WalletSweepPage() {
   const [loading, setLoading] = useState(true);
 
@@ -136,6 +138,9 @@ export default function WalletSweepPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const totalSweepable = userWallets.reduce((acc, w) => acc + (w.usdt_balance ?? 0), 0);
+  const maxTransferableUsdt = hotBalanceUSDT !== null
+    ? Number((hotBalanceUSDT * MAX_COLD_TRANSFER_RATIO).toFixed(6))
+    : null;
 
   const handleCopyMasterWallet = async () => {
     const address = masterHotWallet || feeWalletAddress || "";
@@ -198,6 +203,13 @@ export default function WalletSweepPage() {
     }
     if (hotBalanceUSDT !== null && vaultAsset === "USDT" && val > hotBalanceUSDT) {
       setVaultMsg({ type: "err", text: `핫 지갑 잔액(${hotBalanceUSDT.toLocaleString()} USDT)을 초과합니다.` });
+      return;
+    }
+    if (maxTransferableUsdt !== null && vaultAsset === "USDT" && val > maxTransferableUsdt) {
+      setVaultMsg({
+        type: "err",
+        text: `한 번에 이체 가능한 최대 수량은 보유 USDT의 85%인 ${maxTransferableUsdt.toLocaleString()} USDT입니다.`,
+      });
       return;
     }
 
@@ -473,13 +485,13 @@ export default function WalletSweepPage() {
             <div className="space-y-1.5">
               <div className="flex justify-between items-center text-[10px] text-[#8E8E93]">
                 <label className="uppercase font-bold">이체 수량</label>
-                {hotBalanceUSDT !== null && (
+                {maxTransferableUsdt !== null && vaultAsset === "USDT" && (
                   <button
                     type="button"
-                    onClick={() => setVaultAmount(hotBalanceUSDT.toString())}
+                    onClick={() => setVaultAmount(maxTransferableUsdt.toString())}
                     className="text-[#00D2FF] font-bold hover:underline cursor-pointer"
                   >
-                    [전액 선택: {hotBalanceUSDT.toLocaleString()} USDT]
+                    [최대 선택: {maxTransferableUsdt.toLocaleString()} USDT]
                   </button>
                 )}
               </div>
@@ -503,6 +515,11 @@ export default function WalletSweepPage() {
                   <option value="BNB">BNB</option>
                 </select>
               </div>
+              {maxTransferableUsdt !== null && vaultAsset === "USDT" && (
+                <p className="text-[10px] text-[#FF9F0A]">
+                  한 번에 전액 이체는 불가합니다. 현재 보유 USDT의 85%인 최대 {maxTransferableUsdt.toLocaleString()} USDT까지만 기록 저장할 수 있습니다.
+                </p>
+              )}
             </div>
 
             {/* 오류/성공 메시지 */}
