@@ -1053,7 +1053,7 @@ export default function MobileApp() {
       <div className="sticky top-0 z-40 bg-[#0B0E11]/95 backdrop-blur-md border-b border-[#2B3139] px-5 py-3 flex justify-between items-center">
         <div className="flex items-center h-7">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="URC369" className="h-5 w-auto object-contain mix-blend-lighten" />
+          <img src="/logo.jpg" alt="URC369" className="h-5 w-auto object-contain" />
         </div>
         <div className="flex items-center space-x-3">
           {activeTab === "game" && (
@@ -1081,7 +1081,7 @@ export default function MobileApp() {
         <div className="w-full bg-[#0B0E11] flex items-center justify-center py-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/logo.png"
+            src="/logo.jpg"
             alt="U彩宝369"
             className="w-[85%] h-auto object-contain"
             style={{ mixBlendMode: "lighten" }}

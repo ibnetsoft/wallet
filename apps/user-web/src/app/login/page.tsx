@@ -136,7 +136,7 @@ export default function LoginPage() {
       <div className="mb-10 text-center relative z-10">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/logo.png"
+          src="/logo.jpg"
           alt="U彩宝369"
           className="w-32 h-auto mx-auto mb-4 object-contain"
           style={{ mixBlendMode: "lighten" }}
