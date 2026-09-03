@@ -356,10 +356,10 @@ export default function UsersPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-[#8E8E93]">본인 추천 가입 링크</span>
                     <div className="flex items-center space-x-2">
-                      <span className="text-[#00D2FF] font-mono break-all">{`https://bao369.com/register?ref=${selectedUser.code}`}</span>
+                      <span className="text-[#00D2FF] font-mono break-all">{`https://hongbou.com/register?ref=${selectedUser.code}`}</span>
                       <button 
                         onClick={() => {
-                          navigator.clipboard.writeText(`https://bao369.com/register?ref=${selectedUser.code}`);
+                          navigator.clipboard.writeText(`https://hongbou.com/register?ref=${selectedUser.code}`);
                           alert("복사되었습니다.");
                         }}
                         className="text-[#8E8E93] hover:text-white transition-colors"

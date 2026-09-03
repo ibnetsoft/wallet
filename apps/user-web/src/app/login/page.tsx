@@ -142,7 +142,7 @@ export default function LoginPage() {
           style={{ mixBlendMode: "lighten" }}
         />
         <h1 className="text-2xl font-black text-white tracking-tight">
-          {lang === "ko" ? "BAO369 환영합니다" : lang === "en" ? "Welcome to BAO369" : "欢迎来到 BAO369"}
+          {lang === "ko" ? "969에 오신 것을 환영합니다" : lang === "en" ? "Welcome to 969" : "欢迎来到 969"}
         </h1>
         <p className="text-sm text-[#8E8E93] mt-2">
           {lang === "ko" ? "자산과 369 게임을 관리하려면 로그인하세요" : lang === "en" ? "Log in to manage your assets & 369 games" : "登录以管理您的资产和 369 游戏"}

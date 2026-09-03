@@ -42,7 +42,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: emailMessage(locale, "emailServiceUnavailable") }, { status: 500 });
     }
 
-    const fromEmail = process.env.EMAIL_FROM || "BAO369 <onboarding@resend.dev>";
+    const fromEmail = process.env.EMAIL_FROM || "969 <onboarding@resend.dev>";
     const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {

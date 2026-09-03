@@ -57,12 +57,12 @@ export async function POST(req: Request) {
     }
 
     let parentId: string | null = null;
-    const masterCodes = ["URC883920", "BAO369", "MASTER"];
+    const masterCodes = ["969", "URC883920", "MASTER"];
 
     if (referralCode && !masterCodes.includes(referralCode.toUpperCase())) {
       let resolvedUser: { id: string } | null = null;
 
-      if (referralCode.toUpperCase().startsWith("BAO-")) {
+      if (referralCode.toUpperCase().startsWith("969-")) {
         const idPart = referralCode.substring(4).toLowerCase();
         if (idPart.length === 8) {
           const { data: recById } = await supabase

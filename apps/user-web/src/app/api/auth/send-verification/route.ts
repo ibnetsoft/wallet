@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     confirmUrl.searchParams.set("token", token);
     const template = createVerificationEmail(locale, confirmUrl.toString());
 
-    const fromEmail = process.env.EMAIL_FROM || "BAO369 <onboarding@resend.dev>";
+    const fromEmail = process.env.EMAIL_FROM || "969 <onboarding@resend.dev>";
 
     const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",

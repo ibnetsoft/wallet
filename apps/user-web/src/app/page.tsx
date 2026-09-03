@@ -1,5 +1,5 @@
 "use client";
-// BAO369 Wallet App - Production Vercel Build Trigger
+// 969 Wallet App - Production Vercel Build Trigger
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -621,7 +621,7 @@ export default function MobileApp() {
   const [directTree, setDirectTree] = useState<any[]>([]);
   const [sponsorTree, setSponsorTree] = useState<any[]>([]);
   const visibleNetworkTree = networkTab === "referral" ? directTree : sponsorTree;
-  const [userEmail, setUserEmail] = useState("user@bao369.com");
+  const [userEmail, setUserEmail] = useState("user@969.com");
   const [userNickname, setUserNickname] = useState("User");
   const [isEditingNickname, setIsEditingNickname] = useState(false);
   const [editNicknameValue, setEditNicknameValue] = useState("");
@@ -988,7 +988,7 @@ export default function MobileApp() {
 
   const copyReferral = () => {
     const origin = typeof window !== "undefined" ? window.location.origin : "https://app.urc369.com";
-    const refCode = userId ? `BAO-${userId.substring(0, 8).toUpperCase()}` : "BAO369";
+    const refCode = userId ? `969-${userId.substring(0, 8).toUpperCase()}` : "969";
     navigator.clipboard.writeText(`${origin}/register?ref=${refCode}`);
     setReferralCopied(true);
     setTimeout(() => setReferralCopied(false), 2000);
@@ -1130,7 +1130,7 @@ export default function MobileApp() {
               <div className="text-right">
                 <p className="text-[10px] text-[#848E9C]">邀请码</p>
                   <button type="button" onClick={copyReferral} className="flex items-center space-x-1 bg-[#1E2329] px-2.5 py-1.5 rounded mt-0.5">
-                  <span className="text-[10px] text-[#FCD535] font-mono font-bold">{userId ? `BAO-${userId.substring(0, 8).toUpperCase()}` : "BAO369"}</span>
+                  <span className="text-[10px] text-[#FCD535] font-mono font-bold">{userId ? `969-${userId.substring(0, 8).toUpperCase()}` : "969"}</span>
                   {referralCopied ? <Check size={10} className="text-[#0ECB81]" /> : <Copy size={10} className="text-[#848E9C]" />}
                 </button>
               </div>
@@ -3139,7 +3139,7 @@ export default function MobileApp() {
               
               <div className="flex items-center justify-between bg-[#0B0E11] p-3 rounded-lg border border-[#2B3139]">
                 <span className="text-[10px] text-[#EAECEF] font-mono truncate mr-2">
-                  {typeof window !== "undefined" ? window.location.origin : "https://app.urc369.com"}/register?ref={userId ? `BAO-${userId.substring(0, 8).toUpperCase()}` : "BAO369"}
+                  {typeof window !== "undefined" ? window.location.origin : "https://hongbou.com"}/register?ref={userId ? `969-${userId.substring(0, 8).toUpperCase()}` : "969"}
                 </span>
                 <button type="button" onClick={copyReferral} className="p-2 bg-[#2B3139] hover:bg-[#FCD535] hover:text-[#0B0E11] rounded text-[#848E9C] transition-colors flex-shrink-0">
                   {referralCopied ? <Check size={14} /> : <Copy size={14} />}

@@ -57,7 +57,7 @@ export async function GET() {
         fullName: user.full_name || "",
         phoneNumber: user.phone_number || "",
         memberNumber: Number(user.member_number),
-        code: `BAO-${user.id.substring(0, 8).toUpperCase()}`,
+        code: `969-${user.id.substring(0, 8).toUpperCase()}`,
         joinedAt: new Date(user.created_at).toISOString().split("T")[0],
         lastLoginAt: user.last_login_at ? new Date(user.last_login_at).toLocaleString() : "기록없음",
         starLevel: user.star_level || 0,

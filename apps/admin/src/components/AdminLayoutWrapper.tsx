@@ -309,8 +309,8 @@ export default function AdminLayoutWrapper({
             >
               <Menu size={24} />
             </button>
-            <h1 className="text-base font-bold text-white hidden sm:block">BAO369 바이낸스 체인 통합 관리 시스템</h1>
-            <h1 className="text-base font-bold text-white sm:hidden">BAO369</h1>
+            <h1 className="text-base font-bold text-white hidden sm:block">969 바이낸스 체인 통합 관리 시스템</h1>
+            <h1 className="text-base font-bold text-white sm:hidden">969</h1>
           </div>
 
           <div className="flex items-center space-x-4">
