@@ -14,9 +14,9 @@ function createSafeClient(url: string, key: string, options?: object) {
 
     const mockData: Record<string, unknown[]> = {
       profiles: [
-        { id: "u-1", email: "user@urc369.com", nickname: "User (??", referral_code: "URC883920", created_at: "2026-07-21T00:00:00Z", usdt_balance: 10500.0, status: "ACTIVE" },
-        { id: "u-2", email: "b_kim@urc369.com", nickname: "User B", referral_code: "URC110293", created_at: "2026-07-21T00:00:00Z", usdt_balance: 0.0, status: "PENDING" },
-        { id: "u-3", email: "yh_park@urc369.com", nickname: "User E", referral_code: "URC992011", created_at: "2026-07-20T00:00:00Z", usdt_balance: 0.0, status: "PENDING" }
+        { id: "u-1", email: "user@urc969.com", nickname: "User (??", referral_code: "URC883920", created_at: "2026-07-21T00:00:00Z", usdt_balance: 10500.0, status: "ACTIVE" },
+        { id: "u-2", email: "b_kim@urc969.com", nickname: "User B", referral_code: "URC110293", created_at: "2026-07-21T00:00:00Z", usdt_balance: 0.0, status: "PENDING" },
+        { id: "u-3", email: "yh_park@urc969.com", nickname: "User E", referral_code: "URC992011", created_at: "2026-07-20T00:00:00Z", usdt_balance: 0.0, status: "PENDING" }
       ],
       system_settings: [
         { id: "1", key: "daily_rate", value: "1.2", description: "?쇱씪 ?섏씡瑜?(%)" },
@@ -24,12 +24,12 @@ function createSafeClient(url: string, key: string, options?: object) {
         { id: "3", key: "withdrawal_fee_rate", value: "3", description: "異쒓툑 ?섏닔猷?(%)" }
       ],
       ledger_entries: [
-        { id: "w-1001", user_id: "u-2", users: { email: "b_kim@urc369.com" }, amount: 30.0, fee: 0.9, asset: "USDT", tx_hash: "", status: "PENDING", created_at: "2026-07-27T12:30:00Z" }
+        { id: "w-1001", user_id: "u-2", users: { email: "b_kim@urc969.com" }, amount: 30.0, fee: 0.9, asset: "USDT", tx_hash: "", status: "PENDING", created_at: "2026-07-27T12:30:00Z" }
       ],
       users: [
         {
           id: "u-1",
-          email: "user@urc369.com",
+          email: "user@urc969.com",
           nickname: "User (??",
           status: "ACTIVE",
           user_wallets: [{ address: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F" }],
@@ -40,7 +40,7 @@ function createSafeClient(url: string, key: string, options?: object) {
         },
         {
           id: "u-2",
-          email: "b_kim@urc369.com",
+          email: "b_kim@urc969.com",
           nickname: "User B",
           status: "PENDING",
           user_wallets: [{ address: "0x2546BcD3c84621e9b3d7d1225015b6024f2b23a9" }],

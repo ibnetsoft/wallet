@@ -1,5 +1,8 @@
 .env
 .env*.local
+.env.*
+!.env.example
+!.env.custody.example
 node_modules/
 dist/
 .next/
@@ -9,3 +12,5 @@ dist/
 .vercel-cli-cache/
 .vercel-cli-home/
 apps/admin/.vercel-cli-home/
+/artifacts/
+*.tsbuildinfo

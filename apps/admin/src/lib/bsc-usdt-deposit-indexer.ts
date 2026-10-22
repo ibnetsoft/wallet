@@ -669,7 +669,7 @@ async function creditTransferLog({
     );
 
     // Keep the existing on-chain-deposit rule: a qualifying USDT deposit
-    // activates the account, which lets the database trigger assign the 369
+    // activates the account, which lets the database trigger assign the 969
     // referral and sponsor placement exactly once.
     await client.query(
       `UPDATE public.users

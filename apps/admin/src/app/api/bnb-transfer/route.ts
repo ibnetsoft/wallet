@@ -377,7 +377,6 @@ export async function GET() {
   let sourceAddress: string | null = DEFAULT_MASTER_HOT_WALLET_ADDRESS;
   let sourceBalance: string | null = null;
   let logs: Record<string, unknown>[] = [];
-  let provider: JsonRpcProvider | null = null;
 
   const hasDatabaseConnection = Boolean(process.env.DATABASE_URL?.trim());
   if (hasDatabaseConnection) {
@@ -395,30 +394,9 @@ export async function GET() {
     }
   }
 
-  if (settings.rpcUrls.length > 0 && sourceAddress) {
-    try {
-      const resolved = await resolveHealthyBscProvider(settings.rpcUrls);
-      provider = resolved.provider;
-      sourceBalance = formatEther(await provider.getBalance(sourceAddress));
-    } catch {
-      settings.issues.push("Unable to read the BNB transfer wallet from the configured RPC.");
-    }
-  }
-
-  if (provider && hasDatabaseConnection) {
-    try {
-      const client = await pool.connect();
-      try {
-        // A request can time out after broadcast but before its confirmation
-        // arrives. Reconcile that isolated lock whenever the page refreshes.
-        await reconcileBroadcastLock(client, provider);
-      } finally {
-        client.release();
-      }
-    } catch (error) {
-      console.error("bnb-transfer GET reconciliation error:", sanitizeError(error));
-    }
-  }
+  // The displayed BNB balance is intentionally supplied by the wallet-status
+  // endpoint used by the "지갑 & 모으기 관리" page. This route does not make a
+  // second, independent RPC balance read that could disagree with that page.
 
   if (hasDatabaseConnection) {
     try {

@@ -5,6 +5,7 @@ import { emailMessage, resolveEmailLocale } from "@/lib/email-templates";
 type VerifyEmailTokenPayload = {
   email: string;
   locale?: string;
+  referralCode?: string;
   expiresAt: number;
 };
 
@@ -20,12 +21,15 @@ export async function GET(req: Request) {
     }
 
     try {
-      const { email, locale } = verifyAuthToken<VerifyEmailTokenPayload>(token);
+      const { email, locale, referralCode } = verifyAuthToken<VerifyEmailTokenPayload>(token);
       const redirectUrl = new URL("/register", req.url);
       redirectUrl.searchParams.set("email", email);
       redirectUrl.searchParams.set("verified", "true");
       redirectUrl.searchParams.set("token", token);
       redirectUrl.searchParams.set("locale", resolveEmailLocale(locale, req.headers.get("accept-language")));
+      if (typeof referralCode === "string" && referralCode.trim()) {
+        redirectUrl.searchParams.set("ref", referralCode.trim());
+      }
 
       return NextResponse.redirect(redirectUrl);
     } catch {

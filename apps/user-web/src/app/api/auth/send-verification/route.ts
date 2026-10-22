@@ -11,12 +11,16 @@ export async function POST(req: Request) {
   let locale: EmailLocale = resolveEmailLocale(undefined, req.headers.get("accept-language"));
 
   try {
-    const body = (await req.json()) as { email?: unknown; locale?: unknown };
+    const body = (await req.json()) as { email?: unknown; locale?: unknown; referralCode?: unknown };
     locale = resolveEmailLocale(body.locale, req.headers.get("accept-language"));
     const email = typeof body.email === "string" ? body.email.trim() : "";
+    const referralCode = typeof body.referralCode === "string" ? body.referralCode.trim() : "";
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: emailMessage(locale, "missingEmail") }, { status: 400 });
+    }
+    if (referralCode.length > 64) {
+      return NextResponse.json({ error: emailMessage(locale, "serverError") }, { status: 400 });
     }
 
     const resendApiKey = process.env.RESEND_API_KEY;
@@ -24,7 +28,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: emailMessage(locale, "emailServiceUnavailable") }, { status: 500 });
     }
 
-    const token = signAuthToken({ email, locale, expiresAt: Date.now() + 15 * 60 * 1000 });
+    const token = signAuthToken({
+      email,
+      locale,
+      referralCode,
+      expiresAt: Date.now() + 15 * 60 * 1000,
+    });
     const confirmUrl = new URL("/api/auth/verify-email", req.url);
     confirmUrl.searchParams.set("token", token);
     const template = createVerificationEmail(locale, confirmUrl.toString());

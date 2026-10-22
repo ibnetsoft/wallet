@@ -133,6 +133,26 @@ export default function TransactionsPage() {
     }
   };
 
+  const syncTrc20UsdtDeposits = async () => {
+    setSyncing(true);
+    setSyncMessage(null);
+    try {
+      const response = await fetch(adminApi("/api/deposits/trc20-sync"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || "TRC20 USDT deposit sync failed.");
+      const result = data.result as { checkedWallets: number; credited: number; duplicates: number; failedWallets: number };
+      setSyncMessage(`TRC20 sync: ${result.credited} credited, ${result.checkedWallets} wallets checked, ${result.duplicates} duplicates skipped.`);
+      await fetchTransactions();
+    } catch (error) {
+      setSyncMessage(error instanceof Error ? error.message : "TRC20 USDT deposit sync failed.");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   useEffect(() => {
     void fetchTransactions();
   }, []);
@@ -156,7 +176,7 @@ export default function TransactionsPage() {
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-white">전체 거래 내역 (통합 장부)</h2>
           <p className="mt-1 text-sm text-[#8E8E93]">
-            유저 BSC 입금, 출금, 보너스, 스왑, 게임 보상 내역을 확인합니다.
+            유저 BEP20·TRC20 입금, 출금, 보너스, 스왑, 게임 보상 내역을 확인합니다.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -167,6 +187,14 @@ export default function TransactionsPage() {
           >
             <Coins size={13} className={syncing ? "animate-spin" : ""} />
             <span>{syncing ? "BSC 동기화 중" : "BSC USDT 동기화"}</span>
+          </button>
+          <button
+            onClick={() => void syncTrc20UsdtDeposits()}
+            disabled={syncing}
+            className="flex items-center gap-1.5 rounded-lg border border-[#26A17B]/30 bg-[#26A17B]/10 px-3 py-2 text-xs font-bold text-[#30D5C8] transition-colors hover:bg-[#26A17B]/20 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Coins size={13} className={syncing ? "animate-spin" : ""} />
+            <span>{syncing ? "TRC20 동기화 중" : "TRC20 USDT 동기화"}</span>
           </button>
           <button
             onClick={() => void fetchTransactions()}
@@ -180,7 +208,7 @@ export default function TransactionsPage() {
       </div>
 
       <div className="rounded-xl border border-[#26A17B]/20 bg-[#26A17B]/5 px-4 py-3 text-xs text-[#B7C6CC]">
-        BSC USDT 입금은 메인넷에서 12개 블록 확인 후 자동 반영됩니다. 수동 동기화는 같은 온체인 이벤트를 중복 반영하지 않습니다.
+        BSC 및 TRC20 USDT 입금은 확정된 온체인 이벤트만 반영합니다. 같은 거래 이벤트는 중복 반영하지 않습니다.
       </div>
 
       {syncMessage && (

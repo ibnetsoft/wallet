@@ -67,6 +67,13 @@ export default function SettingsPage() {
   const [showCold, setShowCold] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [walletHistory, setWalletHistory] = useState<{address: string; date: string}[]>([]);
+  const [trc20RpcUrls, setTrc20RpcUrls] = useState("");
+  const [savingTrc20Rpc, setSavingTrc20Rpc] = useState(false);
+  const [trc20RpcMsg, setTrc20RpcMsg] = useState<MsgState | null>(null);
+  const [tronHotWallet, setTronHotWallet] = useState("");
+  const [tronPrivateKey, setTronPrivateKey] = useState("");
+  const [tronSetupSaving, setTronSetupSaving] = useState(false);
+  const [tronSetupMsg, setTronSetupMsg] = useState<MsgState | null>(null);
 
   // ── 자체 지갑 생성 모달 관련 ──
   const [generatedWallet, setGeneratedWallet] = useState<{ address: string; privateKey: string } | null>(null);
@@ -151,6 +158,8 @@ export default function SettingsPage() {
         setColdVault(map["cold_vault_address"] ?? "");
         setHotBalanceUSDT(map["hot_balance_usdt"] ?? "0");
         setColdBalanceUSDT(map["cold_balance_usdt"] ?? "0");
+        setTrc20RpcUrls(map["trc20_rpc_urls"] ?? "");
+        setTronHotWallet(map["tron_master_hot_wallet"] ?? "");
         if (data.walletSnapshot?.address) setHotWallet(data.walletSnapshot.address);
         if (typeof data.walletSnapshot?.usdtBalance === "number") {
           setHotBalanceUSDT(String(data.walletSnapshot.usdtBalance));
@@ -372,6 +381,63 @@ export default function SettingsPage() {
     }
   };
 
+  const handleSaveTrc20Rpc = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const urls = trc20RpcUrls
+      .split(/[\n,]/)
+      .map((url) => url.trim())
+      .filter(Boolean);
+    if (urls.some((url) => !/^https:\/\/[^\s/]+/i.test(url))) {
+      setTrc20RpcMsg({ type: "err", text: "HTTPS 주소만 저장할 수 있습니다." });
+      return;
+    }
+
+    setSavingTrc20Rpc(true);
+    setTrc20RpcMsg(null);
+    try {
+      const response = await fetch(adminApi("/api/settings/save"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rows: [{ key: "trc20_rpc_urls", value: urls.join("\n") }] }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || "저장하지 못했습니다.");
+      setTrc20RpcUrls(urls.join("\n"));
+      setTrc20RpcMsg({ type: "ok", text: "TRC20 RPC 보조 주소를 저장했습니다. 기본 무료 주소는 항상 최후의 대체 경로로 사용됩니다." });
+    } catch (error) {
+      setTrc20RpcMsg({ type: "err", text: error instanceof Error ? error.message : "저장 실패" });
+    } finally {
+      setSavingTrc20Rpc(false);
+    }
+  };
+
+  const setupTronHotWallet = async (action: "GENERATE" | "IMPORT") => {
+    if (action === "IMPORT" && !tronPrivateKey.trim()) {
+      setTronSetupMsg({ type: "err", text: "가져올 TRON 개인키를 입력하세요." });
+      return;
+    }
+    if (action === "GENERATE" && !confirm("새 TRON 핫월렛을 생성합니다. 기존 TRON 핫월렛 설정이 교체됩니다.")) return;
+    setTronSetupSaving(true);
+    setTronSetupMsg(null);
+    try {
+      const response = await fetch(adminApi("/api/tron-wallet"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, privateKey: tronPrivateKey }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || "TRON 핫월렛을 저장하지 못했습니다.");
+      setTronHotWallet(data.address);
+      setTronPrivateKey("");
+      setTronSetupMsg({ type: "ok", text: "TRON 핫월렛을 저장했습니다. 자동 스윕은 아직 비활성 상태입니다." });
+      await loadSettings();
+    } catch (error) {
+      setTronSetupMsg({ type: "err", text: error instanceof Error ? error.message : "설정 실패" });
+    } finally {
+      setTronSetupSaving(false);
+    }
+  };
+
   const handleSaveWallets = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingWallets(true);
@@ -438,7 +504,7 @@ export default function SettingsPage() {
         <div>
           <h2 className="text-2xl font-bold text-white tracking-tight">시스템 환경 설정</h2>
           <p className="text-sm text-[#8E8E93] mt-1">
-            369어드민 마스터 전용 설정 페이지입니다. 지갑 주소, 수수료율, 관리자 계정을 제어합니다.
+            969어드민 마스터 전용 설정 페이지입니다. 지갑 주소, 수수료율, 관리자 계정을 제어합니다.
           </p>
         </div>
         <button
@@ -772,6 +838,60 @@ export default function SettingsPage() {
               </div>
               {/* 수수료 설정 */}
               <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 shadow-lg">
+                <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center mb-3">
+                  <Wallet size={16} className="mr-2 text-[#26A17B]" />
+                  TRC20 입금 RPC 설정
+                </h4>
+                <p className="mb-4 text-[10px] leading-relaxed text-[#8E8E93]">
+                  기본 무료 TRON API를 사용합니다. 속도 또는 한도 문제가 있을 때만 보조 주소를 한 줄에 하나씩 추가하세요. 저장한 주소가 실패하면 기본 무료 주소로 자동 대체됩니다.
+                </p>
+                <form onSubmit={handleSaveTrc20Rpc} className="space-y-3">
+                  <textarea
+                    value={trc20RpcUrls}
+                    onChange={(event) => setTrc20RpcUrls(event.target.value)}
+                    rows={3}
+                    placeholder="https://api.trongrid.io"
+                    className="w-full resize-y rounded-lg border border-[#26262B] bg-[#1C1C21] px-3 py-2.5 font-mono text-xs text-white outline-none focus:border-[#26A17B]"
+                  />
+                  <p className="text-[10px] text-[#8E8E93]">비워 두면 기본 무료 주소만 사용합니다. API 키는 이 칸에 저장하지 마세요.</p>
+                  {trc20RpcMsg && <MsgBox msg={trc20RpcMsg} />}
+                  <button
+                    type="submit"
+                    disabled={savingTrc20Rpc}
+                    className="flex w-full items-center justify-center space-x-2 rounded-lg bg-[#26A17B] py-3 text-sm font-bold text-white transition-colors hover:bg-[#208e60] disabled:opacity-50"
+                  >
+                    {savingTrc20Rpc ? <><RefreshCw size={14} className="animate-spin" /><span>저장 중...</span></> : <><Save size={14} /><span>TRC20 RPC 저장</span></>}
+                  </button>
+                </form>
+              </div>
+
+              <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 shadow-lg">
+                <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center mb-3">
+                  <Wallet size={16} className="mr-2 text-[#00D2FF]" />
+                  TRON 핫월렛 · 스윕 준비
+                </h4>
+                <p className="mb-4 text-[10px] leading-relaxed text-[#8E8E93]">
+                  이 지갑은 향후 회원 지갑에 TRX 가스비를 보충하고 TRC20 USDT를 모으는 용도입니다. 현재 자동 스윕은 비활성 상태이며, 여기서 생성·가져오기만 준비할 수 있습니다.
+                </p>
+                <div className="mb-3 rounded-lg border border-[#26262B] bg-[#0C0C0E] p-3">
+                  <p className="text-[10px] font-bold text-[#8E8E93]">현재 TRON 핫월렛</p>
+                  <p className="mt-1 break-all font-mono text-xs text-[#00D2FF]">{tronHotWallet || "미설정"}</p>
+                </div>
+                <input
+                  type="password"
+                  value={tronPrivateKey}
+                  onChange={(event) => setTronPrivateKey(event.target.value)}
+                  placeholder="기존 TRON 개인키 가져오기 (선택)"
+                  className="mb-3 w-full rounded-lg border border-[#26262B] bg-[#1C1C21] px-3 py-2.5 font-mono text-xs text-white outline-none focus:border-[#00D2FF]"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <button type="button" disabled={tronSetupSaving} onClick={() => void setupTronHotWallet("IMPORT")} className="rounded-lg border border-[#00D2FF]/40 py-2.5 text-xs font-bold text-[#00D2FF] disabled:opacity-50">개인키 가져오기</button>
+                  <button type="button" disabled={tronSetupSaving} onClick={() => void setupTronHotWallet("GENERATE")} className="rounded-lg bg-[#00D2FF] py-2.5 text-xs font-bold text-[#0B0E11] disabled:opacity-50">새 지갑 생성</button>
+                </div>
+                {tronSetupMsg && <MsgBox msg={tronSetupMsg} />}
+              </div>
+
+              <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 shadow-lg">
                 <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center mb-6">
                   <Settings size={16} className="mr-2 text-[#FCD535]" />
                   플랫폼 수수료 설정
@@ -827,7 +947,7 @@ export default function SettingsPage() {
                     <input
                       type="email" required value={newEmail}
                       onChange={e => setNewEmail(e.target.value)}
-                      placeholder="admin@urc369.com"
+                      placeholder="admin@urc969.com"
                       className="w-full bg-[#1C1C21] border border-[#26262B] focus:border-[#BF5AF2] px-3 py-2.5 rounded-lg text-sm text-white outline-none"
                     />
                   </div>

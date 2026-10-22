@@ -16,6 +16,8 @@ import {
   Wallet,
   Menu,
   X,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import { createClient } from "@/lib/supabase/client";
@@ -34,6 +36,7 @@ type NavItem = {
   superAdminOnly?: boolean;
   activeClassName: string;
   inactiveClassName: string;
+  children?: NavItem[];
 };
 
 const NAV_ITEMS: NavItem[] = [
@@ -66,14 +69,16 @@ const NAV_ITEMS: NavItem[] = [
     superAdminOnly: true,
     activeClassName: "border border-[#00D2FF]/20 bg-[#00D2FF]/10 text-[#00D2FF]",
     inactiveClassName: "text-[#8E8E93] hover:bg-[#1C1C21] hover:text-[#FFFFFF]",
-  },
-  {
-    href: "/bnb-transfer",
-    label: "BNB 송금",
-    icon: Send,
-    superAdminOnly: true,
-    activeClassName: "border border-[#F0B90B]/20 bg-[#F0B90B]/10 text-[#F0B90B]",
-    inactiveClassName: "text-[#8E8E93] hover:bg-[#1C1C21] hover:text-[#F0B90B]",
+    children: [
+      {
+        href: "/bnb-transfer",
+        label: "BNB 송금",
+        icon: Send,
+        superAdminOnly: true,
+        activeClassName: "border border-[#F0B90B]/20 bg-[#F0B90B]/10 text-[#F0B90B]",
+        inactiveClassName: "text-[#8E8E93] hover:bg-[#1C1C21] hover:text-[#F0B90B]",
+      },
+    ],
   },
   {
     href: "/transactions",
@@ -128,6 +133,7 @@ export default function AdminLayoutWrapper({
   const [adminRole, setAdminRole] = useState<string | null>(null);
   const [adminEmail, setAdminEmail] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isWalletMenuOpen, setIsWalletMenuOpen] = useState(false);
 
   const resetAdminState = useCallback(() => {
     setAdminRole(null);
@@ -222,6 +228,12 @@ export default function AdminLayoutWrapper({
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
+  useEffect(() => {
+    if (isActivePath(pathname, "/bnb-transfer")) {
+      setIsWalletMenuOpen(true);
+    }
+  }, [pathname]);
+
   if (isLoginPage) {
     return <div className="min-h-screen w-full">{children}</div>;
   }
@@ -238,9 +250,9 @@ export default function AdminLayoutWrapper({
   });
   const accountLabel = isSuperAdmin ? "최고 관리자" : "관리자";
   const accountDescription = isSuperAdmin
-    ? "369어드민 마스터 계정"
+    ? "969어드민 마스터 계정"
     : "제한 권한 운영 계정";
-  const accountBadge = isSuperAdmin ? "369" : "SUB";
+  const accountBadge = isSuperAdmin ? "969" : "SUB";
 
   return (
     <>
@@ -261,7 +273,7 @@ export default function AdminLayoutWrapper({
         <div className="flex h-16 items-center justify-between border-b border-[#26262B] px-6">
           <div className="flex items-center">
             <span className="bg-gradient-to-r from-[#00D2FF] to-[#BF5AF2] bg-clip-text text-lg font-bold tracking-wider text-transparent">
-              369어드민
+              969어드민
             </span>
             <span className="ml-2 rounded border border-[#FF9F0A]/20 bg-[#FF9F0A]/10 px-1.5 py-0.5 text-[9px] font-bold text-[#FF9F0A]">
               ADMIN
@@ -278,7 +290,57 @@ export default function AdminLayoutWrapper({
         <nav className="flex-1 space-y-1.5 overflow-y-auto px-4 py-6">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const active = isActivePath(pathname, item.href);
+            const childItems = (item.children ?? []).filter((child) => !child.superAdminOnly || isSuperAdmin);
+            const active = isActivePath(pathname, item.href) || childItems.some((child) => isActivePath(pathname, child.href));
+
+            if (childItems.length > 0) {
+              return (
+                <div key={item.href}>
+                  <div className="flex items-center gap-1">
+                    <Link
+                      href={item.href}
+                      className={`flex min-w-0 flex-1 items-center space-x-3 rounded-xl px-4 py-3 font-semibold transition-all ${
+                        active ? item.activeClassName : item.inactiveClassName
+                      }`}
+                    >
+                      <Icon size={18} />
+                      <span className="truncate">{item.label}</span>
+                    </Link>
+                    <button
+                      type="button"
+                      aria-label="지갑 관리 하위 메뉴 펼치기"
+                      aria-expanded={isWalletMenuOpen}
+                      onClick={() => setIsWalletMenuOpen((open) => !open)}
+                      className={`rounded-lg p-2 transition-colors ${
+                        active ? "text-[#00D2FF] hover:bg-[#00D2FF]/10" : "text-[#8E8E93] hover:bg-[#1C1C21] hover:text-white"
+                      }`}
+                    >
+                      {isWalletMenuOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                    </button>
+                  </div>
+                  {isWalletMenuOpen && (
+                    <div className="ml-5 mt-1 border-l border-[#26262B] pl-3">
+                      {childItems.map((child) => {
+                        const ChildIcon = child.icon;
+                        const childActive = isActivePath(pathname, child.href);
+                        return (
+                          <Link
+                            key={child.href}
+                            href={child.href}
+                            className={`flex items-center space-x-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all ${
+                              childActive ? child.activeClassName : child.inactiveClassName
+                            }`}
+                          >
+                            <ChildIcon size={15} />
+                            <span>{child.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
 
             return (
               <Link

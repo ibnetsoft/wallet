@@ -52,7 +52,7 @@ export default function LoginPage() {
             <Shield size={32} />
           </div>
           <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#00D2FF] to-[#BF5AF2] tracking-wider mb-2">
-            369어드민
+            969어드민
           </h1>
           <p className="text-sm text-[#8E8E93] font-medium">
             관리자 콘솔 접근 권한이 필요합니다

@@ -56,6 +56,11 @@ interface BnbTransferResponse {
   transfer?: TransferResult;
 }
 
+interface WalletFeeStatusResponse {
+  success: boolean;
+  balance?: number | null;
+}
+
 const statusStyles: Record<TransferStatus, string> = {
   PROCESSING: "border-[#FF9F0A]/30 bg-[#FF9F0A]/10 text-[#FF9F0A]",
   BROADCAST: "border-[#00D2FF]/30 bg-[#00D2FF]/10 text-[#00D2FF]",
@@ -116,12 +121,23 @@ export default function BnbTransferPage() {
     setLoadError(null);
 
     try {
-      const response = await fetch(adminApi("/api/bnb-transfer"), { cache: "no-store" });
-      const result = (await response.json()) as BnbTransferResponse;
-      if (!response.ok || !result.success) {
+      const [transferResponse, feeStatusResponse] = await Promise.all([
+        fetch(adminApi("/api/bnb-transfer"), { cache: "no-store" }),
+        fetch(adminApi("/api/wallet/fee-status"), { cache: "no-store" }),
+      ]);
+      const result = (await transferResponse.json()) as BnbTransferResponse;
+      if (!transferResponse.ok || !result.success) {
         throw new Error(result.error || "Unable to load the BNB transfer page.");
       }
-      setData(result);
+      const feeStatus = feeStatusResponse.ok
+        ? ((await feeStatusResponse.json()) as WalletFeeStatusResponse)
+        : null;
+      setData({
+        ...result,
+        sourceBalance: feeStatus?.success && typeof feeStatus.balance === "number"
+          ? String(feeStatus.balance)
+          : null,
+      });
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : "Unable to load the BNB transfer page.");
     } finally {

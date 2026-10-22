@@ -621,8 +621,8 @@ export default function MobileApp() {
   const [directTree, setDirectTree] = useState<any[]>([]);
   const [sponsorTree, setSponsorTree] = useState<any[]>([]);
   const visibleNetworkTree = networkTab === "referral" ? directTree : sponsorTree;
-  const [userEmail, setUserEmail] = useState("user@969.com");
-  const [userNickname, setUserNickname] = useState("User");
+  const [userEmail, setUserEmail] = useState("...");
+  const [userNickname, setUserNickname] = useState("...");
   const [isEditingNickname, setIsEditingNickname] = useState(false);
   const [editNicknameValue, setEditNicknameValue] = useState("");
   const [nicknameUpdateLoading, setNicknameUpdateLoading] = useState(false);
@@ -643,36 +643,46 @@ export default function MobileApp() {
   const [loadingNetwork, setLoadingNetwork] = useState(false);
   
   const [userDepositAddress, setUserDepositAddress] = useState("");
+  const [tronDepositAddress, setTronDepositAddress] = useState("");
+  const [depositNetwork, setDepositNetwork] = useState<"BSC" | "TRON">("BSC");
   const [addressCopied, setAddressCopied] = useState(false);
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [walletLoading, setWalletLoading] = useState(false);
 
-  const openDepositModal = async () => {
-    setShowDepositModal(true);
-    if (!userDepositAddress && userId) {
-      setWalletLoading(true);
-      try {
-        const res = await fetch("/api/wallet/generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}),
-        });
-        const data = await res.json();
-        if (res.ok && data.address) {
-          setUserDepositAddress(data.address);
-        } else {
-          console.error("Wallet generation failed:", data.error);
-        }
-      } catch (err) {
-        console.error("Wallet generation error:", err);
-      } finally {
-        setWalletLoading(false);
+  const ensureDepositAddress = async (network: "BSC" | "TRON") => {
+    const knownAddress = network === "TRON" ? tronDepositAddress : userDepositAddress;
+    if (knownAddress || !userId) return;
+
+    setWalletLoading(true);
+    try {
+      const res = await fetch("/api/wallet/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ network }),
+      });
+      const data = await res.json();
+      if (res.ok && data.address) {
+        if (network === "TRON") setTronDepositAddress(data.address);
+        else setUserDepositAddress(data.address);
+      } else {
+        console.error("Wallet generation failed:", data.error);
       }
+    } catch (err) {
+      console.error("Wallet generation error:", err);
+    } finally {
+      setWalletLoading(false);
     }
   };
 
+  const openDepositModal = async () => {
+    setShowDepositModal(true);
+    await ensureDepositAddress(depositNetwork);
+  };
+
   const copyDepositAddress = () => {
-    navigator.clipboard.writeText(userDepositAddress);
+    const address = depositNetwork === "TRON" ? tronDepositAddress : userDepositAddress;
+    if (!address) return;
+    navigator.clipboard.writeText(address);
     setAddressCopied(true);
     setTimeout(() => setAddressCopied(false), 2000);
   };
@@ -987,8 +997,10 @@ export default function MobileApp() {
   }, []);
 
   const copyReferral = () => {
+    if (!userId) return;
+
     const origin = typeof window !== "undefined" ? window.location.origin : "https://app.urc369.com";
-    const refCode = userId ? `969-${userId.substring(0, 8).toUpperCase()}` : "969";
+    const refCode = `969-${userId.substring(0, 8).toUpperCase()}`;
     navigator.clipboard.writeText(`${origin}/register?ref=${refCode}`);
     setReferralCopied(true);
     setTimeout(() => setReferralCopied(false), 2000);
@@ -1053,7 +1065,7 @@ export default function MobileApp() {
       <div className="sticky top-0 z-40 bg-[#0B0E11]/95 backdrop-blur-md border-b border-[#2B3139] px-5 py-3 flex justify-between items-center">
         <div className="flex items-center h-7">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="URC369" className="h-5 w-auto object-contain mix-blend-lighten" />
+          <img src="/logo.png" alt="URC969" className="h-5 w-auto object-contain mix-blend-lighten" />
         </div>
         <div className="flex items-center space-x-3">
           {activeTab === "game" && (
@@ -1082,7 +1094,7 @@ export default function MobileApp() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logo.png"
-            alt="U彩宝369"
+            alt="U彩宝969"
             className="w-[85%] h-auto object-contain"
             style={{ mixBlendMode: "lighten" }}
           />
@@ -1129,8 +1141,15 @@ export default function MobileApp() {
               </div>
               <div className="text-right">
                 <p className="text-[10px] text-[#848E9C]">邀请码</p>
-                  <button type="button" onClick={copyReferral} className="flex items-center space-x-1 bg-[#1E2329] px-2.5 py-1.5 rounded mt-0.5">
-                  <span className="text-[10px] text-[#FCD535] font-mono font-bold">{userId ? `969-${userId.substring(0, 8).toUpperCase()}` : "969"}</span>
+                  <button
+                    type="button"
+                    onClick={copyReferral}
+                    disabled={!userId}
+                    className="flex items-center space-x-1 bg-[#1E2329] px-2.5 py-1.5 rounded mt-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                  <span className="text-[10px] text-[#FCD535] font-mono font-bold">
+                    {userId ? `969-${userId.substring(0, 8).toUpperCase()}` : "..."}
+                  </span>
                   {referralCopied ? <Check size={10} className="text-[#0ECB81]" /> : <Copy size={10} className="text-[#848E9C]" />}
                 </button>
               </div>
@@ -1532,13 +1551,27 @@ export default function MobileApp() {
               <div className="flex items-center justify-center space-x-2 text-[#FCD535]">
                 <Wallet size={20} />
                 <h3 className="text-sm font-bold text-[#EAECEF]">
-                  USDT {lang === "ko" ? "입금 (BSC)" : lang === "en" ? "Deposit (BSC)" : "充值 (BSC)"}
+                  USDT {lang === "ko" ? "입금" : lang === "en" ? "Deposit" : "充值"}
                 </h3>
               </div>
 
-              {/* USDT only — URC deposit removed */}
+              <div className="grid grid-cols-2 gap-2 rounded-xl bg-[#0B0E11] p-1">
+                {(["BSC", "TRON"] as const).map((network) => (
+                  <button
+                    key={network}
+                    type="button"
+                    onClick={() => {
+                      setDepositNetwork(network);
+                      void ensureDepositAddress(network);
+                    }}
+                    className={`rounded-lg py-2 text-xs font-bold transition-colors ${depositNetwork === network ? "bg-[#FCD535] text-[#0B0E11]" : "text-[#848E9C] hover:text-[#EAECEF]"}`}
+                  >
+                    {network === "BSC" ? "BEP-20" : "TRC-20"}
+                  </button>
+                ))}
+              </div>
               <div className="bg-[#0B0E11] py-2 px-4 rounded-xl border border-[#26A17B]/40 text-center">
-                <span className="text-xs font-bold text-[#26A17B]">USDT (Tether) · BSC BEP-20</span>
+                <span className="text-xs font-bold text-[#26A17B]">USDT (Tether) · {depositNetwork === "BSC" ? "BSC BEP-20" : "TRON TRC-20"}</span>
               </div>
 
               {/* Dynamic QR Code Image */}
@@ -1548,11 +1581,11 @@ export default function MobileApp() {
                     <RefreshCw size={24} className="text-[#848E9C] animate-spin" />
                     <span className="text-[10px] text-[#848E9C] font-bold">{lang === "ko" ? "지갑 생성 중..." : lang === "en" ? "Generating..." : "生成中..."}</span>
                   </div>
-                ) : userDepositAddress ? (
+                ) : (depositNetwork === "TRON" ? tronDepositAddress : userDepositAddress) ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img 
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${userDepositAddress}`}
-                    alt={`${depositToken} BSC Deposit QR Code`}
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${depositNetwork === "TRON" ? tronDepositAddress : userDepositAddress}`}
+                    alt={`${depositToken} ${depositNetwork} Deposit QR Code`}
                     className="w-full h-full object-contain"
                   />
                 ) : (
@@ -1565,7 +1598,7 @@ export default function MobileApp() {
 
                 <div className="bg-[#0B0E11] p-3 rounded-lg border border-[#2B3139] flex justify-between items-center space-x-2">
                   <span className="text-[10px] font-mono text-[#EAECEF] break-all select-all">
-                    {walletLoading ? (lang === "ko" ? "지갑 주소 생성 중..." : "Generating address...") : userDepositAddress || (lang === "ko" ? "주소 없음" : "No address")}
+                    {walletLoading ? (lang === "ko" ? "지갑 주소 생성 중..." : "Generating address...") : (depositNetwork === "TRON" ? tronDepositAddress : userDepositAddress) || (lang === "ko" ? "주소 없음" : "No address")}
                   </span>
                   <button 
                     onClick={copyDepositAddress} 
@@ -1577,6 +1610,11 @@ export default function MobileApp() {
                     </span>
                   </button>
                 </div>
+                <p className="px-1 text-[10px] leading-relaxed text-[#FF9F0A]">
+                  {depositNetwork === "BSC"
+                    ? (lang === "ko" ? "BEP-20 네트워크로만 보내세요. 다른 네트워크 입금은 복구할 수 없습니다." : "Send only via BEP-20. Deposits from other networks cannot be recovered.")
+                    : (lang === "ko" ? "TRC-20 네트워크로만 보내세요. 다른 네트워크 입금은 복구할 수 없습니다." : "Send only via TRC-20. Deposits from other networks cannot be recovered.")}
+                </p>
               </div>
 
               <button
@@ -3139,9 +3177,16 @@ export default function MobileApp() {
               
               <div className="flex items-center justify-between bg-[#0B0E11] p-3 rounded-lg border border-[#2B3139]">
                 <span className="text-[10px] text-[#EAECEF] font-mono truncate mr-2">
-                  {typeof window !== "undefined" ? window.location.origin : "https://hongbou.com"}/register?ref={userId ? `969-${userId.substring(0, 8).toUpperCase()}` : "969"}
+                  {userId
+                    ? `${typeof window !== "undefined" ? window.location.origin : "https://www.hongbou.com"}/register?ref=969-${userId.substring(0, 8).toUpperCase()}`
+                    : (lang === "ko" ? "로그인 정보를 불러오는 중..." : lang === "en" ? "Loading account..." : "正在加载账户信息...")}
                 </span>
-                <button type="button" onClick={copyReferral} className="p-2 bg-[#2B3139] hover:bg-[#FCD535] hover:text-[#0B0E11] rounded text-[#848E9C] transition-colors flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={copyReferral}
+                  disabled={!userId}
+                  className="p-2 bg-[#2B3139] hover:bg-[#FCD535] hover:text-[#0B0E11] rounded text-[#848E9C] transition-colors flex-shrink-0 disabled:cursor-not-allowed disabled:opacity-50"
+                >
                   {referralCopied ? <Check size={14} /> : <Copy size={14} />}
                 </button>
               </div>

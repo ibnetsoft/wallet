@@ -22,10 +22,12 @@ interface UserProfile {
   jadeBalance: number;
   hongbaoBalance: number;
   active: boolean;
+  canChangeRecommender: boolean;
   totalReferrals: number;
   usedEntries: number;
   sponsorEmail: string;
   sponsorNickname: string;
+  recommenderId: string | null;
 }
 
 export default function UsersPage() {
@@ -41,6 +43,9 @@ export default function UsersPage() {
   const [detailsTab, setDetailsTab] = useState<"machines" | "games" | "bonuses">("machines");
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [userDetails, setUserDetails] = useState<any>(null);
+  const [recommenderUser, setRecommenderUser] = useState<UserProfile | null>(null);
+  const [nextRecommenderId, setNextRecommenderId] = useState("");
+  const [savingRecommender, setSavingRecommender] = useState(false);
 
   const fetchUserDetails = async (user: UserProfile) => {
     setSelectedUser(user);
@@ -64,27 +69,65 @@ export default function UsersPage() {
     setTimeout(() => setCopiedAddress(null), 2000);
   };
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(adminApi("/api/users"));
-        const data = await res.json();
+  const loadUsers = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(adminApi("/api/users"));
+      const data = await res.json();
 
-        if (data.success && data.users) {
-          setUsers(data.users);
-        } else {
-          setUsers([]);
-        }
-      } catch (e) {
-        console.error("유저 목록 조회 실패", e);
+      if (data.success && data.users) {
+        setUsers(data.users);
+      } else {
         setUsers([]);
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (e) {
+      console.error("유저 목록 조회 실패", e);
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchUsers();
+  const openRecommenderModal = (user: UserProfile) => {
+    setRecommenderUser(user);
+    setNextRecommenderId(user.recommenderId ?? "");
+  };
+
+  const handleUpdateRecommender = async () => {
+    if (!recommenderUser) return;
+
+    const selectedRecommender = users.find((user) => user.id === nextRecommenderId);
+    const nextName = selectedRecommender?.nickname ?? "없음 (최상위)";
+    if (!confirm(`${recommenderUser.nickname} 회원의 추천인을 '${nextName}'(으)로 변경하시겠습니까?`)) return;
+
+    setSavingRecommender(true);
+    try {
+      const res = await fetch(adminApi("/api/users"), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: recommenderUser.id,
+          recommenderId: nextRecommenderId || null,
+        }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        alert(`추천인 변경 실패: ${data.error}`);
+        return;
+      }
+
+      setRecommenderUser(null);
+      await loadUsers();
+      alert("추천인이 변경되었습니다.");
+    } catch {
+      alert("추천인 변경 중 오류가 발생했습니다.");
+    } finally {
+      setSavingRecommender(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadUsers();
   }, []);
 
   const handleDeleteUser = async (userId: string, nickname: string) => {
@@ -158,7 +201,7 @@ export default function UsersPage() {
                 <th className="py-3 px-4">회원 정보 (닉네임/직급)</th>
                 <th className="py-3 px-4">BSC 지갑 주소</th>
                 <th className="py-3 px-4 text-right">보유 자산</th>
-                <th className="py-3 px-4 text-center">네트워크 (스폰서/추천/게임)</th>
+                <th className="py-3 px-4 text-center">네트워크 (추천인/산하추천/게임)</th>
                 <th className="py-3 px-4 text-center">활동 기록 (가입/접속)</th>
                 <th className="py-3 px-4 text-center">상태</th>
                 <th className="py-3 px-4 text-center">관리</th>
@@ -234,7 +277,7 @@ export default function UsersPage() {
 
                   {/* 네트워크 */}
                   <td className="py-3 px-4 text-center">
-                    <div className="text-[10px] text-[#EAECEF]"><span className="text-[#8E8E93]">스폰서:</span> {user.sponsorNickname || "없음"}</div>
+                    <div className="text-[10px] text-[#EAECEF]"><span className="text-[#8E8E93]">추천인:</span> {user.sponsorNickname || "없음"}</div>
                     <div className="text-[10px] text-[#00D2FF] mt-0.5"><span className="text-[#8E8E93]">산하추천:</span> {user.totalReferrals}명</div>
                     <div className="text-[10px] text-[#BF5AF2] mt-0.5"><span className="text-[#8E8E93]">게임진행:</span> {user.usedEntries}회</div>
                   </td>
@@ -272,6 +315,19 @@ export default function UsersPage() {
                     <Link href={`/users/${user.id}/organization`} className="px-2 py-1 bg-[#1C1C21] border border-[#26262B] hover:border-[#00D2FF] hover:text-[#00D2FF] text-[#EAECEF] text-[10px] font-bold rounded transition-colors">
                       조직도
                     </Link>
+                    <button
+                      type="button"
+                      onClick={() => openRecommenderModal(user)}
+                      disabled={!user.canChangeRecommender}
+                      title={user.canChangeRecommender ? "추천인 변경" : "미구매 상태의 회원만 변경할 수 있습니다."}
+                      className={`px-2 py-1 border text-[10px] font-bold rounded transition-colors ${
+                        user.canChangeRecommender
+                          ? "bg-[#1C1C21] border-[#26262B] hover:border-[#30D5C8] hover:text-[#30D5C8] text-[#EAECEF]"
+                          : "cursor-not-allowed border-[#26262B] bg-[#1C1C21]/50 text-[#5A5A60]"
+                      }`}
+                    >
+                      추천인
+                    </button>
                     <button onClick={() => handleDeleteUser(user.id, user.nickname)} className="px-2 py-1 bg-[#F6465D]/10 hover:bg-[#F6465D] hover:text-white text-[#F6465D] text-[10px] font-bold rounded transition-colors">
                       삭제
                     </button>
@@ -324,6 +380,72 @@ export default function UsersPage() {
         )}
       </div>
 
+      {recommenderUser && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl border border-[#26262B] bg-[#16161A] p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-bold text-white">추천인 변경</h3>
+                <p className="mt-1 text-xs text-[#8E8E93]">
+                  {recommenderUser.nickname} 회원의 상위 추천인을 지정합니다.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRecommenderUser(null)}
+                disabled={savingRecommender}
+                className="rounded-lg p-1 text-[#8E8E93] hover:bg-[#26262B] hover:text-white disabled:opacity-50"
+                aria-label="추천인 변경 닫기"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <label className="mt-5 block text-xs font-semibold text-[#EAECEF]" htmlFor="recommender">
+              추천인
+            </label>
+            <select
+              id="recommender"
+              value={nextRecommenderId}
+              onChange={(event) => setNextRecommenderId(event.target.value)}
+              disabled={savingRecommender}
+              className="mt-2 w-full rounded-lg border border-[#26262B] bg-[#1C1C21] px-3 py-2.5 text-sm text-white outline-none focus:border-[#30D5C8] disabled:opacity-50"
+            >
+              <option value="">없음 (최상위 회원)</option>
+              {users
+                .filter((user) => user.id !== recommenderUser.id)
+                .map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.nickname} · {user.code}
+                  </option>
+                ))}
+            </select>
+            <p className="mt-3 text-[11px] leading-5 text-[#8E8E93]">
+              본인 또는 하위 회원은 추천인으로 지정할 수 없습니다. 이미 지급된 수당과 거래 기록은 변경되지 않습니다.
+            </p>
+
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setRecommenderUser(null)}
+                disabled={savingRecommender}
+                className="rounded-lg border border-[#26262B] px-4 py-2 text-xs font-bold text-[#EAECEF] hover:border-[#8E8E93] disabled:opacity-50"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleUpdateRecommender()}
+                disabled={savingRecommender}
+                className="rounded-lg bg-[#30D5C8] px-4 py-2 text-xs font-bold text-[#0B0E11] hover:bg-[#55e0d5] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {savingRecommender ? "저장 중..." : "추천인 변경"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* User Details Modal */}
       {selectedUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -348,9 +470,9 @@ export default function UsersPage() {
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-[#8E8E93]">상위 스폰서</span>
+                    <span className="text-[#8E8E93]">상위 추천인</span>
                     <span className="text-white font-semibold">
-                      {selectedUser.sponsorNickname !== "-" ? `${selectedUser.sponsorNickname} (${selectedUser.sponsorEmail})` : "없음 (최상위)"}
+                      {selectedUser.sponsorNickname ? `${selectedUser.sponsorNickname} (${selectedUser.sponsorEmail})` : "없음 (최상위)"}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">

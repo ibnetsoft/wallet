@@ -1,4 +1,10 @@
-# 📄 BSC 기반 멀티 토큰 중앙화 지갑 및 관리자 시스템 개발 사양서
+# 📄 BSC·TRON 기반 중앙화 지갑 및 관리자 시스템
+
+> 현재 구현은 BSC(BEP-20)와 TRON(TRC-20) USDT 입금을 지원합니다.
+> 2026-09-16 운영 배포 소스와 2026-10-22 입금 동기화 수정 사항이 저장소에 반영되어 있습니다.
+> Tron 주소 생성, DB 마이그레이션, 배포 설정과 인증 경로는
+> [TRC20 USDT 입금 운영 안내](docs/trc20-usdt-deposit-sync.md)를 참고하세요.
+> 아래 본문은 초기 BSC 설계 사양이며, 현재 Tron 구현의 상세 기준은 위 안내와 소스 코드입니다.
 > **BSC-based Multi-Token Centralized Wallet & Admin System Technical Specification**
 
 본 문서는 BNB Smart Chain(BSC) 메인넷의 **USDT(BEP-20)** 및 **자체 발행 토큰인 URC(Universal Real Currency)**를 지원하는 중앙화 지갑 플랫폼의 핵심 설계 및 개발 지침을 정의합니다. 본 시스템은 고성능 실시간 자산 관리, 철저한 트랜잭션 원장 무결성 보장, 그리고 다계층 보안 모델을 지향합니다.

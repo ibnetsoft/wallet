@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyAuthToken } from "@/lib/auth-token";
+import { ensureMemberWallets } from "@/lib/wallet-generation";
 
 type RegisterTokenPayload = {
   email: string;
@@ -57,20 +58,48 @@ export async function POST(req: Request) {
     }
 
     let parentId: string | null = null;
-    const masterCodes = ["969", "URC883920", "MASTER"];
+    const masterCodes = ["URC883920", "MASTER"];
+    const normalizedReferralCode = String(referralCode ?? "").trim();
 
-    if (referralCode && !masterCodes.includes(referralCode.toUpperCase())) {
+    if (normalizedReferralCode.toUpperCase() === "969") {
+      const { data: baoUsers, error: baoLookupError } = await supabase
+        .from("users")
+        .select("id")
+        .eq("nickname", "BAO")
+        .limit(2);
+
+      if (baoLookupError || baoUsers?.length !== 1) {
+        console.error("Default referral lookup error:", baoLookupError);
+        return NextResponse.json(
+          { error: "Default referral account is unavailable. Please try again later." },
+          { status: 503 }
+        );
+      }
+
+      parentId = baoUsers[0].id;
+    } else if (normalizedReferralCode && !masterCodes.includes(normalizedReferralCode.toUpperCase())) {
       let resolvedUser: { id: string } | null = null;
 
-      if (referralCode.toUpperCase().startsWith("969-")) {
-        const idPart = referralCode.substring(4).toLowerCase();
-        if (idPart.length === 8) {
-          const { data: recById } = await supabase
+      if (normalizedReferralCode.toUpperCase().startsWith("969-")) {
+        const idPart = normalizedReferralCode.substring(4).toLowerCase();
+        if (/^[0-9a-f]{8}$/.test(idPart)) {
+          // `users.id` is a UUID, so Postgres cannot use LIKE directly on it.
+          // Search the UUID range represented by its displayed first 8 hex digits.
+          const startId = `${idPart}-0000-0000-0000-000000000000`;
+          const nextPrefix = Number.parseInt(idPart, 16) + 1;
+          let referralQuery = supabase
             .from("users")
             .select("id")
-            .like("id", `${idPart}%`)
-            .limit(1);
-          if (recById && recById.length > 0) {
+            .gte("id", startId);
+
+          if (nextPrefix <= 0xffffffff) {
+            const endId = `${nextPrefix.toString(16).padStart(8, "0")}-0000-0000-0000-000000000000`;
+            referralQuery = referralQuery.lt("id", endId);
+          }
+
+          const { data: recById } = await referralQuery.limit(2);
+          // Never assign a sponsor arbitrarily if an 8-character prefix collides.
+          if (recById?.length === 1) {
             resolvedUser = recById[0] as { id: string };
           }
         }
@@ -80,7 +109,7 @@ export async function POST(req: Request) {
         const { data: recommender } = await supabase
           .from("users")
           .select("id")
-          .eq("nickname", referralCode)
+          .eq("nickname", normalizedReferralCode)
           .single();
         if (recommender) {
           resolvedUser = recommender as { id: string };
@@ -91,7 +120,7 @@ export async function POST(req: Request) {
         const { data: recByEmail } = await supabase
           .from("users")
           .select("id")
-          .eq("email", referralCode)
+          .eq("email", normalizedReferralCode)
           .single();
         if (recByEmail) {
           resolvedUser = recByEmail as { id: string };
@@ -150,12 +179,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: `?좎? ????ㅽ뙣: ${dbError.message || JSON.stringify(dbError)}` }, { status: 500 });
     }
 
+    let walletAddress: string;
+    let tronWalletAddress: string;
+    try {
+      const wallets = await ensureMemberWallets(userId);
+      walletAddress = wallets.bsc.address;
+      tronWalletAddress = wallets.tron.address;
+    } catch (walletError) {
+      // A registration is only complete once its deposit address exists.
+      // Compensate for the already-created auth and profile records on failure.
+      await supabase.from("users").delete().eq("id", userId);
+      await supabase.auth.admin.deleteUser(userId);
+      console.error("Automatic wallet generation error:", walletError);
+      return NextResponse.json(
+        { error: "Unable to create a wallet address. Please try signing up again." },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
       message: "?뚯썝媛?낆씠 ?꾨즺?섏뿀?듬땲?? 濡쒓렇???섏씠吏?먯꽌 濡쒓렇?명빐 二쇱꽭??",
       user: {
         id: userId,
-        nickname
+        nickname,
+        walletAddress,
+        tronWalletAddress,
       }
     });
   } catch (error: unknown) {

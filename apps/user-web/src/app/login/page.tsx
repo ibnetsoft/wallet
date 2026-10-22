@@ -137,7 +137,7 @@ export default function LoginPage() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/logo.png"
-          alt="U彩宝369"
+          alt="U彩宝969"
           className="w-32 h-auto mx-auto mb-4 object-contain"
           style={{ mixBlendMode: "lighten" }}
         />
@@ -145,7 +145,7 @@ export default function LoginPage() {
           {lang === "ko" ? "969에 오신 것을 환영합니다" : lang === "en" ? "Welcome to 969" : "欢迎来到 969"}
         </h1>
         <p className="text-sm text-[#8E8E93] mt-2">
-          {lang === "ko" ? "자산과 369 게임을 관리하려면 로그인하세요" : lang === "en" ? "Log in to manage your assets & 369 games" : "登录以管理您的资产和 369 游戏"}
+          {lang === "ko" ? "자산과 969 게임을 관리하려면 로그인하세요" : lang === "en" ? "Log in to manage your assets & 969 games" : "登录以管理您的资产和 969 游戏"}
         </p>
       </div>
 

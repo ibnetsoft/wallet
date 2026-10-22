@@ -43,6 +43,9 @@ function validatePhoneNumber(value: string, lang: string): string {
 }
 
 function RegisterForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [lang, setLang] = useState<"zh" | "en" | "ko">("zh");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -51,7 +54,11 @@ function RegisterForm() {
   const [nickname, setNickname] = useState("");
   const [nicknameError, setNicknameError] = useState("");
   const [nicknameTouched, setNicknameTouched] = useState(false);
-  const [referralCode, setReferralCode] = useState("969");
+  // Read a personal referral link on the very first render. Waiting for an
+  // effect here briefly exposed the generic 969 fallback in embedded browsers.
+  const [referralCode, setReferralCode] = useState(
+    () => searchParams.get("ref")?.trim() || "969"
+  );
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -62,10 +69,6 @@ function RegisterForm() {
   const [token, setToken] = useState("");
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailSuccessMsg, setEmailSuccessMsg] = useState("");
-
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [lang, setLang] = useState<"zh" | "en" | "ko">("zh");
 
   useEffect(() => {
     const saved = localStorage.getItem("urc_lang");
@@ -87,7 +90,7 @@ function RegisterForm() {
 
   // 이메일 인증 링크로 이동해서 가입창으로 돌아온 경우의 파라미터 감지
   useEffect(() => {
-    const ref = searchParams.get("ref");
+    const ref = searchParams.get("ref")?.trim();
     if (ref) setReferralCode(ref);
 
     const verifiedParam = searchParams.get("verified");
@@ -128,7 +131,11 @@ function RegisterForm() {
       const res = await fetch("/api/auth/send-verification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), locale: lang }),
+        body: JSON.stringify({
+          email: email.trim(),
+          locale: lang,
+          referralCode: referralCode.trim(),
+        }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -260,7 +267,7 @@ function RegisterForm() {
           {lang === "ko" ? "회원가입" : lang === "en" ? "Create Account" : "创建账号"}
         </h1>
         <p className="text-sm text-[#848E9C] mt-2">
-          {lang === "ko" ? "지금 369 Pass-up 시스템에 합류하세요" : lang === "en" ? "Join 369 Pass-up system today" : "立即加入 369 Pass-up 系统"}
+          {lang === "ko" ? "지금 969 Pass-up 시스템에 합류하세요" : lang === "en" ? "Join 969 Pass-up system today" : "立即加入 969 Pass-up 系统"}
         </p>
       </div>
 

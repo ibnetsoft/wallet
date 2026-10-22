@@ -22,6 +22,11 @@ const CLIENT_VISIBLE_SETTING_KEYS = [
   "hot_balance_usdt",
   "cold_balance_usdt",
   "hot_wallet_history",
+  "trc20_rpc_urls",
+  "tron_master_hot_wallet",
+  "tron_energy_reserve_trx",
+  "tron_sweep_gas_fund_trx",
+  "tron_sweep_enabled",
 ];
 
 function sanitizeWalletHistory(value: unknown) {
