@@ -30,7 +30,7 @@ export async function GET() {
         ROW_NUMBER() OVER (ORDER BY u.created_at ASC, u.id ASC) AS member_number,
         NULL AS last_login_at,
         u.star_level,
-        uw.address AS wallet_address,
+        uw.wallets,
         COALESCE(b_usdt.available_balance::numeric, 0) AS usdt_balance,
         COALESCE(b_bao.available_balance::numeric, 0) AS bao_balance,
         COALESCE(b_jade.available_balance::numeric, 0) AS jade_balance,
@@ -41,7 +41,14 @@ export async function GET() {
         s.nickname AS sponsor_nickname,
         u.recommender_id
       FROM public.users u
-      LEFT JOIN public.user_wallets uw ON u.id = uw.user_id
+      LEFT JOIN LATERAL (
+        SELECT jsonb_agg(
+          jsonb_build_object('chainType', chain_type, 'address', address)
+          ORDER BY chain_type, address
+        ) AS wallets
+        FROM public.user_wallets
+        WHERE user_id = u.id
+      ) uw ON true
       LEFT JOIN public.assets a_usdt ON a_usdt.symbol = 'USDT'
       LEFT JOIN public.user_balances b_usdt ON u.id = b_usdt.user_id AND b_usdt.asset_id = a_usdt.id
       LEFT JOIN public.assets a_bao ON a_bao.symbol = 'BAO'
@@ -70,7 +77,8 @@ export async function GET() {
         joinedAt: user.joined_at_kst,
         lastLoginAt: user.last_login_at ? new Date(user.last_login_at).toLocaleString() : "기록없음",
         starLevel: user.star_level || 0,
-        walletAddress: user.wallet_address || "미발급",
+        walletAddress: user.wallets?.[0]?.address || "미발급",
+        wallets: user.wallets || [],
         assets: parseFloat(user.usdt_balance),
         baoBalance: parseFloat(user.bao_balance),
         jadeBalance: parseFloat(user.jade_balance),

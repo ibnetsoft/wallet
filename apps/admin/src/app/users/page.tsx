@@ -16,7 +16,7 @@ interface UserProfile {
   joinedAt: string;
   lastLoginAt: string;
   starLevel: number;
-  walletAddress: string;
+  wallets: { chainType: string; address: string }[];
   assets: number;
   baoBalance: number;
   jadeBalance: number;
@@ -170,6 +170,7 @@ export default function UsersPage() {
       <div>
         <h2 className="text-2xl font-bold text-white tracking-tight">회원 관리</h2>
         <p className="text-sm text-[#8E8E93] mt-1">전체 가입자 목록 조회 및 본인 계정 활성화 상태, 조직도를 실시간으로 통합 관리합니다.</p>
+        <p className="text-xs text-[#8E8E93] mt-2">회원별 BSC·TRON 입금 주소와 통합 잔액을 표시합니다. 통합 잔액은 입금 주소별 온체인 잔액과 다를 수 있습니다.</p>
       </div>
 
       <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 shadow-lg">
@@ -199,8 +200,8 @@ export default function UsersPage() {
               <tr className="border-b border-[#26262B] text-[#8E8E93] font-semibold uppercase tracking-wider pb-3">
                 <th className="py-3 px-2 text-center w-10">No.</th>
                 <th className="py-3 px-4">회원 정보 (닉네임/직급)</th>
-                <th className="py-3 px-4">BSC 지갑 주소</th>
-                <th className="py-3 px-4 text-right">보유 자산</th>
+                <th className="py-3 px-4">입금 주소 (BSC·TRON)</th>
+                <th className="py-3 px-4 text-right">회원 통합 잔액</th>
                 <th className="py-3 px-4 text-center">네트워크 (추천인/산하추천/게임)</th>
                 <th className="py-3 px-4 text-center">활동 기록 (가입/접속)</th>
                 <th className="py-3 px-4 text-center">상태</th>
@@ -239,18 +240,23 @@ export default function UsersPage() {
 
                   {/* 지갑 주소 */}
                   <td className="py-3 px-4">
-                    {user.walletAddress !== "미발급" ? (
-                      <div className="flex items-center space-x-2">
-                        <span className="text-[10px] font-mono text-[#00D2FF] truncate w-24">
-                          {user.walletAddress.slice(0, 6)}...{user.walletAddress.slice(-4)}
+                    {user.wallets.length > 0 ? (
+                      <div className="space-y-2">
+                      {user.wallets.map((wallet) => (
+                      <div key={`${wallet.chainType}:${wallet.address}`} className="flex items-center space-x-2">
+                        <span className="text-[9px] text-[#8E8E93] w-20 shrink-0">{wallet.chainType === "TRON" ? "TRON (TRC20)" : wallet.chainType === "BSC" ? "BSC (BEP20)" : wallet.chainType}</span>
+                        <span title={wallet.address} className="text-[10px] font-mono text-[#00D2FF] truncate w-24">
+                          {wallet.address.slice(0, 6)}...{wallet.address.slice(-4)}
                         </span>
                         <button 
-                          onClick={() => handleCopy(user.walletAddress)}
+                          onClick={() => handleCopy(wallet.address)}
                           className="p-1 hover:bg-[#26262B] rounded text-[#8E8E93] hover:text-white transition-colors"
-                          title="주소 복사"
+                          title={`${wallet.chainType} 주소 복사`}
                         >
-                          {copiedAddress === user.walletAddress ? <Check size={12} className="text-[#0ECB81]" /> : <Copy size={12} />}
+                          {copiedAddress === wallet.address ? <Check size={12} className="text-[#0ECB81]" /> : <Copy size={12} />}
                         </button>
+                      </div>
+                      ))}
                       </div>
                     ) : (
                       <span className="text-[10px] text-[#8E8E93]">미발급</span>
