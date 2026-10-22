@@ -6,6 +6,7 @@ import {
   Lock, ArrowDownRight, ArrowUpRight, ShieldCheck, AlertTriangle, Info, Copy, Check
 } from "lucide-react";
 import { adminApi } from "@/lib/admin-path";
+import Trc20SweepPanel from "@/components/Trc20SweepPanel";
 
 interface UserWallet {
   user_id: string;
@@ -28,6 +29,10 @@ interface VaultTransferLog {
 const MAX_COLD_TRANSFER_RATIO = 0.85;
 
 export default function WalletSweepPage() {
+  return <div className="space-y-8"><Trc20SweepPanel /><BscWalletSweepPage /></div>;
+}
+
+function BscWalletSweepPage() {
   const [loading, setLoading] = useState(true);
 
   // ── 실제 DB 데이터 ──
@@ -155,15 +160,15 @@ export default function WalletSweepPage() {
 
   // ── 스윕: API를 통해 DB 트랜잭션 수행 ──
   const handleSweep = async () => {
-    if (totalSweepable <= 0) {
-      setSweepMsg({ type: "err", text: "모으기 가능한 유저 잔액이 없습니다." });
+    if (userWallets.length === 0) {
+      setSweepMsg({ type: "err", text: "등록된 BSC 회원 지갑이 없습니다." });
       return;
     }
     if (!masterHotWallet) {
       setSweepMsg({ type: "err", text: "마스터 핫 지갑 주소가 생성되지 않았습니다." });
       return;
     }
-    if (!confirm(`유저 개별 지갑 총 ${totalSweepable.toLocaleString()} USDT를 자체발행한 회사지갑(${masterHotWallet})으로 즉시 모으기(Sweep)하시겠습니까?\n\n⚠️ 이 작업은 즉시 유저 잔액을 차감하고 회사 지갑 잔액으로 병합합니다.`)) return;
+    if (!confirm(`BSC 회원 지갑의 실제 온체인 USDT를 회사 지갑(${masterHotWallet})으로 모읍니다.\n\n실제 블록체인 송금이며 회원의 앱 잔액은 차감하지 않습니다. 계속하시겠습니까?`)) return;
 
     setLoadingSweep(true);
     setSweepMsg(null);
@@ -178,7 +183,7 @@ export default function WalletSweepPage() {
 
       setSweepMsg({ 
         type: "ok", 
-        text: `✅ 지갑 모으기(${totalSweepable.toLocaleString()} USDT)가 성공적으로 완료되어 회사 지갑 잔고에 반영되었습니다!` 
+        text: `BSC 온체인 USDT ${Number(data.sweptAmount).toLocaleString()} 모으기가 완료됐습니다. 회원 장부 잔액은 유지됩니다.`
       });
       fetchData();
     } catch (e: unknown) {
@@ -264,7 +269,7 @@ export default function WalletSweepPage() {
         <div>
           <h2 className="text-2xl font-bold text-white tracking-tight flex items-center space-x-2">
             <Wallet className="text-[#00D2FF]" />
-            <span>지갑 자산 모으기 &amp; 콜드 금고 이체 관리</span>
+            <span>BSC 지갑 모으기 &amp; 콜드 금고 이체 기록</span>
           </h2>
           <p className="text-sm text-[#8E8E93] mt-1">
             유저 지갑 자산 모으기(Sweep) 및 마스터 핫 지갑과 오프라인 콜드 금고(Cold Vault) 간의 안전 자산 이체 기록을 제어합니다.
@@ -285,8 +290,8 @@ export default function WalletSweepPage() {
         <div className="text-xs text-[#EAECEF] leading-relaxed">
           <span className="font-bold text-[#FF9F0A]">[중요] </span>
           이 페이지의 모든 잔액과 지갑 주소는 <strong>DB의 실제 데이터</strong>입니다.
-          &quot;스윕 실행&quot; 및 &quot;콜드 금고 이체&quot; 버튼은 <strong>블록체인에 직접 트랜잭션을 전송하지 않습니다.</strong>
-          &nbsp;DB에 요청/기록을 저장하며, 실제 온체인 실행은 별도 지갑 앱(MetaMask, Trust Wallet 등)에서 직접 수행하세요.
+          BSC·TRC20 모으기는 <strong>실제 블록체인 송금</strong>이며 회원의 앱 잔액을 유지합니다.
+          &nbsp;콜드 금고 이체는 별도로 수행한 송금의 기록만 저장합니다.
         </div>
       </div>
 
@@ -416,12 +421,12 @@ export default function WalletSweepPage() {
 
           <button
             onClick={handleSweep}
-            disabled={loadingSweep || totalSweepable <= 0}
+            disabled={loadingSweep || userWallets.length === 0}
             className="w-full py-3.5 bg-gradient-to-r from-[#00D2FF] to-[#BF5AF2] hover:opacity-90 text-white font-bold rounded-xl transition-all flex items-center justify-center space-x-2 shadow-[0_0_15px_rgba(0,210,255,0.2)] disabled:opacity-40 text-xs cursor-pointer"
           >
             {loadingSweep ? <RefreshCw size={16} className="animate-spin" /> : (
               <>
-                <span>스윕 실행하기 (DB 즉시 반영)</span>
+                <span>BSC 온체인 USDT 모으기 실행</span>
                 <ArrowRightLeft size={16} />
               </>
             )}

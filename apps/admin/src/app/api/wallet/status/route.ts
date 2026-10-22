@@ -69,7 +69,7 @@ export async function GET() {
             '[]'
           ) as user_balances
         FROM public.users u
-        LEFT JOIN public.user_wallets uw ON u.id = uw.user_id
+        LEFT JOIN public.user_wallets uw ON u.id = uw.user_id AND uw.chain_type = 'BSC'
         LEFT JOIN public.user_balances ub ON u.id = ub.user_id
         GROUP BY u.id, u.email
         LIMIT 100

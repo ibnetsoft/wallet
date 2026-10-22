@@ -4,6 +4,7 @@
 > 2026-09-16 운영 배포 소스와 2026-10-22 입금 동기화 수정 사항이 저장소에 반영되어 있습니다.
 > Tron 주소 생성, DB 마이그레이션, 배포 설정과 인증 경로는
 > [TRC20 USDT 입금 운영 안내](docs/trc20-usdt-deposit-sync.md)를 참고하세요.
+> 관리자 TRC20 USDT 모으기 설정과 실행 절차는 [모으기 운영 안내](docs/trc20-usdt-sweep.md)를 참고하세요.
 > 아래 본문은 초기 BSC 설계 사양이며, 현재 Tron 구현의 상세 기준은 위 안내와 소스 코드입니다.
 > **BSC-based Multi-Token Centralized Wallet & Admin System Technical Specification**
 

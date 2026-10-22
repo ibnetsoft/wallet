@@ -3,6 +3,7 @@ import { Pool } from "pg";
 import { parseEther, formatUnits, Wallet, HDNodeWallet, JsonRpcProvider, Contract } from "ethers";
 import { getBscRpcUrl } from "@/lib/chain-config";
 import { resolveMasterHotWallet } from "@/lib/master-hot-wallet";
+import { getAdminUser } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,9 @@ const ERC20_ABI = [
 ];
 
 export async function POST(request: Request) {
+  const admin = await getAdminUser();
+  if (admin?.role !== 'SUPER_ADMIN') return NextResponse.json({ success:false,error:'최고 관리자 권한이 필요합니다.' },{status:403});
+  if (request.headers.get('origin') !== new URL(request.url).origin) return NextResponse.json({success:false,error:'요청 출처가 일치하지 않습니다.'},{status:403});
   const client = await pool.connect();
   try {
     await request.json();
@@ -50,17 +54,12 @@ export async function POST(request: Request) {
     // 2. Instantiate Master Fee Wallet (using master hot wallet private key)
     const masterFeeWallet = resolvedMasterWallet.signer.connect(provider);
 
-    // 3. Fetch user wallets and balances where USDT (asset_id = 2) available_balance > 0
+    if ((await provider.getNetwork()).chainId !== BigInt(56)) throw new Error('BSC mainnet is required.');
+    // Custody assets are independent of members' spendable ledger balances.
+    // Never derive an EVM signer for a TRON address.
     const queryRes = await client.query(`
-      SELECT 
-        ub.id as balance_id,
-        ub.user_id,
-        ub.available_balance,
-        uw.address,
-        uw.derivation_index
-      FROM public.user_balances ub
-      JOIN public.user_wallets uw ON ub.user_id = uw.user_id
-      WHERE ub.asset_id = 2 AND ub.available_balance > 0
+      SELECT uw.user_id,uw.address,uw.derivation_index
+      FROM public.user_wallets uw WHERE uw.chain_type = 'BSC'
     `);
 
     const users = queryRes.rows;
@@ -70,7 +69,7 @@ export async function POST(request: Request) {
     }
 
     // Get USDT contract address
-    const assetRes = await client.query("SELECT contract_address FROM public.assets WHERE id = 2");
+    const assetRes = await client.query("SELECT contract_address FROM public.assets WHERE symbol = 'USDT' AND is_active = true LIMIT 1");
     if (assetRes.rows.length === 0 || !assetRes.rows[0].contract_address) {
       return NextResponse.json({ success: false, error: "USDT 컨트랙트 주소를 찾을 수 없습니다." }, { status: 500 });
     }
@@ -85,6 +84,8 @@ export async function POST(request: Request) {
       // Derive user wallet
       const userNode = HDNodeWallet.fromPhrase(mnemonic, "", `m/44'/60'/0'/0/${derivationIndex}`);
       const userWallet = new Wallet(userNode.privateKey, provider);
+      if (userWallet.address.toLowerCase() !== user.address.toLowerCase()) throw new Error('Stored BSC wallet does not match its derivation path.');
+      if (userWallet.address.toLowerCase() === masterHotWallet.toLowerCase()) continue;
       
       const usdtContract = new Contract(usdtContractAddress, ERC20_ABI, userWallet);
       
@@ -110,18 +111,10 @@ export async function POST(request: Request) {
 
       totalSwept += amountToSweep;
 
-      // 6. Update the PostgreSQL DB ONLY AFTER the transactions are confirmed.
-      await client.query("BEGIN");
-      await client.query("UPDATE public.user_balances SET available_balance = 0 WHERE id = $1", [user.balance_id]);
-      
-      // Add ledger entry for the sweep out
-      const amountFormatted = parseFloat(formatUnits(amountToSweep, 18));
-      await client.query(`
-        INSERT INTO public.ledger_entries (user_id, asset_id, amount, tx_type, status, tx_hash)
-        VALUES ($1, 2, $2, 'WITHDRAW', 'COMPLETED', $3)
-      `, [user.user_id, -amountFormatted, transferTx.hash]);
-
-      await client.query("COMMIT");
+      // Collection changes custody location, not the member's claim on funds.
+      // Record the confirmed custody move separately from withdrawal ledgers.
+      await client.query(`INSERT INTO public.sweep_requests(total_amount,target_wallet,status,requested_by)
+        VALUES($1,$2,'completed',$3)`,[formatUnits(amountToSweep,18),masterHotWallet,admin.id]);
     }
 
     if (totalSwept === BigInt(0)) {
@@ -140,19 +133,14 @@ export async function POST(request: Request) {
       DO UPDATE SET value = (COALESCE(public.system_settings.value::numeric, 0) + $2)::text
     `, [sweptAmountFormatted, parseFloat(sweptAmountFormatted)]);
 
-    // Insert completed sweep request log
-    await client.query(`
-      INSERT INTO public.sweep_requests (total_amount, target_wallet, status, requested_by)
-      VALUES ($1, $2, 'completed', 'admin')
-    `, [parseFloat(sweptAmountFormatted), masterHotWallet]);
-
     await client.query("COMMIT");
 
     return NextResponse.json({ success: true, sweptAmount: parseFloat(sweptAmountFormatted) });
 
   } catch (err: any) {
-    console.error("wallet/sweep route error:", err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    await client.query("ROLLBACK").catch(() => undefined);
+    console.error("BSC sweep could not complete", err instanceof Error ? err.name : "UnknownError");
+    return NextResponse.json({ success: false, error: "BSC 모으기 결과를 확인하지 못했습니다. 온체인 내역을 확인한 뒤 다시 진행하세요." }, { status: 500 });
   } finally {
     client.release();
   }

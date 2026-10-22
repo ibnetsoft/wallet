@@ -25,7 +25,7 @@ function getAddress(privateKey: string) {
 
 export async function POST(request: Request) {
   const admin = await getAdminUser();
-  if (!admin) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  if (admin?.role !== 'SUPER_ADMIN') return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
   if (!isSameOriginRequest(request)) return NextResponse.json({ success: false, error: "Invalid request origin." }, { status: 403 });
 
   const body = await request.json().catch(() => ({}));

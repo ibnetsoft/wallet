@@ -868,10 +868,10 @@ export default function SettingsPage() {
               <div className="bg-[#16161A] border border-[#26262B] rounded-2xl p-6 shadow-lg">
                 <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center mb-3">
                   <Wallet size={16} className="mr-2 text-[#00D2FF]" />
-                  TRON 핫월렛 · 스윕 준비
+                  TRON 핫월렛 · USDT 모으기
                 </h4>
                 <p className="mb-4 text-[10px] leading-relaxed text-[#8E8E93]">
-                  이 지갑은 향후 회원 지갑에 TRX 가스비를 보충하고 TRC20 USDT를 모으는 용도입니다. 현재 자동 스윕은 비활성 상태이며, 여기서 생성·가져오기만 준비할 수 있습니다.
+                  회원 지갑에 TRX 가스비를 대납하고 TRC20 USDT를 받는 회사 지갑입니다. 지갑 모으기 화면에서 한도 설정, 온체인 검토와 수동 실행을 진행하세요.
                 </p>
                 <div className="mb-3 rounded-lg border border-[#26262B] bg-[#0C0C0E] p-3">
                   <p className="text-[10px] font-bold text-[#8E8E93]">현재 TRON 핫월렛</p>
