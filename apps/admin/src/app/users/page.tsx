@@ -194,16 +194,27 @@ export default function UsersPage() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
+        <p className="mb-3 text-xs text-[#8E8E93]">화면이 좁으면 표를 좌우로 스크롤해 주세요. 주소에 마우스를 올리면 전체 주소를 확인할 수 있습니다.</p>
+        <div className="max-w-full overflow-x-auto rounded-lg border border-[#26262B]" role="region" aria-label="회원 목록 (좌우 스크롤)" tabIndex={0}>
+          <table className="w-full min-w-[1560px] whitespace-nowrap text-left text-xs border-collapse [&_td]:align-middle">
+            <colgroup>
+              <col className="w-12" />
+              <col className="w-64" />
+              <col className="w-80" />
+              <col className="w-44" />
+              <col className="w-40" />
+              <col className="w-48" />
+              <col className="w-24" />
+              <col className="w-60" />
+            </colgroup>
             <thead>
               <tr className="border-b border-[#26262B] text-[#8E8E93] font-semibold uppercase tracking-wider pb-3">
                 <th className="py-3 px-2 text-center w-10">No.</th>
                 <th className="py-3 px-4">회원 정보 (닉네임/직급)</th>
                 <th className="py-3 px-4">입금 주소 (BSC·TRON)</th>
                 <th className="py-3 px-4 text-right">회원 통합 잔액</th>
-                <th className="py-3 px-4 text-center">네트워크 (추천인/산하추천/게임)</th>
-                <th className="py-3 px-4 text-center">활동 기록 (가입/접속)</th>
+                <th className="py-3 px-4 text-center">추천 · 게임 현황</th>
+                <th className="py-3 px-4 text-center">가입 · 접속 기록</th>
                 <th className="py-3 px-4 text-center">상태</th>
                 <th className="py-3 px-4 text-center">관리</th>
               </tr>
@@ -219,7 +230,7 @@ export default function UsersPage() {
                   
                   {/* 회원 정보 */}
                   <td className="py-3 px-4">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center gap-2">
                       <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
                         user.starLevel >= 3 ? 'bg-[#FF9F0A]/20 text-[#FF9F0A] border border-[#FF9F0A]/30' : 
                         user.starLevel >= 1 ? 'bg-[#0ECB81]/20 text-[#0ECB81] border border-[#0ECB81]/30' :
@@ -228,8 +239,8 @@ export default function UsersPage() {
                         {user.starLevel > 0 ? `${user.starLevel}성` : '일반'}
                       </span>
                       <span className="font-semibold text-white">{user.nickname}</span>
-                      <span className="font-mono text-[#BF5AF2] text-[10px]">({user.code})</span>
                     </div>
+                    <div className="font-mono text-[#BF5AF2] text-[10px] mt-1">{user.code}</div>
                     <div className="text-[10px] text-[#8E8E93] mt-1">{user.email}</div>
                     {(user.fullName || user.phoneNumber) && (
                       <div className="text-[10px] text-[#8E8E93] mt-1">
@@ -241,16 +252,16 @@ export default function UsersPage() {
                   {/* 지갑 주소 */}
                   <td className="py-3 px-4">
                     {user.wallets.length > 0 ? (
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                       {user.wallets.map((wallet) => (
                       <div key={`${wallet.chainType}:${wallet.address}`} className="flex items-center space-x-2">
-                        <span className="text-[9px] text-[#8E8E93] w-20 shrink-0">{wallet.chainType === "TRON" ? "TRON (TRC20)" : wallet.chainType === "BSC" ? "BSC (BEP20)" : wallet.chainType}</span>
-                        <span title={wallet.address} className="text-[10px] font-mono text-[#00D2FF] truncate w-24">
-                          {wallet.address.slice(0, 6)}...{wallet.address.slice(-4)}
+                        <span className="text-[10px] text-[#8E8E93] w-20 shrink-0">{wallet.chainType === "TRON" ? "TRON (TRC20)" : wallet.chainType === "BSC" ? "BSC (BEP20)" : wallet.chainType}</span>
+                        <span title={wallet.address} className="text-xs font-mono text-[#00D2FF] shrink-0">
+                          {wallet.address.slice(0, 10)}...{wallet.address.slice(-8)}
                         </span>
                         <button 
                           onClick={() => handleCopy(wallet.address)}
-                          className="p-1 hover:bg-[#26262B] rounded text-[#8E8E93] hover:text-white transition-colors"
+                          className="shrink-0 p-1.5 hover:bg-[#26262B] rounded text-[#8E8E93] hover:text-white transition-colors"
                           title={`${wallet.chainType} 주소 복사`}
                         >
                           {copiedAddress === wallet.address ? <Check size={12} className="text-[#0ECB81]" /> : <Copy size={12} />}
@@ -310,7 +321,8 @@ export default function UsersPage() {
                   </td>
 
                   {/* 관리 */}
-                  <td className="py-3 px-4 text-center flex items-center justify-center space-x-1.5 h-[80px]">
+                  <td className="py-3 px-4 text-center">
+                    <div className="flex items-center justify-center gap-1.5">
                     <button 
                       onClick={() => fetchUserDetails(user)}
                       className="px-2 py-1 bg-[#1C1C21] border border-[#26262B] hover:border-[#BF5AF2] hover:text-[#BF5AF2] text-[#EAECEF] text-[10px] font-bold rounded transition-colors flex items-center space-x-1"
@@ -337,6 +349,7 @@ export default function UsersPage() {
                     <button onClick={() => handleDeleteUser(user.id, user.nickname)} className="px-2 py-1 bg-[#F6465D]/10 hover:bg-[#F6465D] hover:text-white text-[#F6465D] text-[10px] font-bold rounded transition-colors">
                       삭제
                     </button>
+                    </div>
                   </td>
                 </tr>
               ))}

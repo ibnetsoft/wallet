@@ -362,7 +362,7 @@ export default function AdminLayoutWrapper({
         </div>
       </aside>
 
-      <div className="flex min-h-screen flex-1 flex-col md:pl-64">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col md:pl-64">
         <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-[#26262B] bg-[#16161A]/80 px-4 md:px-8 backdrop-blur-md">
           <div className="flex items-center space-x-4">
             <button
