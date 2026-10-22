@@ -22,7 +22,7 @@ export default function Trc20SweepPanel() {
   const [scanning,setScanning] = useState(true);
   const [previews,setPreviews] = useState<Preview[]>([]);
   const [enabled,setEnabled] = useState(false);
-  const [maxFunding,setMaxFunding] = useState('15');
+  const [maxFunding,setMaxFunding] = useState('25');
   const [reserve,setReserve] = useState('50');
   const [busy,setBusy] = useState(false);
   const [message,setMessage] = useState('');
@@ -30,23 +30,47 @@ export default function Trc20SweepPanel() {
   // because the browser did not receive the first response.
   const operationKeys = useRef<Record<string,string>>({});
 
-  const load = useCallback(async () => {
-    setScanning(true);setBalanceScan(null);
-    try {
+  const refreshRequests = useCallback(async () => {
     const response = await fetch(adminApi('/api/wallet/trc20-sweep'),{cache:'no-store'});
     const result = await response.json();
     if (!response.ok || !result.success) throw new Error(result.error || 'TRC20 모으기 내역을 조회하지 못했습니다.');
-    setData(result);
+    setData(result as Dashboard);
+    return result as Dashboard;
+  },[]);
+  const load = useCallback(async () => {
+    setScanning(true);setBalanceScan(null);
+    try {
+    await refreshRequests();
     const balances = await fetch(adminApi('/api/wallet/trc20-sweep?balances=1'),{cache:'no-store'});
     const scan = await balances.json();
     if (!balances.ok || !scan.success) throw new Error(scan.error || 'TRON 온체인 잔액 조회에 실패했습니다. 다시 새로고침해 주세요.');
     setBalanceScan(scan);
     } finally {setScanning(false);}
-  },[]);
+  },[refreshRequests]);
   useEffect(() => { void load().catch(error => setMessage(error.message)); },[load]);
+  const savedEnabled=data?.settings.enabled;
+  const savedMaxFunding=data?.settings.maxFundingTrx;
+  const savedReserve=data?.settings.reserveTrx;
   useEffect(() => {
-    if (data) { setEnabled(data.settings.enabled);setMaxFunding(data.settings.maxFundingTrx);setReserve(data.settings.reserveTrx); }
-  },[data]);
+    if (savedEnabled!==undefined && savedMaxFunding!==undefined && savedReserve!==undefined) {
+      setEnabled(savedEnabled);setMaxFunding(savedMaxFunding);setReserve(savedReserve);
+    }
+  },[savedEnabled,savedMaxFunding,savedReserve]);
+  const hasPending = Boolean(data?.requests.some(row=>active(row.status)));
+  useEffect(()=>{
+    if (!hasPending) return;
+    let refreshing=false;
+    const timer=setInterval(async()=>{
+      if (refreshing) return;
+      refreshing=true;
+      try {
+        const next=await refreshRequests();
+        if (!next.requests.some(row=>active(row.status))) await load();
+      } catch { setMessage('진행 상태를 조회하지 못했습니다. 서버의 자동 처리는 계속됩니다.'); }
+      finally {refreshing=false;}
+    },5000);
+    return ()=>clearInterval(timer);
+  },[hasPending,refreshRequests,load]);
   async function post(body:object) {
     const response = await fetch(adminApi('/api/wallet/trc20-sweep'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const result = await response.json();
@@ -56,7 +80,7 @@ export default function Trc20SweepPanel() {
   async function perform(action:()=>Promise<void>) {
     setBusy(true);setMessage('');
     try { await action(); }
-    catch(error) { setMessage(error instanceof Error ? error.message : '요청 결과를 확인하지 못했습니다.'); }
+    catch(error) { setMessage(error instanceof Error ? error.message : '요청 결과를 확인하지 못했습니다.');void refreshRequests().catch(()=>undefined); }
     finally { setBusy(false); }
   }
   const pending = data?.requests.find(row=>active(row.status));
@@ -72,8 +96,8 @@ export default function Trc20SweepPanel() {
     if (!confirm(`TRON 메인넷에서 ${preview.amount} USDT를 회사 지갑으로 모읍니다.\n\n출발: ${preview.source}\n수신: ${preview.target}\nTRX 대납 상한: ${preview.maxGasTrx} TRX\n\n실제 온체인 송금입니다. 회원 장부 잔액은 유지됩니다. 계속하시겠습니까?`)) return;
     operationKeys.current[preview.token] ??= crypto.randomUUID();
     const result = await post({action:'EXECUTE',token:preview.token,idempotencyKey:operationKeys.current[preview.token],confirmation:'COLLECT TRC20'});
-    setMessage(result.request.status==='COMPLETED' ? 'TRC20 모으기가 확정됐습니다. 회원 잔액은 그대로 유지됩니다.' : '요청이 저장됐습니다. 아래 기존 요청의 상태 확인·계속 진행을 이용하세요.');
-    setPreviews(previous=>previous.filter(item=>item.source!==preview.source));await load();
+    setMessage(result.request.status==='COMPLETED' ? 'TRC20 모으기가 확정됐습니다. 회원 잔액은 그대로 유지됩니다.' : '요청이 저장됐습니다. 서버가 가스비 대납부터 USDT 모으기 확정까지 자동 진행합니다. 화면을 닫아도 계속 처리됩니다.');
+    setPreviews(previous=>previous.filter(item=>item.source!==preview.source));await refreshRequests();
   }
   return (
     <section aria-labelledby="trc20-sweep-title" className="space-y-5 rounded-2xl border border-[#30D5C8]/40 bg-[#16161A] p-6">
@@ -81,6 +105,7 @@ export default function Trc20SweepPanel() {
         <div>
           <h3 id="trc20-sweep-title" className="text-lg font-bold text-white">TRON · TRC20 USDT 모으기</h3>
           <p className="mt-1 text-xs text-[#A5A5AD]">회원 주소의 실제 USDT를 TRON 회사 지갑으로 옮깁니다. 회원의 앱 잔액은 차감하지 않습니다.</p>
+          <p className="mt-1 text-xs text-[#30D5C8]">한 번 실행하면 가스비 대납 → 확정 확인 → USDT 모으기 완료까지 서버가 자동 진행합니다.</p>
         </div>
         <button disabled={busy || scanning} onClick={()=>void perform(load)} className="rounded-lg border border-[#36363B] px-3 py-2 text-xs text-white disabled:opacity-40">{scanning ? '온체인 잔액 조회 중…' : '잔액·내역 새로고침'}</button>
       </div>
@@ -119,7 +144,7 @@ export default function Trc20SweepPanel() {
           {(!balanceScan || balanceScan.wallets.length===0) && <p className="p-4 text-xs text-[#A5A5AD]">{scanning ? 'TRON 주소별 USDT 잔액을 조회하고 있습니다…' : !balanceScan ? '잔액을 조회하지 못했습니다. 새로고침해 주세요.' : balanceScan.failed+balanceScan.unchecked>0 ? '조회에 성공한 주소 중 잔액이 있는 지갑이 없습니다.' : '모을 USDT 잔액이 있는 TRON 회원 지갑이 없습니다.'}</p>}
         </div>
         <button disabled={busy || scanning || !balanceScan?.wallets.length || Boolean(pending)} onClick={()=>void perform(()=>review(balanceScan!.wallets.map(wallet=>wallet.id)))} className="w-full rounded-xl bg-[#30D5C8] px-4 py-3 font-bold text-black disabled:opacity-40">{busy ? '처리 중…' : '잔액 지갑 전체 모으기 검토'}</button>
-        {pending && <p className="text-xs text-[#FFB45A]">진행 중인 요청이 있습니다. 아래 내역에서 같은 요청을 계속 진행하세요.</p>}
+        {pending && <p role="status" className="text-xs text-[#30D5C8]">{data.settings.enabled ? '서버에서 자동 처리 중입니다. 상태는 5초마다 갱신되며 화면을 닫아도 계속 진행합니다. 완료 후 다음 지갑을 모을 수 있습니다.' : '모으기가 비활성화되어 자동 처리를 일시 중지했습니다. 다시 활성화하면 기존 요청을 이어서 처리합니다.'}</p>}
         {previews.map(preview=><div key={preview.source} className="space-y-2 rounded-xl border border-[#30D5C8]/30 p-4 text-sm text-white">
           <p className="break-all text-xs">출발: {preview.source}</p><p className="break-all text-xs">수신: {preview.target}</p>
           <p className="font-bold">모을 수량: {preview.amount} USDT</p>
@@ -137,7 +162,7 @@ export default function Trc20SweepPanel() {
               <td className="p-2">{row.amount} USDT<p className="max-w-52 break-all font-mono text-[10px]">{row.source}</p></td>
               <td className="p-2">{labels[row.status] || row.status}{row.message && <p className="max-w-64 text-[#FFB45A]">{row.message}</p>}</td>
               <td className="space-y-1 p-2">{row.gasTx && <a className="block text-[#00D2FF] underline" href={`https://tronscan.org/#/transaction/${row.gasTx}`} target="_blank" rel="noreferrer">TRX 대납 TX</a>}{row.sweepTx && <a className="block text-[#00D2FF] underline" href={`https://tronscan.org/#/transaction/${row.sweepTx}`} target="_blank" rel="noreferrer">USDT 모으기 TX</a>}</td>
-              <td className="p-2">{active(row.status) && <button disabled={busy} onClick={()=>void perform(async()=>{const result=await post({action:'RESUME',requestId:row.id});setMessage(result.busy ? '다른 요청에서 처리 중입니다. 잠시 후 확인하세요.' : result.request.status==='COMPLETED' ? '모으기 확정 완료. 회원 잔액은 유지됩니다.' : '확정 대기 중입니다. 잠시 후 같은 요청의 상태를 확인하세요.');await load();})} className="rounded border border-[#36363B] px-2 py-2 disabled:opacity-40">상태 확인·계속 진행</button>}</td>
+              <td className="p-2">{active(row.status) ? <span className="text-[#30D5C8]">{data.settings.enabled ? '자동 처리 중' : '일시 중지'}</span> : row.status==='COMPLETED' ? <span className="text-[#30D5C8]">완료</span> : '—'}</td>
             </tr>)}</tbody>
           </table>
           {data.requests.length===0 && <p className="py-3 text-xs text-[#A5A5AD]">아직 모으기 요청이 없습니다.</p>}

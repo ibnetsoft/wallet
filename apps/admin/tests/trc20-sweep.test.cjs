@@ -12,6 +12,7 @@ const policy = require('../src/lib/trc20-sweep-policy.ts');
 const { TronSweepChain } = require('../src/lib/trc20-sweep-chain.ts');
 const { previewSweep,createSweep,advanceSweep,publicSweep } = require('../src/lib/trc20-sweep.ts');
 const { scanFundedTronWallets } = require('../src/lib/trc20-sweep-balances.ts');
+const { runAutomaticSweeps } = require('../src/lib/trc20-sweep-worker.ts');
 const mnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'; // Public BIP-39 test vector only.
 process.env.WALLET_MASTER_MNEMONIC=mnemonic;
 process.env.CRON_SECRET='unit-test-review-secret';
@@ -71,6 +72,17 @@ class FakeDb {
       rows.push({...this.row});return {rows};
     }
     throw new Error('Unexpected query '+sql);
+  }
+}
+class WorkerDb extends FakeDb {
+  workerOccupied=false;workerUnlocks=0;autoAttempts=0;
+  async query(sql,params=[]) {
+    if(sql.startsWith('SELECT value FROM public.system_settings'))return {rows:[{value:String(this.enabled)}]};
+    if(sql.includes('pg_try_advisory_lock'))return {rows:[{locked:!this.workerOccupied}]};
+    if(sql.includes('pg_advisory_unlock')){this.workerUnlocks++;return {rows:[{}]};}
+    if(sql.startsWith('SELECT id FROM public.trc20_sweep_requests'))return {rows:this.row && ['PENDING','GAS_FUNDED','SWEEPING'].includes(this.row.status) && !this.row.lease_token ? [{id:this.row.id}] : []};
+    if(sql.includes('SET auto_attempt_count=auto_attempt_count+1')){this.autoAttempts++;return {rows:[]};}
+    return super.query(sql,params);
   }
 }
 test('amount conversions preserve six-decimal precision and reject malformed values',()=>{
@@ -157,4 +169,64 @@ test('legacy USDT simulation is validated by emitted event, even with a zero ret
   }
   const estimate=await new SimulationChain().estimate(wallet.address,master.address,amount);
   assert.equal(estimate.feeLimit,BigInt(8450000));assert.equal(estimate.requiredTrx,BigInt(10450000));
+});
+
+test('server worker completes approved gas and USDT phases without any browser RESUME',async()=>{
+  const db=new WorkerDb(),chain=new FakeChain();
+  const preview=await previewSweep(db,wallet.id,chain);
+  const id=await createSweep(db,{token:preview.token,idempotencyKey:randomUUID(),confirmation:'COLLECT TRC20'},randomUUID());
+  await advanceSweep(db,id,chain);assert.equal(chain.gasSigned,1);
+  const step=(client,id)=>advanceSweep(client,id,chain);
+  await runAutomaticSweeps(db,step);assert.equal(chain.gasSigned,1);assert.equal(db.row.status,'PENDING');
+  chain.gasSolid=true;
+  await runAutomaticSweeps(db,step);assert.equal(db.row.status,'SWEEPING');assert.equal(chain.sweepSigned,1);
+  chain.sweepSolid=true;
+  await runAutomaticSweeps(db,step);assert.equal(db.row.status,'COMPLETED');
+  assert.equal(db.autoAttempts,3);assert.equal(db.workerUnlocks,3);
+  assert.equal(chain.gasSigned,1);assert.equal(chain.sweepSigned,1);
+  assert.ok(!db.queries.some(sql=>sql.includes('UPDATE public.user_balances')));
+});
+test('automatic worker is idle without approved requests and honors disabled/occupied state',async()=>{
+  const db=new WorkerDb();let calls=0;
+  const step=async()=>{calls++;throw new Error('Must not execute');};
+  assert.equal((await runAutomaticSweeps(db,step)).checked,0);
+  db.enabled=false;assert.equal((await runAutomaticSweeps(db,step)).enabled,false);
+  db.enabled=true;db.workerOccupied=true;assert.equal((await runAutomaticSweeps(db,step)).busy,true);
+  assert.equal(calls,0);assert.equal(db.autoAttempts,0);
+});
+test('worker releases its global lock after errors so the next scheduler can recover',async()=>{
+  const db=new WorkerDb(),chain=new FakeChain();
+  const preview=await previewSweep(db,wallet.id,chain);
+  await createSweep(db,{token:preview.token,idempotencyKey:randomUUID(),confirmation:'COLLECT TRC20'},randomUUID());
+  await assert.rejects(runAutomaticSweeps(db,async()=>{throw new Error('Temporary worker failure');}));
+  assert.equal(db.workerUnlocks,1);
+});
+test('transient RPC errors before signing keep the approved request retryable',async()=>{
+  const db=new WorkerDb(),chain=new FakeChain();
+  const preview=await previewSweep(db,wallet.id,chain);
+  const id=await createSweep(db,{token:preview.token,idempotencyKey:randomUUID(),confirmation:'COLLECT TRC20'},randomUUID());
+  chain.tokenBalance=async()=>{throw new Error('RPC timeout');};
+  await advanceSweep(db,id,chain);
+  assert.equal(db.row.status,'PENDING');assert.equal(chain.gasSigned,0);
+  chain.tokenBalance=async()=>amount;
+  await runAutomaticSweeps(db,(client,id)=>advanceSweep(client,id,chain));
+  assert.equal(chain.gasSigned,1);assert.equal(db.row.status,'PENDING');
+});
+test('expired signed transactions are only checked, never replaced or rebroadcast',async()=>{
+  const db=new WorkerDb(),chain=new FakeChain();
+  const preview=await previewSweep(db,wallet.id,chain);
+  const id=await createSweep(db,{token:preview.token,idempotencyKey:randomUUID(),confirmation:'COLLECT TRC20'},randomUUID());
+  await advanceSweep(db,id,chain);
+  db.row.gas_signed_tx.raw_data.expiration=0;
+  await runAutomaticSweeps(db,(client,id)=>advanceSweep(client,id,chain));
+  assert.equal(chain.broadcasts.length,1);assert.equal(chain.gasSigned,1);
+  chain.gasSolid=true;
+  await runAutomaticSweeps(db,(client,id)=>advanceSweep(client,id,chain));
+  assert.equal(db.row.status,'SWEEPING');assert.equal(chain.sweepSigned,1);
+  db.row.sweep_signed_tx.raw_data.expiration=0;
+  await runAutomaticSweeps(db,(client,id)=>advanceSweep(client,id,chain));
+  assert.equal(chain.broadcasts.length,2);assert.equal(chain.sweepSigned,1);
+  chain.sweepSolid=true;
+  await runAutomaticSweeps(db,(client,id)=>advanceSweep(client,id,chain));
+  assert.equal(db.row.status,'COMPLETED');
 });

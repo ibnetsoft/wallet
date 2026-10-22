@@ -37,7 +37,7 @@ async function configuration(client: PoolClient): Promise<Config> {
   let reserve = BigInt("0"), maxFunding = BigInt("0");
   try {
     reserve = units(values.get('tron_energy_reserve_trx') || '50');
-    maxFunding = units(values.get('tron_sweep_gas_fund_trx') || '15');
+    maxFunding = units(values.get('tron_sweep_gas_fund_trx') || '25');
     if (maxFunding <= BigInt("0") || maxFunding > MAX_GAS_SUN || reserve < BigInt("1000000")) throw new Error();
   } catch { issues.push('TRX 대납 한도(0 초과~100 TRX)와 회사 지갑 최소 잔액(1 TRX 이상)을 확인하세요.'); }
   return { target, key, enabled: values.get('tron_sweep_enabled') === 'true', reserve, maxFunding, issues };
@@ -168,6 +168,10 @@ export async function advanceSweep(client: PoolClient, id: string, chain = new T
         const state = receiptState(await chain.confirmed(row.gas_funding_tx_hash),row.gas_funding_tx_hash);
         if (state === 'failed') { await update("status='FAILED',error_message='TRX 대납이 온체인에서 실패했습니다.'"); return {request:publicSweep(row)}; }
         if (state === 'pending') {
+          if (row.gas_signed_tx.raw_data.expiration <= Date.now()) {
+            await update("error_message='TRX 대납 TX의 전파 유효기간이 지났습니다. 추가 대납 없이 기존 TX의 확정 여부를 자동 확인 중입니다.'");
+            return {request:publicSweep(row)};
+          }
           await chain.broadcast(row.gas_signed_tx); // Same signed TX only, never a fresh payment.
           return { request:publicSweep(row) };
         }
@@ -205,12 +209,14 @@ export async function advanceSweep(client: PoolClient, id: string, chain = new T
         await update("status='COMPLETED',completed_at=now(),gas_signed_tx=NULL,sweep_signed_tx=NULL,error_message=NULL");
       } else if (state === 'failed') {
         await update("status='FAILED',error_message='USDT 전송이 실패했거나 확정 전송 내역이 요청과 다릅니다.'");
+      } else if (row.sweep_signed_tx.raw_data.expiration <= Date.now()) {
+        await update("error_message='USDT TX의 전파 유효기간이 지났습니다. 새 전송을 만들지 않고 기존 TX의 확정 여부를 자동 확인 중입니다.'");
       } else { await chain.broadcast(row.sweep_signed_tx); }
     }
     return { request:publicSweep(row) };
   } catch (error) {
-    const message = error instanceof SweepError ? error.message : 'TRON 처리 결과를 아직 확정하지 못했습니다. 기존 요청에서 상태 확인을 이용하세요.';
-    if (!row.gas_signed_tx && !row.sweep_signed_tx && !row.gas_funding_tx_hash && !row.sweep_tx_hash) {
+    const message = error instanceof SweepError ? error.message : 'TRON 응답을 확인하지 못했습니다. 서버가 같은 요청을 자동 재시도합니다.';
+    if (error instanceof SweepError && !row.gas_signed_tx && !row.sweep_signed_tx && !row.gas_funding_tx_hash && !row.sweep_tx_hash) {
       await update("status='FAILED',error_message=$3",[message]);
     } else { await update('error_message=$3',[message]); }
     return { request:publicSweep(row) };
