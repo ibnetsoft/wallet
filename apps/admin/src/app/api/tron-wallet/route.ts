@@ -47,6 +47,14 @@ export async function POST(request: Request) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('tron_master_hot_wallet_setup'))");
+    if (action === "GENERATE") {
+      const existing = await client.query("SELECT value FROM public.system_settings WHERE key=ANY($1::text[]) AND btrim(value)<>''",[["tron_master_hot_wallet","tron_master_hot_wallet_private_key"]]);
+      if (existing.rows.length || process.env.TRON_MASTER_HOT_WALLET_PRIVATE_KEY) {
+        await client.query("ROLLBACK");
+        return NextResponse.json({success:false,error:"이미 등록된 TRON 회사 지갑이 있습니다. 기존 지갑을 확인하세요."},{status:409});
+      }
+    }
     for (const [key, value] of [["tron_master_hot_wallet", address], ["tron_master_hot_wallet_private_key", privateKey]]) {
       await client.query(
         `INSERT INTO public.system_settings (key, value) VALUES ($1, $2)

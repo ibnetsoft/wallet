@@ -1,16 +1,19 @@
 import { NextResponse } from "next/server";
 import { getAdminUser } from "@/lib/admin-auth";
-import { sweepPool, sweepDashboard, previewSweep, createSweep, advanceSweep, saveSweepSettings, SweepError } from "@/lib/trc20-sweep";
+import { sweepPool, sweepDashboard, sweepBalances, previewSweep, createSweep, advanceSweep, saveSweepSettings, SweepError } from "@/lib/trc20-sweep";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-export async function GET() {
+export async function GET(request: Request) {
   const admin = await getAdminUser();
   if (admin?.role !== 'SUPER_ADMIN') return NextResponse.json({success:false,error:'최고 관리자 권한이 필요합니다.'},{status:403});
   const client = await sweepPool.connect();
-  try { return NextResponse.json({success:true,...await sweepDashboard(client)}); }
+  try {
+    const balances = new URL(request.url).searchParams.get('balances') === '1';
+    return NextResponse.json({success:true,...await (balances ? sweepBalances(client) : sweepDashboard(client))});
+  }
   catch { return NextResponse.json({success:false,error:'TRC20 모으기 설정을 읽지 못했습니다. DB 마이그레이션 적용 여부를 확인하세요.'},{status:503}); }
   finally { client.release(); }
 }

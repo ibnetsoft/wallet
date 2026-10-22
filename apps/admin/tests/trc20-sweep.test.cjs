@@ -11,6 +11,7 @@ const { TronWeb,utils } = require('tronweb');
 const policy = require('../src/lib/trc20-sweep-policy.ts');
 const { TronSweepChain } = require('../src/lib/trc20-sweep-chain.ts');
 const { previewSweep,createSweep,advanceSweep,publicSweep } = require('../src/lib/trc20-sweep.ts');
+const { scanFundedTronWallets } = require('../src/lib/trc20-sweep-balances.ts');
 const mnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'; // Public BIP-39 test vector only.
 process.env.WALLET_MASTER_MNEMONIC=mnemonic;
 process.env.CRON_SECRET='unit-test-review-secret';
@@ -75,6 +76,26 @@ class FakeDb {
 test('amount conversions preserve six-decimal precision and reject malformed values',()=>{
   assert.equal(policy.units('201.000001'),BigInt(201000001));assert.equal(policy.decimal(BigInt(201000001)),'201.000001');
   for(const invalid of ['-1','1e6','1.0000001','NaN'])assert.throws(()=>policy.units(invalid));
+});
+
+test('funded wallet list uses actual chain balances, filters zero and preserves six decimals',async()=>{
+  const wallets=['zero','small','large'].map(address=>({id:address,address,email:'test@example.invalid',nickname:null}));
+  const raw={zero:BigInt(0),small:BigInt(1),large:BigInt(201000000)};
+  const result=await scanFundedTronWallets(wallets,{tokenBalance:async address=>raw[address]});
+  assert.deepEqual(result.wallets.map(w=>[w.address,w.balance]),[['large','201.000000'],['small','0.000001']]);
+  assert.equal(result.totalUsdt,'201.000001');assert.equal(result.checked,3);
+  assert.equal(result.failed,0);assert.equal(result.unchecked,0);
+});
+test('unavailable chain balances are reported as unknown, never as successful zero',async()=>{
+  const wallets=['failed','funded'].map(address=>({id:address,address,email:'test@example.invalid',nickname:null}));
+  const result=await scanFundedTronWallets(wallets,{tokenBalance:async address=>{if(address==='failed')throw new Error('RPC unavailable');return BigInt(5000000);}});
+  assert.equal(result.checked,1);assert.equal(result.failed,1);assert.equal(result.totalUsdt,'5.000000');
+  assert.equal(result.wallets.length,1);assert.equal(result.wallets[0].address,'funded');
+});
+test('scan time budget reports unqueried wallets and does not claim they are empty',async()=>{
+  let calls=0;
+  const result=await scanFundedTronWallets([{id:'1',address:'unknown',email:'test@example.invalid',nickname:null}],{tokenBalance:async()=>{calls++;return BigInt(0);}},0);
+  assert.equal(calls,0);assert.equal(result.checked,0);assert.equal(result.unchecked,1);
 });
 test('unsigned transaction validation rejects a validly encoded but substituted destination',()=>{
   const intent={phase:'sweep',source:wallet.address,target:master.address,amount,feeLimit:BigInt(8000000)};

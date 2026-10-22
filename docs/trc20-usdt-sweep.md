@@ -17,7 +17,7 @@ not activate collection. Deploy `apps/admin` with the existing server-only
 2. In the TRC20 panel, set the maximum TRX top-up per request and minimum
    company TRX reserve. Explicitly enable collection. No automatic sweeps or
    configuration changes happen merely by applying the migration.
-3. Select a member, then review the on-chain USDT balance, company recipient,
+3. Review a funded wallet row (or all listed wallets), including the on-chain USDT balance, company recipient,
    source/company TRX balances, maximum top-up, and contract energy fee limit.
    This preview cannot sign or broadcast a transaction. Each review expires
    after five minutes and is authenticated by a server HMAC.
@@ -64,3 +64,24 @@ precision, substituted transactions, receipt matching, read-only previews,
 gas limits, disabled execution, lost-response recovery, idempotency, and
 occupied leases. No test broadcasts funds. Real gas funding and USDT transfer
 still require operator execution and on-chain confirmation.
+## Funded wallet list
+
+The TRC20 section lists only member TRON addresses whose mainnet USDT balance
+is greater than zero. `/api/wallet/trc20-sweep?balances=1` reads the official
+USDT contract through the throttled TRON adapter, independently of the member's
+unified application balance. The list includes the full address, member and
+actual token quantity; the summary totals only successful positive lookups.
+Lookup failures and addresses not reached within the scan time budget are
+reported as unknown, not zero. Refresh to check them again.
+
+Operators can review one listed wallet or all funded wallets. Each review still
+requires its own confirmed execution. The existing durable request, signed quote,
+idempotency and one-active-company-request protections remain in place. Once a
+request is pending, resume that request until confirmed before collecting the next
+wallet. No page load, balance refresh or review broadcasts a transaction.
+
+Company TRON wallet generation stores the private key only in the server database
+setting and returns the public address. Generation refuses to replace an existing
+company wallet. A newly generated address must be activated and funded with TRX
+before gas sponsorship and collection can execute. Generation does not enable
+sweeping or transfer funds.

@@ -3,6 +3,7 @@ import { Pool, type PoolClient } from "pg";
 import { TronWeb, type Types } from "tronweb";
 import { TronSweepChain } from "./trc20-sweep-chain";
 import { decimal, units, MAX_GAS_SUN, receiptState } from "./trc20-sweep-policy";
+import { scanFundedTronWallets, type SweepWallet } from "./trc20-sweep-balances";
 
 export const sweepPool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
 type Config = { target: string; key: string; enabled: boolean; reserve: bigint; maxFunding: bigint; issues: string[] };
@@ -88,6 +89,13 @@ export async function sweepDashboard(client: PoolClient) {
     gas_funding_tx_hash,sweep_tx_hash,error_message,created_at FROM public.trc20_sweep_requests ORDER BY created_at DESC LIMIT 30`)).rows;
   return { wallets, requests: requests.map(publicSweep), settings: {
     target: config.target, enabled: config.enabled, reserveTrx: decimal(config.reserve), maxFundingTrx: decimal(config.maxFunding), issues: config.issues } };
+}
+export async function sweepBalances(client: PoolClient, chain = new TronSweepChain()) {
+  const config = await configuration(client);
+  const wallets = (await client.query<SweepWallet>(`SELECT w.id,w.address,u.email,u.nickname
+    FROM public.user_wallets w JOIN public.users u ON u.id=w.user_id
+    WHERE w.chain_type='TRON' AND w.address<>$1 ORDER BY u.created_at,w.id`,[config.target])).rows;
+  return scanFundedTronWallets(wallets,chain);
 }
 export async function previewSweep(client: PoolClient, walletId: string, chain = new TronSweepChain()) {
   const config = await configuration(client); ready(config);
