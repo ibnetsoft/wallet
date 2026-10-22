@@ -70,6 +70,8 @@ export async function GET() {
         [
           "DEPOSIT",
           "WITHDRAW",
+          "TRANSFER_IN",
+          "TRANSFER_OUT",
           ...BONUS_TRANSACTION_TYPES,
           ...SWAP_TRANSACTION_TYPES,
         ],
@@ -102,6 +104,7 @@ export async function GET() {
 
     // The transactions tab is reserved for user-facing wallet movement only.
     const transactions = entries.filter((entry) => {
+      if (entry.txType === "TRANSFER_IN" || entry.txType === "TRANSFER_OUT") return true;
       if (entry.txType === "WITHDRAW") {
         return typeof entry.details.address === "string" && entry.details.address.length > 0;
       }

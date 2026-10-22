@@ -45,6 +45,8 @@ function assetDisplayName(asset: string) {
 }
 
 function transactionTypeLabel(type: string) {
+  if (type === "TRANSFER_OUT") return "회원 이체 보냄";
+  if (type === "TRANSFER_IN") return "회원 이체 받음";
   if (type === "GAME_WAGER") {
     return "게임 베팅";
   }

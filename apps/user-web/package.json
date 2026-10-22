@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:member-transfer": "node --test tests/member-transfer.test.cjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.3",

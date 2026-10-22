@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getParticipationErrorMessage } from "@/lib/game-rounds";
+import MemberTransferModal from "@/components/MemberTransferModal";
 import {
   Home, Wallet, Gamepad2, Users, Settings, ArrowDownLeft, ArrowUpRight,
   RefreshCw, Copy, Check, Play, TrendingUp, Bell, ArrowRightLeft, Star,
@@ -688,6 +689,7 @@ export default function MobileApp() {
   };
 
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [showMemberTransfer, setShowMemberTransfer] = useState(false);
   const [showSwapModal, setShowSwapModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [txHistory, setTxHistory] = useState<WalletHistoryEntry[]>([]);
@@ -1112,7 +1114,7 @@ export default function MobileApp() {
           </div>
           <div className="flex items-center space-x-1.5">
             <div className="w-2 h-2 rounded-full bg-[#0ECB81] animate-pulse" />
-            <span className="text-[11px] font-bold text-[#EAECEF]">BSC Network</span>
+            <span className="text-[11px] font-bold text-[#EAECEF]">BSC · TRON</span>
           </div>
         </div>
       )}
@@ -1450,7 +1452,7 @@ export default function MobileApp() {
               </div>
 
               {/* 3 Action Buttons: Deposit, Withdraw, History */}
-              <div className="grid grid-cols-3 gap-2 pt-2">
+              <div className="grid grid-cols-4 gap-2 pt-2">
                 <button
                   onClick={() => openDepositModal()}
                   className="bg-[#0B0E11] hover:bg-[#2B3139] border border-[#2B3139] hover:border-[#FCD535] py-3 rounded-xl flex flex-col items-center justify-center space-y-2 transition-all group"
@@ -1465,6 +1467,14 @@ export default function MobileApp() {
                 >
                   <ArrowUpRight size={24} strokeWidth={2.5} className="text-[#F6465D] group-hover:scale-110 transition-transform" />
                   <span className="text-xs font-bold text-[#EAECEF]">{t.withdraw}</span>
+                </button>
+
+                <button
+                  onClick={() => setShowMemberTransfer(true)}
+                  className="bg-[#0B0E11] hover:bg-[#2B3139] border border-[#2B3139] hover:border-[#FCD535] py-3 rounded-xl flex flex-col items-center justify-center space-y-2 transition-all group"
+                >
+                  <ArrowRightLeft size={24} className="text-[#FCD535]" />
+                  <span className="text-xs font-bold text-[#EAECEF]">{lang === "ko" ? "회원 이체" : lang === "en" ? "Transfer" : "会员转账"}</span>
                 </button>
 
                 <button
@@ -1626,6 +1636,9 @@ export default function MobileApp() {
             </div>
           </div>
         )}
+
+        {showMemberTransfer && userId && <MemberTransferModal userId={userId} balance={usdtBalance} lang={lang}
+          onClose={() => setShowMemberTransfer(false)} onSuccess={() => { void loadBalances(userId); void loadTxHistory(); }} />}
 
         {/* Withdraw Modal Popup */}
         {showWithdrawModal && (
@@ -1824,13 +1837,15 @@ export default function MobileApp() {
                 {/* ── 입출금 탭 ── */}
                 {walletHistoryTab === "tx" && (() => {
                   const getTxLabel = (txType: string, status: string) => {
+                    if (txType === "TRANSFER_OUT") return lang === "ko" ? "회원 이체 보냄" : lang === "en" ? "Member transfer sent" : "会员转出";
+                    if (txType === "TRANSFER_IN") return lang === "ko" ? "회원 이체 받음" : lang === "en" ? "Member transfer received" : "会员转入";
                     if (txType === "WITHDRAW") {
                       if (status === "PENDING") return lang === "ko" ? "⏳ 출금준비중" : lang === "en" ? "⏳ Pending Withdrawal" : "⏳ 提现准备中";
                       if (status === "COMPLETED" || status === "APPROVED") return lang === "ko" ? "✅ 출금완료" : lang === "en" ? "✅ Withdrawn" : "✅ 已提现";
                       if (status === "REJECTED" || status === "FAILED") return lang === "ko" ? "❌ 출금거절" : lang === "en" ? "❌ Rejected" : "❌ 已拒绝";
                       return lang === "ko" ? "출금" : "Withdraw";
                     }
-                    if (txType === "DEPOSIT") return lang === "ko" ? "💰 BSC 입금" : lang === "en" ? "💰 BSC Deposit" : "💰 BSC 充值";
+                    if (txType === "DEPOSIT") return lang === "ko" ? "💰 USDT 입금" : lang === "en" ? "💰 USDT Deposit" : "💰 USDT 充值";
                     return txType;
                   };
                   const getStatusBadge = (txType: string, status: string) => {
@@ -1857,7 +1872,7 @@ export default function MobileApp() {
                             {items.map((tx) => {
                               const isPlus = tx.amount > 0;
                               const badge = getStatusBadge(tx.txType, tx.status);
-                              const addr = tx.txType === "WITHDRAW" ? tx.details.address : tx.details.from_address;
+                              const addr = tx.txType === "TRANSFER_OUT" ? tx.details.recipient_nickname : tx.txType === "TRANSFER_IN" ? tx.details.sender_nickname : tx.txType === "WITHDRAW" ? tx.details.address : tx.details.from_address;
                               return (
                                 <div key={tx.id} className="bg-[#0B0E11] p-3 rounded-xl border border-[#2B3139]">
                                   <div className="flex justify-between items-start">
@@ -1866,13 +1881,13 @@ export default function MobileApp() {
                                       <p className="text-[10px] text-[#848E9C] mt-0.5 font-mono">{new Date(tx.createdAt).toLocaleString()}</p>
                                       {typeof addr === "string" && (
                                         <p className="text-[9px] text-[#848E9C] mt-0.5 font-mono truncate max-w-[180px]">
-                                          {tx.txType === "WITHDRAW" ? "→ " : "← "}{addr}
+                                          {tx.txType === "WITHDRAW" || tx.txType === "TRANSFER_OUT" ? "→ " : "← "}{addr}
                                         </p>
                                       )}
                                     </div>
                                     <div className="text-right">
                                       <p className={`text-xs font-mono font-bold ${isPlus ? "text-[#0ECB81]" : "text-[#F6465D]"}`}>
-                                        {isPlus ? "+" : ""}{Math.abs(tx.amount).toFixed(2)} {tx.symbol}
+                                        {isPlus ? "+" : "-"}{Math.abs(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })} {tx.symbol}
                                       </p>
                                       <span className={`inline-block mt-1 text-[9px] font-bold px-1.5 py-0.5 rounded border ${badge.color}`}>{badge.text}</span>
                                     </div>
